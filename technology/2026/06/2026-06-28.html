@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily AI & Tech Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Daily AI & Tech Digest</h1>
+      <div class="header-date">2026-06-28</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">★ Highlights</a>
+<a href="#sec-us_news" class="nav-link">Silicon Valley & US News</a>
+<a href="#sec-china_news" class="nav-link">China Tech News</a>
+<a href="#sec-github_trending" class="nav-link">GitHub Trending</a>
+<a href="#sec-arxiv_top" class="nav-link">arXiv — Top Institution Papers</a>
+<a href="#sec-arxiv_other" class="nav-link">arXiv — Other Notable Papers</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">25 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>8 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">25/25 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">US News</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">China News</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">GitHub</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:57%"></div></div>
+  <span class="stat-count">4</span>
+</div><div class="stat-row">
+  <span class="stat-label">arXiv (Top Inst.)</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:28%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">arXiv (Other)</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:71%"></div></div>
+  <span class="stat-count">5</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">embodied-ai</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">人形机器人</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">memory-shortage</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">inference-efficiency</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">supercomputing</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">chip-design</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">export-controls</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">DeepSeek</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">AI-datacenter</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    ★ Highlights
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="supercomputer TOP500 export-controls HPC">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">The Verge</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">China claims the world's fastest supercomputer<div class="title-zh">中国宣称拥有全球最快超级计算机</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">supercomputer</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">TOP500</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">export-controls</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">HPC</span></div>
+  <div class="item-summary">China's LineShine supercomputer has pushed El Capitan out of the No. 1 spot on the TOP500 ranking — the country's first time at the top since 2018 — despite strict US limits on high-powered computing exports.</div>
+  <a class="item-link" href="https://www.theverge.com/tech/958768/china-claims-the-worlds-fastest-supercomputer" target="_blank" rel="noopener">&rarr; www.theverge.com</a>
+</div>
+<div class="item-card" data-keywords="Claude Mythos 5 export-controls Anthropic enterprise">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    
+    
+    <span class="item-source">9to5Mac</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Anthropic cleared to release Claude Mythos 5 to over 100 US institutions<div class="title-zh">Anthropic 获准向 100 多家美国机构发布 Claude Mythos 5</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Claude Mythos 5</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">export-controls</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Anthropic</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">enterprise</span></div>
+  <div class="item-summary">After an export-control directive forced Anthropic to disable access to Claude Fable 5 and Mythos 5, the company reached a deal with the US government allowing Mythos 5 to be released to over 100 US institutions.</div>
+  <a class="item-link" href="https://9to5mac.com/2026/06/26/anthropic-cleared-to-release-claude-mythos-5-to-over-100-us-institutions/" target="_blank" rel="noopener">&rarr; 9to5mac.com</a>
+</div>
+<div class="item-card" data-keywords="memory-shortage CXMT DRAM supply-chain">
+  <div class="item-meta">
+    <span class="item-org">Apple</span>
+    
+    
+    <span class="item-source">The Verge</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Apple wants permission to buy memory from a blacklisted Chinese supplier<div class="title-zh">苹果寻求批准从被列入黑名单的中国供应商采购内存</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">memory-shortage</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">CXMT</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">DRAM</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">supply-chain</span></div>
+  <div class="item-summary">According to the Financial Times, Apple is seeking a Trump-administration exception to buy RAM chips from CXMT — a Chinese supplier blacklisted by the Pentagon over PLA ties — to ease pressure on its supply chain amid a global memory shortage.</div>
+  <a class="item-link" href="https://www.theverge.com/tech/958707/apple-ram-buy-memory-blacklisted-china-cxmt" target="_blank" rel="noopener">&rarr; www.theverge.com</a>
+</div>
+<div class="item-card" data-keywords="具身智能 人形机器人 量产 智元">
+  <div class="item-meta">
+    <span class="item-org">智元 AgiBot</span>
+    
+    <span class="lang-note">中文内容</span>
+    <span class="item-source">36kr</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgiBot rolls out its 15,000th mass-produced general-purpose embodied robot<div class="title-zh">智元第15000台通用具身机器人正式量产下线</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">具身智能</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">人形机器人</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">量产</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">智元</span></div>
+  <div class="item-summary">6月28日，智元宣布通用具身机器人精灵G2第15000台正式量产下线，公司称这标志着中国人形机器人产业迈向大规模真实场景应用。</div>
+  <a class="item-link" href="https://36kr.com/newsflashes/3872498969252864?f=rss" target="_blank" rel="noopener">&rarr; 36kr.com</a>
+</div>
+<div class="item-card" data-keywords="DSpark speculative-decoding inference-efficiency open-source">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Peking University and DeepSeek open-source DSpark, boosting LLM inference efficiency<div class="title-zh">北京大学与 DeepSeek 开源 DSpark，大幅提升大模型推理效率</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">DSpark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">speculative-decoding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">inference-efficiency</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span></div>
+  <div class="item-summary">Peking University and DeepSeek jointly open-sourced DSpark, a speculative-decoding framework that the teams report boosts LLM inference speed by 60-85%, with up to a 661% throughput gain under strict latency constraints.</div>
+  <a class="item-link" href="https://pandaily.com/peking-university-deepseek-dspark-inference-efficiency-jun2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+<div class="item-card" data-keywords="DeepSeek funding Harness coding-agent">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepSeek pivots to aggressive expansion with $7B funding and massive hiring<div class="title-zh">DeepSeek 完成 70 亿美元融资并大规模招聘，转向激进扩张</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">DeepSeek</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">funding</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Harness</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">coding-agent</span></div>
+  <div class="item-summary">DeepSeek has raised a record $7B and plans to double every department while launching its Harness AI coding-agent team to rival Anthropic's Claude Code, reversing its prior 'no funding, no commercialization' stance.</div>
+  <a class="item-link" href="https://pandaily.com/deepseek-funding-expansion-hiring-harness" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-us_news">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-us_news">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Silicon Valley & US News
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="supercomputer TOP500 export-controls HPC">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">The Verge</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">China claims the world's fastest supercomputer<div class="title-zh">中国宣称拥有全球最快超级计算机</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">supercomputer</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">TOP500</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">export-controls</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">HPC</span></div>
+  <div class="item-summary">China's LineShine supercomputer has pushed El Capitan out of the No. 1 spot on the TOP500 ranking — the country's first time at the top since 2018 — despite strict US limits on high-powered computing exports.</div>
+  <a class="item-link" href="https://www.theverge.com/tech/958768/china-claims-the-worlds-fastest-supercomputer" target="_blank" rel="noopener">&rarr; www.theverge.com</a>
+</div>
+<div class="item-card" data-keywords="Claude Mythos 5 export-controls Anthropic enterprise">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    
+    
+    <span class="item-source">9to5Mac</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Anthropic cleared to release Claude Mythos 5 to over 100 US institutions<div class="title-zh">Anthropic 获准向 100 多家美国机构发布 Claude Mythos 5</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Claude Mythos 5</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">export-controls</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Anthropic</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">enterprise</span></div>
+  <div class="item-summary">After an export-control directive forced Anthropic to disable access to Claude Fable 5 and Mythos 5, the company reached a deal with the US government allowing Mythos 5 to be released to over 100 US institutions.</div>
+  <a class="item-link" href="https://9to5mac.com/2026/06/26/anthropic-cleared-to-release-claude-mythos-5-to-over-100-us-institutions/" target="_blank" rel="noopener">&rarr; 9to5mac.com</a>
+</div>
+<div class="item-card" data-keywords="memory-shortage CXMT DRAM supply-chain">
+  <div class="item-meta">
+    <span class="item-org">Apple</span>
+    
+    
+    <span class="item-source">The Verge</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Apple wants permission to buy memory from a blacklisted Chinese supplier<div class="title-zh">苹果寻求批准从被列入黑名单的中国供应商采购内存</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">memory-shortage</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">CXMT</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">DRAM</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">supply-chain</span></div>
+  <div class="item-summary">According to the Financial Times, Apple is seeking a Trump-administration exception to buy RAM chips from CXMT — a Chinese supplier blacklisted by the Pentagon over PLA ties — to ease pressure on its supply chain amid a global memory shortage.</div>
+  <a class="item-link" href="https://www.theverge.com/tech/958707/apple-ram-buy-memory-blacklisted-china-cxmt" target="_blank" rel="noopener">&rarr; www.theverge.com</a>
+</div>
+<div class="item-card" data-keywords="Micron memory-chips HBM AI-demand">
+  <div class="item-meta">
+    <span class="item-org">Micron</span>
+    
+    
+    <span class="item-source">TechCrunch</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Why Wall Street thinks US memory maker Micron is the next Nvidia<div class="title-zh">华尔街为何认为美国存储厂商美光是下一个英伟达</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Micron</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">memory-chips</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">HBM</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">AI-demand</span></div>
+  <div class="item-summary">Hunting for AI-linked stocks that could match Nvidia's returns, Wall Street investors increasingly see memory-chip maker Micron as a leading candidate as AI demand tightens the memory market.</div>
+  <a class="item-link" href="https://techcrunch.com/2026/06/28/why-wall-street-thinks-us-memory-maker-micron-is-the-next-nvidia/" target="_blank" rel="noopener">&rarr; techcrunch.com</a>
+</div>
+<div class="item-card" data-keywords="Gemini Meta AI-models">
+  <div class="item-meta">
+    <span class="item-org">Google</span>
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Google limits Meta's use of its Gemini AI models<div class="title-zh">谷歌限制 Meta 使用其 Gemini AI 模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Gemini</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Meta</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">AI-models</span></div>
+  <div class="item-summary">Google has restricted Meta's use of its Gemini AI models, according to a Financial Times report cited by CNBC.</div>
+  <a class="item-link" href="https://www.cnbc.com/2026/06/28/google-limits-metas-use-of-its-gemini-ai-models-ft-reports.html" target="_blank" rel="noopener">&rarr; www.cnbc.com</a>
+</div>
+<div class="item-card" data-keywords="ChatGPT AI-evidence privacy litigation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">The Verge</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Prosecutors used ChatGPT logs as evidence in the Palisades fire trial<div class="title-zh">检方在帕利塞兹大火审判中将 ChatGPT 记录用作证据</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">ChatGPT</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">AI-evidence</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">privacy</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">litigation</span></div>
+  <div class="item-summary">In the arson case over the deadly Palisades wildfire, prosecutors introduced the defendant's ChatGPT logs as evidence alongside iPhone location data, security-camera footage, and witness testimony.</div>
+  <a class="item-link" href="https://www.theverge.com/ai-artificial-intelligence/958751/prosecutors-chatgpt-palisades-wildfire-arson-mistrial" target="_blank" rel="noopener">&rarr; www.theverge.com</a>
+</div>
+<div class="item-card" data-keywords="OpenAI Apple hardware-talent Vision-Pro">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">TechCrunch</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Apple Vision Pro exec is reportedly leaving for OpenAI<div class="title-zh">苹果 Vision Pro 高管据报将离职加入 OpenAI</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">OpenAI</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Apple</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">hardware-talent</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Vision-Pro</span></div>
+  <div class="item-summary">Paul Meade, the Apple vice president in charge of the Vision Pro headset, is reportedly leaving the company to join OpenAI's hardware team.</div>
+  <a class="item-link" href="https://techcrunch.com/2026/06/27/apple-vision-pro-exec-is-reportedly-leaving-for-openai/" target="_blank" rel="noopener">&rarr; techcrunch.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-china_news">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-china_news">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    China Tech News
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="具身智能 人形机器人 量产 智元">
+  <div class="item-meta">
+    <span class="item-org">智元 AgiBot</span>
+    
+    <span class="lang-note">中文内容</span>
+    <span class="item-source">36kr</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgiBot rolls out its 15,000th mass-produced general-purpose embodied robot<div class="title-zh">智元第15000台通用具身机器人正式量产下线</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">具身智能</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">人形机器人</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">量产</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">智元</span></div>
+  <div class="item-summary">6月28日，智元宣布通用具身机器人精灵G2第15000台正式量产下线，公司称这标志着中国人形机器人产业迈向大规模真实场景应用。</div>
+  <a class="item-link" href="https://36kr.com/newsflashes/3872498969252864?f=rss" target="_blank" rel="noopener">&rarr; 36kr.com</a>
+</div>
+<div class="item-card" data-keywords="DSpark speculative-decoding inference-efficiency open-source">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Peking University and DeepSeek open-source DSpark, boosting LLM inference efficiency<div class="title-zh">北京大学与 DeepSeek 开源 DSpark，大幅提升大模型推理效率</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">DSpark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">speculative-decoding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">inference-efficiency</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span></div>
+  <div class="item-summary">Peking University and DeepSeek jointly open-sourced DSpark, a speculative-decoding framework that the teams report boosts LLM inference speed by 60-85%, with up to a 661% throughput gain under strict latency constraints.</div>
+  <a class="item-link" href="https://pandaily.com/peking-university-deepseek-dspark-inference-efficiency-jun2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+<div class="item-card" data-keywords="DeepSeek funding Harness coding-agent">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepSeek pivots to aggressive expansion with $7B funding and massive hiring<div class="title-zh">DeepSeek 完成 70 亿美元融资并大规模招聘，转向激进扩张</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">DeepSeek</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">funding</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Harness</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">coding-agent</span></div>
+  <div class="item-summary">DeepSeek has raised a record $7B and plans to double every department while launching its Harness AI coding-agent team to rival Anthropic's Claude Code, reversing its prior 'no funding, no commercialization' stance.</div>
+  <a class="item-link" href="https://pandaily.com/deepseek-funding-expansion-hiring-harness" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+<div class="item-card" data-keywords="humanoid-robots motors supply-chain China">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Nearly 20 Chinese motor makers race for humanoid robot first-mover advantage<div class="title-zh">近 20 家中国电机厂商争夺人形机器人先发优势</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">humanoid-robots</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">motors</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">supply-chain</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">China</span></div>
+  <div class="item-summary">Nearly 20 listed Chinese motor companies are competing in the humanoid-robot supply chain, with frameless torque motors and hollow-cup motors emerging as the dominant technical pathways.</div>
+  <a class="item-link" href="https://pandaily.com/chinese-motor-makers-humanoid-robot-race-jun2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+<div class="item-card" data-keywords="UBTECH humanoid-robot consumer-robotics">
+  <div class="item-meta">
+    <span class="item-org">UBTECH</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">UBTECH sells 5,000 companion robots in two weeks, eyes consumer market<div class="title-zh">优必选两周售出 5000 台陆伴机器人，瓜分消费市场突破</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">UBTECH</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">humanoid-robot</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">consumer-robotics</span></div>
+  <div class="item-summary">UBTECH's U1 full-size humanoid companion robot logged more than 5,000 pre-orders in under three weeks, signaling growing consumer appetite for emotional AI robots in China.</div>
+  <a class="item-link" href="https://pandaily.com/ubtech-u1-companion-robot-5000-sales-jun2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+<div class="item-card" data-keywords="nuclear-fusion superconducting-magnets domestic-production">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">China achieves 100% domestically produced nuclear fusion superconducting magnets<div class="title-zh">中国实现核聚变超导磁体 100% 国产化，“人造太阳”取得突破</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">nuclear-fusion</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">superconducting-magnets</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">domestic-production</span></div>
+  <div class="item-summary">China has reached 100% domestic production of two critical fusion-reactor superconducting magnets — the world's largest toroidal-field magnet and a 60 kA central solenoid coil — both of which passed technical validation.</div>
+  <a class="item-link" href="https://pandaily.com/china-100-percent-domestic-nuclear-fusion-magnets-artificial-sun-jun2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+<div class="item-card" data-keywords="optical-modules MCU AI-datacenter 800G">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Optical-module MCUs become critical as AI data centers drive 800G and 1.6T demand<div class="title-zh">光模块 MCU 成关键，AI 数据中心推动 800G 与 1.6T 需求激增</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">optical-modules</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">MCU</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">AI-datacenter</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">800G</span></div>
+  <div class="item-summary">MCU chips for optical modules are emerging as a critical semiconductor segment as AI data-center buildout drives 800G/1.6T demand, with domestic players GigaDevice and Nations Technologies racing to capture share.</div>
+  <a class="item-link" href="https://pandaily.com/optical-module-mcu-critical-ai-data-center-800g-1-6t-jun2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-github_trending">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-github_trending">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    GitHub Trending
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="openpilot robotics-os autonomous-driving open-source">
+  <div class="item-meta">
+    <span class="item-org">comma.ai</span>
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">commaai/openpilot<div class="title-zh">commaai/openpilot — 面向机器人与辅助驾驶的开源操作系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">openpilot</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">robotics-os</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">autonomous-driving</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span></div>
+  <div class="item-summary">openpilot is an open-source operating system for robotics that currently upgrades the driver-assistance system on more than 300 supported cars.</div>
+  <a class="item-link" href="https://github.com/commaai/openpilot" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="MinerU document-parsing LLM-data open-source">
+  <div class="item-meta">
+    <span class="item-org">OpenDataLab</span>
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">opendatalab/MinerU<div class="title-zh">opendatalab/MinerU — 将复杂文档转为适配大模型的 Markdown/JSON</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">MinerU</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">document-parsing</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">LLM-data</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span></div>
+  <div class="item-summary">MinerU transforms complex documents such as PDFs and Office files into LLM-ready Markdown or JSON for agentic workflows.</div>
+  <a class="item-link" href="https://github.com/opendatalab/MinerU" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="3D-reconstruction foundation-model robotics">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Robbyant/lingbot-map<div class="title-zh">Robbyant/lingbot-map — 从流式数据重建场景的前馈式 3D 基础模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">3D-reconstruction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">foundation-model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">robotics</span></div>
+  <div class="item-summary">lingbot-map is a feed-forward 3D foundation model for reconstructing scenes from streaming data.</div>
+  <a class="item-link" href="https://github.com/Robbyant/lingbot-map" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="MCP code-intelligence knowledge-graph">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeusData/codebase-memory-mcp<div class="title-zh">DeusData/codebase-memory-mcp — 高性能代码智能 MCP 服务器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">MCP</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">code-intelligence</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">knowledge-graph</span></div>
+  <div class="item-summary">codebase-memory-mcp is a high-performance code-intelligence MCP server that indexes codebases into a persistent knowledge graph across 158 languages with sub-millisecond queries as a single static binary.</div>
+  <a class="item-link" href="https://github.com/DeusData/codebase-memory-mcp" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-arxiv_top">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-arxiv_top">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    arXiv — Top Institution Papers
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="robot-perception self-supervised multimodal open-source">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2606.27317</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OctoSense: Self-Supervised Learning for Multimodal Robot Perception<div class="title-zh">OctoSense：面向多模态机器人感知的自监督学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">robot-perception</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">self-supervised</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">multimodal</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span></div>
+  <div class="item-summary">OctoSense pairs an open-source multi-sensor platform — stereo RGB and event cameras, LiDAR, thermal camera, IMU, RTK-corrected GPS, and proprioception — with a self-supervised approach for multimodal robot perception.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2606.27317v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="Apple-silicon GPU-cache unified-memory">
+  <div class="item-meta">
+    <span class="item-org">Apple</span>
+    <span class="arxiv-tag">arxiv:2606.27098</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Residual GPU Cache State on Apple M4 Pro<div class="title-zh">Apple M4 Pro 上的残留 GPU 缓存状态</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">Apple-silicon</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">GPU-cache</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">unified-memory</span></div>
+  <div class="item-summary">This paper characterizes the undocumented cache state left after a completed GPU command on Apple's 14-core M4 Pro, which exposes unified CPU-GPU memory, and validates the measurement pipeline used to probe that phase boundary.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2606.27098v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-arxiv_other">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-arxiv_other">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    arXiv — Other Notable Papers
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="chip-design VLSI open-source-EDA education">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.25673</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Croc: Training the Next Generation Chip Designers on Domain-Specific End-to-End Open Source Silicon<div class="title-zh">Croc：基于领域专用端到端开源硕片培养下一代芯片设计人才</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">chip-design</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">VLSI</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">open-source-EDA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">education</span></div>
+  <div class="item-summary">Croc is an end-to-end, open-source silicon design flow built to train engineers in VLSI design from architecture specification through to tape-out, addressing the growing demand for domain-specific SoC expertise.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2606.25673v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hw-sw-codesign agentic-ai EDA open-source">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.27350</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CHIA: An open-source framework for principled, agentic AI-driven hardware/software co-design research<div class="title-zh">CHIA：用于智能体驱动软硬件协同设计研究的开源框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">hw-sw-codesign</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">agentic-ai</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">EDA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span></div>
+  <div class="item-summary">CHIA is an open-source framework for principled, agentic AI-driven research in hardware/software co-design, spanning computer architecture, systems, compilers, and VLSI.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2606.27350v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embodied-ai test-time-scaling manipulation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.27268</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">E-TTS: A New Embodied Test-Time Scaling Framework for Robotic Manipulation<div class="title-zh">E-TTS：面向机器人操作的具身测试时扩展框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">embodied-ai</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">test-time-scaling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">manipulation</span></div>
+  <div class="item-summary">E-TTS proposes a test-time scaling framework for robotic manipulation, studying how scaling reasoning at inference time can improve an embodied policy's performance.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2606.27268v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="diffusion-transformer physics-simulation 3D">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.27364</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PhysiFormer: Learning to Simulate Mechanics in World Space<div class="title-zh">PhysiFormer：在世界空间中学习模拟力学</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">diffusion-transformer</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">physics-simulation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">3D</span></div>
+  <div class="item-summary">PhysiFormer is a diffusion transformer that produces physically-plausible 3D object motion by representing objects as meshes in world coordinates rather than in view-dependent pixel space.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2606.27364v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embodied-agents omnimodal autonomy">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.27251</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Advancing Omnimodal Embodied Agents from Isolated Skills to Everyday Physical Autonomy<div class="title-zh">推动全模态具身智能体从孤立技能迈向日常物理自主</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">embodied-agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">omnimodal</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="robotics">autonomy</span></div>
+  <div class="item-summary">This paper builds persistent embodied agents that orchestrate both cyber tools (APIs, IoT) and physical tools (manipulation, navigation) in unstructured environments, with autonomous recovery from physical failures.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2606.27251v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://www.theverge.com" target="_blank" rel="noopener">The Verge</a></li>
+<li><a href="https://techcrunch.com" target="_blank" rel="noopener">TechCrunch</a></li>
+<li><a href="https://9to5mac.com" target="_blank" rel="noopener">9to5Mac</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://36kr.com" target="_blank" rel="noopener">36kr</a></li>
+<li><a href="https://pandaily.com" target="_blank" rel="noopener">Pandaily</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-06-29 02:14 &mdash; daily-tech-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-06-28", "stats": {"total_items": 25, "sources_count": 8, "links_verified_count": 25, "links_failed_count": 0, "section_counts": {"us_news": 7, "china_news": 7, "github_trending": 4, "arxiv_top": 2, "arxiv_other": 5}}, "daily_keywords": [{"text": "embodied-ai", "domain": "robotics"}, {"text": "人形机器人", "domain": "robotics"}, {"text": "memory-shortage", "domain": "hardware"}, {"text": "inference-efficiency", "domain": "ai-ml"}, {"text": "supercomputing", "domain": "hardware"}, {"text": "chip-design", "domain": "hardware"}, {"text": "export-controls", "domain": "safety"}, {"text": "DeepSeek", "domain": "org-product"}, {"text": "open-source", "domain": "software"}, {"text": "AI-datacenter", "domain": "hardware"}], "sections": [{"id": "highlights", "label": "★ Highlights", "items": [{"title": "China claims the world's fastest supercomputer", "title_zh": "中国宣称拥有全球最快超级计算机", "url": "https://www.theverge.com/tech/958768/china-claims-the-worlds-fastest-supercomputer", "source": "The Verge", "section": "us_news", "organization": "", "language": "en", "arxiv_id": "", "summary": "China's LineShine supercomputer has pushed El Capitan out of the No. 1 spot on the TOP500 ranking — the country's first time at the top since 2018 — despite strict US limits on high-powered computing exports.", "keywords": [{"text": "supercomputer", "domain": "hardware"}, {"text": "TOP500", "domain": "hardware"}, {"text": "export-controls", "domain": "safety"}, {"text": "HPC", "domain": "hardware"}], "link_verified": true, "is_highlight": true}, {"title": "Anthropic cleared to release Claude Mythos 5 to over 100 US institutions", "title_zh": "Anthropic 获准向 100 多家美国机构发布 Claude Mythos 5", "url": "https://9to5mac.com/2026/06/26/anthropic-cleared-to-release-claude-mythos-5-to-over-100-us-institutions/", "source": "9to5Mac", "section": "us_news", "organization": "Anthropic", "language": "en", "arxiv_id": "", "summary": "After an export-control directive forced Anthropic to disable access to Claude Fable 5 and Mythos 5, the company reached a deal with the US government allowing Mythos 5 to be released to over 100 US institutions.", "keywords": [{"text": "Claude Mythos 5", "domain": "org-product"}, {"text": "export-controls", "domain": "safety"}, {"text": "Anthropic", "domain": "org-product"}, {"text": "enterprise", "domain": "org-product"}], "link_verified": true, "is_highlight": true}, {"title": "Apple wants permission to buy memory from a blacklisted Chinese supplier", "title_zh": "苹果寻求批准从被列入黑名单的中国供应商采购内存", "url": "https://www.theverge.com/tech/958707/apple-ram-buy-memory-blacklisted-china-cxmt", "source": "The Verge", "section": "us_news", "organization": "Apple", "language": "en", "arxiv_id": "", "summary": "According to the Financial Times, Apple is seeking a Trump-administration exception to buy RAM chips from CXMT — a Chinese supplier blacklisted by the Pentagon over PLA ties — to ease pressure on its supply chain amid a global memory shortage.", "keywords": [{"text": "memory-shortage", "domain": "hardware"}, {"text": "CXMT", "domain": "hardware"}, {"text": "DRAM", "domain": "hardware"}, {"text": "supply-chain", "domain": "hardware"}], "link_verified": true, "is_highlight": true}, {"title": "AgiBot rolls out its 15,000th mass-produced general-purpose embodied robot", "title_zh": "智元第15000台通用具身机器人正式量产下线", "url": "https://36kr.com/newsflashes/3872498969252864?f=rss", "source": "36kr", "section": "china_news", "organization": "智元 AgiBot", "language": "zh", "arxiv_id": "", "summary": "6月28日，智元宣布通用具身机器人精灵G2第15000台正式量产下线，公司称这标志着中国人形机器人产业迈向大规模真实场景应用。", "keywords": [{"text": "具身智能", "domain": "robotics"}, {"text": "人形机器人", "domain": "robotics"}, {"text": "量产", "domain": "robotics"}, {"text": "智元", "domain": "org-product"}], "link_verified": true, "is_highlight": true}, {"title": "Peking University and DeepSeek open-source DSpark, boosting LLM inference efficiency", "title_zh": "北京大学与 DeepSeek 开源 DSpark，大幅提升大模型推理效率", "url": "https://pandaily.com/peking-university-deepseek-dspark-inference-efficiency-jun2026", "source": "Pandaily", "section": "china_news", "organization": "DeepSeek", "language": "en", "arxiv_id": "", "summary": "Peking University and DeepSeek jointly open-sourced DSpark, a speculative-decoding framework that the teams report boosts LLM inference speed by 60-85%, with up to a 661% throughput gain under strict latency constraints.", "keywords": [{"text": "DSpark", "domain": "org-product"}, {"text": "speculative-decoding", "domain": "ai-ml"}, {"text": "inference-efficiency", "domain": "ai-ml"}, {"text": "open-source", "domain": "software"}], "link_verified": true, "is_highlight": true}, {"title": "DeepSeek pivots to aggressive expansion with $7B funding and massive hiring", "title_zh": "DeepSeek 完成 70 亿美元融资并大规模招聘，转向激进扩张", "url": "https://pandaily.com/deepseek-funding-expansion-hiring-harness", "source": "Pandaily", "section": "china_news", "organization": "DeepSeek", "language": "en", "arxiv_id": "", "summary": "DeepSeek has raised a record $7B and plans to double every department while launching its Harness AI coding-agent team to rival Anthropic's Claude Code, reversing its prior 'no funding, no commercialization' stance.", "keywords": [{"text": "DeepSeek", "domain": "org-product"}, {"text": "funding", "domain": "org-product"}, {"text": "Harness", "domain": "org-product"}, {"text": "coding-agent", "domain": "software"}], "link_verified": true, "is_highlight": true}]}, {"id": "us_news", "label": "Silicon Valley & US News", "items": [{"title": "China claims the world's fastest supercomputer", "title_zh": "中国宣称拥有全球最快超级计算机", "url": "https://www.theverge.com/tech/958768/china-claims-the-worlds-fastest-supercomputer", "source": "The Verge", "section": "us_news", "organization": "", "language": "en", "arxiv_id": "", "summary": "China's LineShine supercomputer has pushed El Capitan out of the No. 1 spot on the TOP500 ranking — the country's first time at the top since 2018 — despite strict US limits on high-powered computing exports.", "keywords": [{"text": "supercomputer", "domain": "hardware"}, {"text": "TOP500", "domain": "hardware"}, {"text": "export-controls", "domain": "safety"}, {"text": "HPC", "domain": "hardware"}], "link_verified": true, "is_highlight": true}, {"title": "Anthropic cleared to release Claude Mythos 5 to over 100 US institutions", "title_zh": "Anthropic 获准向 100 多家美国机构发布 Claude Mythos 5", "url": "https://9to5mac.com/2026/06/26/anthropic-cleared-to-release-claude-mythos-5-to-over-100-us-institutions/", "source": "9to5Mac", "section": "us_news", "organization": "Anthropic", "language": "en", "arxiv_id": "", "summary": "After an export-control directive forced Anthropic to disable access to Claude Fable 5 and Mythos 5, the company reached a deal with the US government allowing Mythos 5 to be released to over 100 US institutions.", "keywords": [{"text": "Claude Mythos 5", "domain": "org-product"}, {"text": "export-controls", "domain": "safety"}, {"text": "Anthropic", "domain": "org-product"}, {"text": "enterprise", "domain": "org-product"}], "link_verified": true, "is_highlight": true}, {"title": "Apple wants permission to buy memory from a blacklisted Chinese supplier", "title_zh": "苹果寻求批准从被列入黑名单的中国供应商采购内存", "url": "https://www.theverge.com/tech/958707/apple-ram-buy-memory-blacklisted-china-cxmt", "source": "The Verge", "section": "us_news", "organization": "Apple", "language": "en", "arxiv_id": "", "summary": "According to the Financial Times, Apple is seeking a Trump-administration exception to buy RAM chips from CXMT — a Chinese supplier blacklisted by the Pentagon over PLA ties — to ease pressure on its supply chain amid a global memory shortage.", "keywords": [{"text": "memory-shortage", "domain": "hardware"}, {"text": "CXMT", "domain": "hardware"}, {"text": "DRAM", "domain": "hardware"}, {"text": "supply-chain", "domain": "hardware"}], "link_verified": true, "is_highlight": true}, {"title": "Why Wall Street thinks US memory maker Micron is the next Nvidia", "title_zh": "华尔街为何认为美国存储厂商美光是下一个英伟达", "url": "https://techcrunch.com/2026/06/28/why-wall-street-thinks-us-memory-maker-micron-is-the-next-nvidia/", "source": "TechCrunch", "section": "us_news", "organization": "Micron", "language": "en", "arxiv_id": "", "summary": "Hunting for AI-linked stocks that could match Nvidia's returns, Wall Street investors increasingly see memory-chip maker Micron as a leading candidate as AI demand tightens the memory market.", "keywords": [{"text": "Micron", "domain": "org-product"}, {"text": "memory-chips", "domain": "hardware"}, {"text": "HBM", "domain": "hardware"}, {"text": "AI-demand", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}, {"title": "Google limits Meta's use of its Gemini AI models", "title_zh": "谷歌限制 Meta 使用其 Gemini AI 模型", "url": "https://www.cnbc.com/2026/06/28/google-limits-metas-use-of-its-gemini-ai-models-ft-reports.html", "source": "Hacker News", "section": "us_news", "organization": "Google", "language": "en", "arxiv_id": "", "summary": "Google has restricted Meta's use of its Gemini AI models, according to a Financial Times report cited by CNBC.", "keywords": [{"text": "Gemini", "domain": "org-product"}, {"text": "Meta", "domain": "org-product"}, {"text": "AI-models", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}, {"title": "Prosecutors used ChatGPT logs as evidence in the Palisades fire trial", "title_zh": "检方在帕利塞兹大火审判中将 ChatGPT 记录用作证据", "url": "https://www.theverge.com/ai-artificial-intelligence/958751/prosecutors-chatgpt-palisades-wildfire-arson-mistrial", "source": "The Verge", "section": "us_news", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "In the arson case over the deadly Palisades wildfire, prosecutors introduced the defendant's ChatGPT logs as evidence alongside iPhone location data, security-camera footage, and witness testimony.", "keywords": [{"text": "ChatGPT", "domain": "org-product"}, {"text": "AI-evidence", "domain": "safety"}, {"text": "privacy", "domain": "safety"}, {"text": "litigation", "domain": "safety"}], "link_verified": true, "is_highlight": false}, {"title": "Apple Vision Pro exec is reportedly leaving for OpenAI", "title_zh": "苹果 Vision Pro 高管据报将离职加入 OpenAI", "url": "https://techcrunch.com/2026/06/27/apple-vision-pro-exec-is-reportedly-leaving-for-openai/", "source": "TechCrunch", "section": "us_news", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "Paul Meade, the Apple vice president in charge of the Vision Pro headset, is reportedly leaving the company to join OpenAI's hardware team.", "keywords": [{"text": "OpenAI", "domain": "org-product"}, {"text": "Apple", "domain": "org-product"}, {"text": "hardware-talent", "domain": "org-product"}, {"text": "Vision-Pro", "domain": "org-product"}], "link_verified": true, "is_highlight": false}]}, {"id": "china_news", "label": "China Tech News", "items": [{"title": "AgiBot rolls out its 15,000th mass-produced general-purpose embodied robot", "title_zh": "智元第15000台通用具身机器人正式量产下线", "url": "https://36kr.com/newsflashes/3872498969252864?f=rss", "source": "36kr", "section": "china_news", "organization": "智元 AgiBot", "language": "zh", "arxiv_id": "", "summary": "6月28日，智元宣布通用具身机器人精灵G2第15000台正式量产下线，公司称这标志着中国人形机器人产业迈向大规模真实场景应用。", "keywords": [{"text": "具身智能", "domain": "robotics"}, {"text": "人形机器人", "domain": "robotics"}, {"text": "量产", "domain": "robotics"}, {"text": "智元", "domain": "org-product"}], "link_verified": true, "is_highlight": true}, {"title": "Peking University and DeepSeek open-source DSpark, boosting LLM inference efficiency", "title_zh": "北京大学与 DeepSeek 开源 DSpark，大幅提升大模型推理效率", "url": "https://pandaily.com/peking-university-deepseek-dspark-inference-efficiency-jun2026", "source": "Pandaily", "section": "china_news", "organization": "DeepSeek", "language": "en", "arxiv_id": "", "summary": "Peking University and DeepSeek jointly open-sourced DSpark, a speculative-decoding framework that the teams report boosts LLM inference speed by 60-85%, with up to a 661% throughput gain under strict latency constraints.", "keywords": [{"text": "DSpark", "domain": "org-product"}, {"text": "speculative-decoding", "domain": "ai-ml"}, {"text": "inference-efficiency", "domain": "ai-ml"}, {"text": "open-source", "domain": "software"}], "link_verified": true, "is_highlight": true}, {"title": "DeepSeek pivots to aggressive expansion with $7B funding and massive hiring", "title_zh": "DeepSeek 完成 70 亿美元融资并大规模招聘，转向激进扩张", "url": "https://pandaily.com/deepseek-funding-expansion-hiring-harness", "source": "Pandaily", "section": "china_news", "organization": "DeepSeek", "language": "en", "arxiv_id": "", "summary": "DeepSeek has raised a record $7B and plans to double every department while launching its Harness AI coding-agent team to rival Anthropic's Claude Code, reversing its prior 'no funding, no commercialization' stance.", "keywords": [{"text": "DeepSeek", "domain": "org-product"}, {"text": "funding", "domain": "org-product"}, {"text": "Harness", "domain": "org-product"}, {"text": "coding-agent", "domain": "software"}], "link_verified": true, "is_highlight": true}, {"title": "Nearly 20 Chinese motor makers race for humanoid robot first-mover advantage", "title_zh": "近 20 家中国电机厂商争夺人形机器人先发优势", "url": "https://pandaily.com/chinese-motor-makers-humanoid-robot-race-jun2026", "source": "Pandaily", "section": "china_news", "organization": "", "language": "en", "arxiv_id": "", "summary": "Nearly 20 listed Chinese motor companies are competing in the humanoid-robot supply chain, with frameless torque motors and hollow-cup motors emerging as the dominant technical pathways.", "keywords": [{"text": "humanoid-robots", "domain": "robotics"}, {"text": "motors", "domain": "robotics"}, {"text": "supply-chain", "domain": "hardware"}, {"text": "China", "domain": "org-product"}], "link_verified": true, "is_highlight": false}, {"title": "UBTECH sells 5,000 companion robots in two weeks, eyes consumer market", "title_zh": "优必选两周售出 5000 台陆伴机器人，瓜分消费市场突破", "url": "https://pandaily.com/ubtech-u1-companion-robot-5000-sales-jun2026", "source": "Pandaily", "section": "china_news", "organization": "UBTECH", "language": "en", "arxiv_id": "", "summary": "UBTECH's U1 full-size humanoid companion robot logged more than 5,000 pre-orders in under three weeks, signaling growing consumer appetite for emotional AI robots in China.", "keywords": [{"text": "UBTECH", "domain": "org-product"}, {"text": "humanoid-robot", "domain": "robotics"}, {"text": "consumer-robotics", "domain": "robotics"}], "link_verified": true, "is_highlight": false}, {"title": "China achieves 100% domestically produced nuclear fusion superconducting magnets", "title_zh": "中国实现核聚变超导磁体 100% 国产化，“人造太阳”取得突破", "url": "https://pandaily.com/china-100-percent-domestic-nuclear-fusion-magnets-artificial-sun-jun2026", "source": "Pandaily", "section": "china_news", "organization": "", "language": "en", "arxiv_id": "", "summary": "China has reached 100% domestic production of two critical fusion-reactor superconducting magnets — the world's largest toroidal-field magnet and a 60 kA central solenoid coil — both of which passed technical validation.", "keywords": [{"text": "nuclear-fusion", "domain": "hardware"}, {"text": "superconducting-magnets", "domain": "hardware"}, {"text": "domestic-production", "domain": "hardware"}], "link_verified": true, "is_highlight": false}, {"title": "Optical-module MCUs become critical as AI data centers drive 800G and 1.6T demand", "title_zh": "光模块 MCU 成关键，AI 数据中心推动 800G 与 1.6T 需求激增", "url": "https://pandaily.com/optical-module-mcu-critical-ai-data-center-800g-1-6t-jun2026", "source": "Pandaily", "section": "china_news", "organization": "", "language": "en", "arxiv_id": "", "summary": "MCU chips for optical modules are emerging as a critical semiconductor segment as AI data-center buildout drives 800G/1.6T demand, with domestic players GigaDevice and Nations Technologies racing to capture share.", "keywords": [{"text": "optical-modules", "domain": "hardware"}, {"text": "MCU", "domain": "hardware"}, {"text": "AI-datacenter", "domain": "hardware"}, {"text": "800G", "domain": "hardware"}], "link_verified": true, "is_highlight": false}]}, {"id": "github_trending", "label": "GitHub Trending", "items": [{"title": "commaai/openpilot", "title_zh": "commaai/openpilot — 面向机器人与辅助驾驶的开源操作系统", "url": "https://github.com/commaai/openpilot", "source": "GitHub Trending", "section": "github_trending", "organization": "comma.ai", "language": "en", "arxiv_id": "", "summary": "openpilot is an open-source operating system for robotics that currently upgrades the driver-assistance system on more than 300 supported cars.", "keywords": [{"text": "openpilot", "domain": "software"}, {"text": "robotics-os", "domain": "robotics"}, {"text": "autonomous-driving", "domain": "robotics"}, {"text": "open-source", "domain": "software"}], "link_verified": true, "is_highlight": false}, {"title": "opendatalab/MinerU", "title_zh": "opendatalab/MinerU — 将复杂文档转为适配大模型的 Markdown/JSON", "url": "https://github.com/opendatalab/MinerU", "source": "GitHub Trending", "section": "github_trending", "organization": "OpenDataLab", "language": "en", "arxiv_id": "", "summary": "MinerU transforms complex documents such as PDFs and Office files into LLM-ready Markdown or JSON for agentic workflows.", "keywords": [{"text": "MinerU", "domain": "software"}, {"text": "document-parsing", "domain": "software"}, {"text": "LLM-data", "domain": "ai-ml"}, {"text": "open-source", "domain": "software"}], "link_verified": true, "is_highlight": false}, {"title": "Robbyant/lingbot-map", "title_zh": "Robbyant/lingbot-map — 从流式数据重建场景的前馈式 3D 基础模型", "url": "https://github.com/Robbyant/lingbot-map", "source": "GitHub Trending", "section": "github_trending", "organization": "", "language": "en", "arxiv_id": "", "summary": "lingbot-map is a feed-forward 3D foundation model for reconstructing scenes from streaming data.", "keywords": [{"text": "3D-reconstruction", "domain": "ai-ml"}, {"text": "foundation-model", "domain": "ai-ml"}, {"text": "robotics", "domain": "robotics"}], "link_verified": true, "is_highlight": false}, {"title": "DeusData/codebase-memory-mcp", "title_zh": "DeusData/codebase-memory-mcp — 高性能代码智能 MCP 服务器", "url": "https://github.com/DeusData/codebase-memory-mcp", "source": "GitHub Trending", "section": "github_trending", "organization": "", "language": "en", "arxiv_id": "", "summary": "codebase-memory-mcp is a high-performance code-intelligence MCP server that indexes codebases into a persistent knowledge graph across 158 languages with sub-millisecond queries as a single static binary.", "keywords": [{"text": "MCP", "domain": "software"}, {"text": "code-intelligence", "domain": "software"}, {"text": "knowledge-graph", "domain": "software"}], "link_verified": true, "is_highlight": false}]}, {"id": "arxiv_top", "label": "arXiv — Top Institution Papers", "items": [{"title": "OctoSense: Self-Supervised Learning for Multimodal Robot Perception", "title_zh": "OctoSense：面向多模态机器人感知的自监督学习", "url": "https://arxiv.org/abs/2606.27317v1", "source": "arXiv", "section": "arxiv_top", "organization": "NVIDIA", "language": "en", "arxiv_id": "2606.27317", "summary": "OctoSense pairs an open-source multi-sensor platform — stereo RGB and event cameras, LiDAR, thermal camera, IMU, RTK-corrected GPS, and proprioception — with a self-supervised approach for multimodal robot perception.", "keywords": [{"text": "robot-perception", "domain": "robotics"}, {"text": "self-supervised", "domain": "ai-ml"}, {"text": "multimodal", "domain": "ai-ml"}, {"text": "open-source", "domain": "software"}], "link_verified": true, "is_highlight": false}, {"title": "Residual GPU Cache State on Apple M4 Pro", "title_zh": "Apple M4 Pro 上的残留 GPU 缓存状态", "url": "https://arxiv.org/abs/2606.27098v1", "source": "arXiv", "section": "arxiv_top", "organization": "Apple", "language": "en", "arxiv_id": "2606.27098", "summary": "This paper characterizes the undocumented cache state left after a completed GPU command on Apple's 14-core M4 Pro, which exposes unified CPU-GPU memory, and validates the measurement pipeline used to probe that phase boundary.", "keywords": [{"text": "Apple-silicon", "domain": "hardware"}, {"text": "GPU-cache", "domain": "hardware"}, {"text": "unified-memory", "domain": "hardware"}], "link_verified": true, "is_highlight": false}]}, {"id": "arxiv_other", "label": "arXiv — Other Notable Papers", "items": [{"title": "Croc: Training the Next Generation Chip Designers on Domain-Specific End-to-End Open Source Silicon", "title_zh": "Croc：基于领域专用端到端开源硕片培养下一代芯片设计人才", "url": "https://arxiv.org/abs/2606.25673v1", "source": "arXiv", "section": "arxiv_other", "organization": "", "language": "en", "arxiv_id": "2606.25673", "summary": "Croc is an end-to-end, open-source silicon design flow built to train engineers in VLSI design from architecture specification through to tape-out, addressing the growing demand for domain-specific SoC expertise.", "keywords": [{"text": "chip-design", "domain": "hardware"}, {"text": "VLSI", "domain": "hardware"}, {"text": "open-source-EDA", "domain": "hardware"}, {"text": "education", "domain": "software"}], "link_verified": true, "is_highlight": false}, {"title": "CHIA: An open-source framework for principled, agentic AI-driven hardware/software co-design research", "title_zh": "CHIA：用于智能体驱动软硬件协同设计研究的开源框架", "url": "https://arxiv.org/abs/2606.27350v1", "source": "arXiv", "section": "arxiv_other", "organization": "", "language": "en", "arxiv_id": "2606.27350", "summary": "CHIA is an open-source framework for principled, agentic AI-driven research in hardware/software co-design, spanning computer architecture, systems, compilers, and VLSI.", "keywords": [{"text": "hw-sw-codesign", "domain": "hardware"}, {"text": "agentic-ai", "domain": "ai-ml"}, {"text": "EDA", "domain": "hardware"}, {"text": "open-source", "domain": "software"}], "link_verified": true, "is_highlight": false}, {"title": "E-TTS: A New Embodied Test-Time Scaling Framework for Robotic Manipulation", "title_zh": "E-TTS：面向机器人操作的具身测试时扩展框架", "url": "https://arxiv.org/abs/2606.27268v1", "source": "arXiv", "section": "arxiv_other", "organization": "", "language": "en", "arxiv_id": "2606.27268", "summary": "E-TTS proposes a test-time scaling framework for robotic manipulation, studying how scaling reasoning at inference time can improve an embodied policy's performance.", "keywords": [{"text": "embodied-ai", "domain": "robotics"}, {"text": "test-time-scaling", "domain": "ai-ml"}, {"text": "manipulation", "domain": "robotics"}], "link_verified": true, "is_highlight": false}, {"title": "PhysiFormer: Learning to Simulate Mechanics in World Space", "title_zh": "PhysiFormer：在世界空间中学习模拟力学", "url": "https://arxiv.org/abs/2606.27364v1", "source": "arXiv", "section": "arxiv_other", "organization": "", "language": "en", "arxiv_id": "2606.27364", "summary": "PhysiFormer is a diffusion transformer that produces physically-plausible 3D object motion by representing objects as meshes in world coordinates rather than in view-dependent pixel space.", "keywords": [{"text": "diffusion-transformer", "domain": "ai-ml"}, {"text": "physics-simulation", "domain": "robotics"}, {"text": "3D", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}, {"title": "Advancing Omnimodal Embodied Agents from Isolated Skills to Everyday Physical Autonomy", "title_zh": "推动全模态具身智能体从孤立技能迈向日常物理自主", "url": "https://arxiv.org/abs/2606.27251v1", "source": "arXiv", "section": "arxiv_other", "organization": "", "language": "en", "arxiv_id": "2606.27251", "summary": "This paper builds persistent embodied agents that orchestrate both cyber tools (APIs, IoT) and physical tools (manipulation, navigation) in unstructured environments, with autonomous recovery from physical failures.", "keywords": [{"text": "embodied-agents", "domain": "robotics"}, {"text": "omnimodal", "domain": "ai-ml"}, {"text": "autonomy", "domain": "robotics"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "The Verge", "url": "https://www.theverge.com"}, {"name": "TechCrunch", "url": "https://techcrunch.com"}, {"name": "9to5Mac", "url": "https://9to5mac.com"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "36kr", "url": "https://36kr.com"}, {"name": "Pandaily", "url": "https://pandaily.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "arXiv", "url": "https://arxiv.org"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
