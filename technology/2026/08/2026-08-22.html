@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily AI & Tech Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Daily AI & Tech Digest</h1>
+      <div class="header-date">2026-08-22</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">! Highlights</a>
+<a href="#sec-us_news" class="nav-link">Silicon Valley & US News</a>
+<a href="#sec-github_trending" class="nav-link">GitHub Trending</a>
+<a href="#sec-arxiv_top" class="nav-link">arXiv · Affiliated Labs</a>
+<a href="#sec-arxiv_other" class="nav-link">arXiv · Research</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">30 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">30/30 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">highlights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:6%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">US News</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">16</span>
+</div><div class="stat-row">
+  <span class="stat-label">GitHub</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:50%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">arXiv (Top Inst.)</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">4</span>
+</div><div class="stat-row">
+  <span class="stat-label">arXiv (Other)</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">AI Agent harness</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">MCP 生态</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">端侧 AI 推理</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">检索增强生成</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">LLM 鲁棒性</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">企业级记忆系统</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">开源工具</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">AI 辅助编程</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="policy">隐私与未成年人保护</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="policy">贸易关税</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">卫星遥感数据</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">增材制造</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    ! Highlights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="Meta child privacy litigation social media">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Hook, hold, harvest and hide: Meta's alleged strategy laid out in first week<div class="title-zh">钩住、留住、收割、隐藏：Meta 被指的策略在庭审首周曝光</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Meta</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">child privacy</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="policy">litigation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">social media</span></div>
+  <div class="item-summary">In a trial that opened on Tuesday, California and 28 other states accused Meta of designing addictive sites and violating laws protecting children's privacy, The Guardian reports.</div>
+  <a class="item-link" href="https://www.theguardian.com/technology/2026/aug/22/meta-trial-children-privacy" target="_blank" rel="noopener">&rarr; www.theguardian.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-us_news">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-us_news">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Silicon Valley & US News
+    <span class="section-count">[16]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="ElevenLabs TwelveLabs AI startups brand naming">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ElevenLabs, TwelveLabs, ThirteenLabs<div class="title-zh">ElevenLabs、TwelveLabs、ThirteenLabs</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">ElevenLabs</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">TwelveLabs</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">AI startups</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">brand naming</span></div>
+  <div class="item-summary">A blog post catalogs companies named after a number plus “labs”, from ElevenLabs through FourteenLabs and beyond, after the author googled “thirteenlabs” and found an AI project for 3D scenery. The page lists numbers 0–99 with links and marks which companies are AI-related.</div>
+  <a class="item-link" href="https://quantumi.sh/public/labs.html" target="_blank" rel="noopener">&rarr; quantumi.sh</a>
+</div>
+<div class="item-card" data-keywords="performance optimization LLM-generated code software engineering">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">There's no reason for software to be slow anymore<div class="title-zh">软件没理由再这么慢了</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">performance optimization</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">LLM-generated code</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">software engineering</span></div>
+  <div class="item-summary">Dan Luu argues that the cost of formerly specialized performance work has fallen by orders of magnitude, so optimizations that once paid off only at large scale are now broadly worthwhile. The post opens with a viral tweet claiming that LLMs produce slow, bloated code.</div>
+  <a class="item-link" href="https://danluu.com/perf-opt/" target="_blank" rel="noopener">&rarr; danluu.com</a>
+</div>
+<div class="item-card" data-keywords="agent harness Claude Code Codex open-source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Munder Difflin – Agent harness to run an office of your clones<div class="title-zh">Munder Difflin：让你的克隆体开一间办公室的 Agent harness</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">agent harness</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">Claude Code</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">Codex</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source</span></div>
+  <div class="item-summary">Munder Difflin is a free and open-source multi-agent harness that runs Claude Code, Codex, Gemini CLI and nine more terminal agents as an office of clones on your own machine, using subscriptions you already pay for. It now includes the Stapler for local dictation and meeting notes.</div>
+  <a class="item-link" href="https://munderdiffl.in/" target="_blank" rel="noopener">&rarr; munderdiffl.in</a>
+</div>
+<div class="item-card" data-keywords="Claude Code Anthropic A/B testing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Anthropic appears to be A/B testing reduced effort levels in Claude Code<div class="title-zh">Anthropic 疑似在 Claude Code 中 A/B 测试更低的 effort 档位</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">Claude Code</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Anthropic</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">A/B testing</span></div>
+  <div class="item-summary">A post on X says Anthropic appears to be A/B testing reduced effort levels in Claude Code.</div>
+  <a class="item-link" href="https://twitter.com/argofowl/status/2091150597374537729" target="_blank" rel="noopener">&rarr; twitter.com</a>
+</div>
+<div class="item-card" data-keywords="nanoGPT benchmark frontier models optimizer">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">NanoGPT Speedrun Frontier<div class="title-zh">NanoGPT Speedrun 前沿榜</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">nanoGPT</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">frontier models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">optimizer</span></div>
+  <div class="item-summary">Prime Intellect compares 153 autonomous runs from 18 frontier models on the nanoGPT optimizer speedrun.</div>
+  <a class="item-link" href="https://www.primeintellect.ai/research/nanogpt-speedrun" target="_blank" rel="noopener">&rarr; www.primeintellect.ai</a>
+</div>
+<div class="item-card" data-keywords="GrapheneOS Motorola Android secure element">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Initial focus for our partnership with Motorola is a regular non-folding device<div class="title-zh">GrapheneOS：与 Motorola 合作的首要目标是一款非折叠设备</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">GrapheneOS</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">Motorola</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Android</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">secure element</span></div>
+  <div class="item-summary">GrapheneOS says its partnership with Motorola will initially focus on a regular non-folding device. It notes that the current Motorola Signature, Razr Fold and Razr Ultra (all 2026) are close to meeting its requirements but lack MTE, adequate secure element integration and other features being added for 2027.</div>
+  <a class="item-link" href="https://grapheneos.social/@GrapheneOS/117136278553665985" target="_blank" rel="noopener">&rarr; grapheneos.social</a>
+</div>
+<div class="item-card" data-keywords="cybersecurity Unix hacking history">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Stalking the Wily Hacker: 40 years later – Cliff Stoll [video]<div class="title-zh">追踪狡猾的黑客：40 年后——Cliff Stoll（视频）</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">cybersecurity</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Unix</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">hacking history</span></div>
+  <div class="item-summary">Cliff Stoll recalls tripping over a 75-cent accounting glitch in a Unix system 40 years ago, a clue that led to a year-long chase across networks and modem banks.</div>
+  <a class="item-link" href="https://www.youtube.com/watch?v=656058JxTM0" target="_blank" rel="noopener">&rarr; www.youtube.com</a>
+</div>
+<div class="item-card" data-keywords="tariffs Canada trade">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Canada will match US tariffs 'dollar for dollar' as trade talks break down<div class="title-zh">贸易谈判破裂，加拿大将“逐美元”对等回应美国关税</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="policy">tariffs</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="policy">Canada</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="policy">trade</span></div>
+  <div class="item-summary">Canada will match US tariffs dollar for dollar after trade talks broke down, according to a BBC report.</div>
+  <a class="item-link" href="https://www.bbc.com/news/articles/cvgvyy4x2mvo" target="_blank" rel="noopener">&rarr; www.bbc.com</a>
+</div>
+<div class="item-card" data-keywords="Z80 microprocessor retro computing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Z80 – The 1970s Microprocessor Still Alive (2021)<div class="title-zh">Z80——仍然存活的 1970 年代微处理器（2021）</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">Z80</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">microprocessor</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">retro computing</span></div>
+  <div class="item-summary">A 2021 IEEE Micro article revisits the Z80 microprocessor from the 1970s, which the piece describes as still alive.</div>
+  <a class="item-link" href="https://www.computer.org/csdl/magazine/mi/2021/06/09623402/1yJTvlRLmhi" target="_blank" rel="noopener">&rarr; www.computer.org</a>
+</div>
+<div class="item-card" data-keywords="Meta child privacy litigation social media">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Hook, hold, harvest and hide: Meta's alleged strategy laid out in first week<div class="title-zh">钩住、留住、收割、隐藏：Meta 被指的策略在庭审首周曝光</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">Meta</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">child privacy</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="policy">litigation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="org-product">social media</span></div>
+  <div class="item-summary">In a trial that opened on Tuesday, California and 28 other states accused Meta of designing addictive sites and violating laws protecting children's privacy, The Guardian reports.</div>
+  <a class="item-link" href="https://www.theguardian.com/technology/2026/aug/22/meta-trial-children-privacy" target="_blank" rel="noopener">&rarr; www.theguardian.com</a>
+</div>
+<div class="item-card" data-keywords="philosophy Kant music">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Kantian Critique of "Sorry" by Justin Bieber<div class="title-zh">对 Justin Bieber《Sorry》的康德式批判</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">philosophy</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">Kant</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">music</span></div>
+  <div class="item-summary">A blog post examines Justin Bieber's “Sorry” through a Kantian lens, asking what makes an apology morally meaningful.</div>
+  <a class="item-link" href="https://decodingvibes.com/blog/a-kantian-critique-of-sorry-by-justin-bieber/" target="_blank" rel="noopener">&rarr; decodingvibes.com</a>
+</div>
+<div class="item-card" data-keywords="MCP protocol specification">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">New MCP Roadmap<div class="title-zh">新版 MCP 路线图</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">MCP</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">protocol</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">specification</span></div>
+  <div class="item-summary">The Model Context Protocol project published an update on its roadmap and the focus areas for upcoming specification releases.</div>
+  <a class="item-link" href="https://blog.modelcontextprotocol.io/posts/mcp-roadmap/" target="_blank" rel="noopener">&rarr; blog.modelcontextprotocol.io</a>
+</div>
+<div class="item-card" data-keywords="Nostr decentralization protocol">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Nostr is an inclusive communication commons<div class="title-zh">Nostr 是包容性的通信公地</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Nostr</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">decentralization</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">protocol</span></div>
+  <div class="item-summary">Nostr is presented as a simple standard defining a scalable architecture of clients and servers that lets information spread freely without control by any corporation or government. It is described as embracing the chaos of the early internet, with multiple kinds of data and clients offering their own perspectives on the same underlying information.</div>
+  <a class="item-link" href="https://nostr.org/" target="_blank" rel="noopener">&rarr; nostr.org</a>
+</div>
+<div class="item-card" data-keywords="Belgium royal family DNA test">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Belgian car salesman becomes prince after DNA test proves royal parentage<div class="title-zh">比利时汽车销售员因 DNA 检测证实王室血统成为王子</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">Belgium</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">royal family</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">DNA test</span></div>
+  <div class="item-summary">A 26-year-old car salesman has formally become a prince after being acknowledged as the son of Prince Laurent, the brother of Belgium's king, CNN reports.</div>
+  <a class="item-link" href="https://www.cnn.com/2026/08/22/europe/prince-belgium-secret-son-scli-intl" target="_blank" rel="noopener">&rarr; www.cnn.com</a>
+</div>
+<div class="item-card" data-keywords="Scrap 2006 Moxie Marlinspike">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Scrap (2006)<div class="title-zh">Scrap（2006）</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">Scrap</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">2006</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">Moxie Marlinspike</span></div>
+  <div class="item-summary">A Hacker News submission points to a 2006 item titled “Scrap” through a link to Moxie Marlinspike's X account; no further description is provided.</div>
+  <a class="item-link" href="https://twitter.com/moxie/status/2091218652133732491" target="_blank" rel="noopener">&rarr; twitter.com</a>
+</div>
+<div class="item-card" data-keywords="Python Bruce Eckel Creative Commons free book">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Thinking in Python<div class="title-zh">用 Python 思考</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Python</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">Bruce Eckel</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">Creative Commons</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">free book</span></div>
+  <div class="item-summary">Bruce Eckel's book “Thinking in Python” is freely readable online under a CC BY-NC-ND 4.0 license, with optional support through GitHub Sponsors or Ko-fi. Commercial publication requires a contract with the author.</div>
+  <a class="item-link" href="https://thinkinginpython.com/" target="_blank" rel="noopener">&rarr; thinkinginpython.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-github_trending">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-github_trending">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    GitHub Trending
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="FireRedAudio Python GitHub Trending">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FireRedTeam/FireRedAudio<div class="title-zh">FireRedTeam/FireRedAudio（Python）</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">FireRedAudio</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Python</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">GitHub Trending</span></div>
+  <div class="item-summary">FireRedAudio is a Python repository from the FireRedTeam organization that is trending on GitHub; the listing provides no further description.</div>
+  <a class="item-link" href="https://github.com/FireRedTeam/FireRedAudio" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="AI infrastructure LLM inference open-source book systems design">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">bojieli/ai-infra-book<div class="title-zh">bojieli/ai-infra-book：开源 AI Infra 书稿</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">AI infrastructure</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">LLM inference</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">open-source book</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">systems design</span></div>
+  <div class="item-summary">An open-source book manuscript, “Understanding AI Infra: Quantitative Analysis and System Design”, derives LLM inference and training system designs from hardware constraints and model architectures. The repository includes the full text, a PDF, companion calculation tools and experiments.</div>
+  <a class="item-link" href="https://github.com/bojieli/ai-infra-book" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="ChatGPT MCP multi-agent TypeScript">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">totec448-spec/chat-on-steroids<div class="title-zh">totec448-spec/chat-on-steroids</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">ChatGPT</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">MCP</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">multi-agent</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">TypeScript</span></div>
+  <div class="item-summary">The project provides cross-platform local MCP capabilities for ChatGPT, with Chrome integration, Goal, Compact and Resume features, and durable multi-agent workflows. It is written in TypeScript.</div>
+  <a class="item-link" href="https://github.com/totec448-spec/chat-on-steroids" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skill Claude Code web design JavaScript">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">nateherkai/scroll-craft<div class="title-zh">nateherkai/scroll-craft：滚动叙事网站构建技能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">agent skill</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">Claude Code</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">web design</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">JavaScript</span></div>
+  <div class="item-summary">Scroll Craft is an agent skill for building premium, immersive, scroll-driven websites that works with Codex, Claude Code and other coding agents. It is also available as a Claude Code plugin and is written in JavaScript.</div>
+  <a class="item-link" href="https://github.com/nateherkai/scroll-craft" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skill Remotion motion design Claude Code">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Vincentwei1021/video-talkcraft<div class="title-zh">Vincentwei1021/video-talkcraft：口播讲解视频生成技能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">agent skill</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Remotion</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">motion design</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">Claude Code</span></div>
+  <div class="item-summary">Video Talkcraft is an agent skill that turns Claude Code or Codex into a motion-design studio for voiceover-driven explainer videos. It offers word-level voiceover sync, 109 motion recipe cards, an anti-slideshow camera system and Remotion rendering.</div>
+  <a class="item-link" href="https://github.com/Vincentwei1021/video-talkcraft" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent framework ReAct TUI Python">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ApodexAI/FrontierAgent<div class="title-zh">ApodexAI/FrontierAgent：开源 Agent 框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">agent framework</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">ReAct</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">TUI</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Python</span></div>
+  <div class="item-summary">ApodexAI open-sourced FrontierAgent, an agent framework with a native command-line TUI and ReAct and Agent Team modes. It runs with one command on macOS and Linux, requires no preinstall and has no hard Docker dependency.</div>
+  <a class="item-link" href="https://github.com/ApodexAI/FrontierAgent" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="BongoCat SDL3 OpenGL C">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">vladelaina/BongoCat<div class="title-zh">vladelaina/BongoCat</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">BongoCat</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">SDL3</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">OpenGL</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">C</span></div>
+  <div class="item-summary">BongoCat is a C project that combines SDL3 and OpenGL, described by its author as three mysterious forces united as one. The repository links to a Discord community.</div>
+  <a class="item-link" href="https://github.com/vladelaina/BongoCat" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="x64dbg MCP reverse engineering Zig">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">duty1g/x64dbg-mcp-server<div class="title-zh">duty1g/x64dbg-mcp-server：x64dbg 的 MCP 插件</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">x64dbg</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">MCP</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">reverse engineering</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Zig</span></div>
+  <div class="item-summary">x64dbg-MCP Server is a native MCP plugin for x64dbg that exposes the debugger's functionality over HTTP, letting MCP-compatible AI assistants set breakpoints, step through code, read memory and dump registers. It is built with Zig as a zero-dependency, single-binary, cross-platform tool.</div>
+  <a class="item-link" href="https://github.com/duty1g/x64dbg-mcp-server" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-arxiv_top">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-arxiv_top">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    arXiv · Affiliated Labs
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="edge AI medical device breast cancer MDT automatic speech recognition retrieval-augmented generation">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2608.22108</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Development and Feasibility Evaluation of an Edge AI as Medical Device System for Breast Cancer Multidisciplinary Team Meetings<div class="title-zh">面向乳腺癌多学科团队会议的边缘 AI 医疗器械系统开发与可行性评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">edge AI</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="safety">medical device</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">breast cancer MDT</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">automatic speech recognition</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">retrieval-augmented generation</span></div>
+  <div class="item-summary">The authors developed a fully on-device pipeline using open-source ASR and LLMs on a single NVIDIA Jetson AGX Orin to transcribe breast cancer MDT discussions, structure clinical information, and generate NICE-grounded treatment recommendations via RAG. Evaluation on recorded and synthetic discussions found reduced ASR word error rates and more MDT-concordant interventions than a proprietary cloud comparator, supporting the feasibility of privacy-preserving on-device decision support.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22108v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="Transformer architecture attention mechanisms gating language modeling">
+  <div class="item-meta">
+    <span class="item-org">DeepMind</span>
+    <span class="arxiv-tag">arxiv:2608.22117</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TANGO: Treating Tokens as Operators<div class="title-zh">TANGO：将 token 视为算子</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">Transformer architecture</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">attention mechanisms</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">gating</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">language modeling</span></div>
+  <div class="item-summary">TANGO computes a nonlinear feature-wise gate at each source token, averages these gates per destination, and uses the average to modulate a linear projection of the destination, forming the diagonal core of a source-conditioned linear operator. At matched parameters and training data, full-prefix TANGO has the lowest mean test negative log-likelihood in all 16 settings, and a narrower three-set variant reaches 3.26 to 3.45 times its throughput.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22117v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="Apple Neural Engine weight compression Core ML quantization inference latency">
+  <div class="item-meta">
+    <span class="item-org">Apple</span>
+    <span class="arxiv-tag">arxiv:2608.22110</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How Weight Encoding Affects Language Model Placement and Performance on the Apple Neural Engine<div class="title-zh">权重编码如何影响语言模型在 Apple Neural Engine 上的部署与性能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">Apple Neural Engine</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">weight compression</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">Core ML</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">quantization</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">inference latency</span></div>
+  <div class="item-summary">Using the public Core ML deployment path, the study combines compiler device plans, synchronized memory-controller measurements, and compute-unit exclusion controls to examine how dense fp16, int8, and ternary weight encodings affect where language-model checkpoints execute. It finds encoding-dependent placement, with a smaller fp16 export running on the CPU while compressed counterparts show ANE activity, and reports a 1.9x reduction in warm forward latency for the int8 export.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22110v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal inference edge computing communication efficiency feature selection">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2608.22115</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CST: Collaborative Selective Transmission for Communication-Efficient Multimodal Edge Inference<div class="title-zh">CST：面向通信高效多模态边缘推理的协同选择性传输</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">multimodal inference</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="hardware">edge computing</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="software">communication efficiency</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">feature selection</span></div>
+  <div class="item-summary">Collaborative Selective Transmission is a main-directed query-response framework that retrieves only helper information complementary to the main device's current representation, sending sparse support indices instead of dense helper features. Across three multimodal sensing benchmarks it transmits at most 14.18% of helper feature values and achieves up to 4.27x end-to-end speedup over Transmit-All on a five-node NVIDIA Jetson Orin Nano testbed.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22115v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-arxiv_other">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-arxiv_other">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    arXiv · Research
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="physics reasoning vision-language models reinforcement learning post-training">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.22126</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Decoupled Physical Modeling and Execution for Physics Reasoning<div class="title-zh">面向物理推理的解耦式物理建模与执行</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">physics reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">vision-language models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">post-training</span></div>
+  <div class="item-summary">The paper introduces a framework that distills intermediate representations explicitly encoding the physical modeling process and uses two-stage post-training, with supervised fine-tuning for structured modeling followed by rubric-based reinforcement learning to improve modeling quality. Across PhysReason, PhyX, and SeePhys, physical modeling outperforms GRPO by about 3% on average for small vision-language models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22126v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="additive manufacturing 3D printability LLM reasoning material selection knowledge grounding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.22128</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Task-Driven 3D Printability Assistance via Geometry- and Knowledge-Grounded LLM Reasoning<div class="title-zh">任务驱动的 3D 打印可行性辅助：以几何与知识为依据的 LLM 推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">additive manufacturing</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">3D printability</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">LLM reasoning</span> <span class="kw-pill" style="--kw-lb:#f5f5f5;--kw-lt:#525252;--kw-db:#262626;--kw-dt:#a3a3a3" data-domain="other">material selection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="ai-ml">knowledge grounding</span></div>
+  <div class="item-summary">The framework grounds LLM reasoning in STL geometry evidence and structured material and printer knowledge to produce pre-print recommendations covering printability, material choice, process parameters, design guidance, risks, and explanations for a natural-language task description. It achieved 75.0% printability over 96 physical validation trials and raised Gemini 2.5 Flash-Lite material-selection accuracy from 37.5% to 90.0%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22128v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-10-22 10:07 &mdash; daily-tech-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-08-22", "stats": {"total_items": 30, "sources_count": 3, "links_verified_count": 30, "links_failed_count": 0, "section_counts": {"highlights": 1, "us_news": 16, "github_trending": 8, "arxiv_top": 4, "arxiv_other": 2}}, "daily_keywords": [{"text": "AI Agent harness", "domain": "ai-ml"}, {"text": "MCP 生态", "domain": "software"}, {"text": "端侧 AI 推理", "domain": "hardware"}, {"text": "检索增强生成", "domain": "ai-ml"}, {"text": "LLM 鲁棒性", "domain": "ai-ml"}, {"text": "企业级记忆系统", "domain": "software"}, {"text": "开源工具", "domain": "software"}, {"text": "AI 辅助编程", "domain": "ai-ml"}, {"text": "隐私与未成年人保护", "domain": "policy"}, {"text": "贸易关税", "domain": "policy"}, {"text": "卫星遥感数据", "domain": "other"}, {"text": "增材制造", "domain": "hardware"}], "sections": [{"id": "highlights", "label": "! Highlights", "items": [{"title": "Hook, hold, harvest and hide: Meta's alleged strategy laid out in first week", "url": "https://www.theguardian.com/technology/2026/aug/22/meta-trial-children-privacy", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "钩住、留住、收割、隐藏：Meta 被指的策略在庭审首周曝光", "summary": "In a trial that opened on Tuesday, California and 28 other states accused Meta of designing addictive sites and violating laws protecting children's privacy, The Guardian reports.", "keywords": [{"text": "Meta", "domain": "org-product"}, {"text": "child privacy", "domain": "safety"}, {"text": "litigation", "domain": "policy"}, {"text": "social media", "domain": "org-product"}], "is_highlight": true}]}, {"id": "us_news", "label": "Silicon Valley & US News", "items": [{"title": "ElevenLabs, TwelveLabs, ThirteenLabs", "url": "https://quantumi.sh/public/labs.html", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "ElevenLabs、TwelveLabs、ThirteenLabs", "summary": "A blog post catalogs companies named after a number plus “labs”, from ElevenLabs through FourteenLabs and beyond, after the author googled “thirteenlabs” and found an AI project for 3D scenery. The page lists numbers 0–99 with links and marks which companies are AI-related.", "keywords": [{"text": "ElevenLabs", "domain": "org-product"}, {"text": "TwelveLabs", "domain": "org-product"}, {"text": "AI startups", "domain": "org-product"}, {"text": "brand naming", "domain": "other"}], "is_highlight": false}, {"title": "There's no reason for software to be slow anymore", "url": "https://danluu.com/perf-opt/", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "软件没理由再这么慢了", "summary": "Dan Luu argues that the cost of formerly specialized performance work has fallen by orders of magnitude, so optimizations that once paid off only at large scale are now broadly worthwhile. The post opens with a viral tweet claiming that LLMs produce slow, bloated code.", "keywords": [{"text": "performance optimization", "domain": "software"}, {"text": "LLM-generated code", "domain": "software"}, {"text": "software engineering", "domain": "software"}], "is_highlight": false}, {"title": "Munder Difflin – Agent harness to run an office of your clones", "url": "https://munderdiffl.in/", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "Munder Difflin：让你的克隆体开一间办公室的 Agent harness", "summary": "Munder Difflin is a free and open-source multi-agent harness that runs Claude Code, Codex, Gemini CLI and nine more terminal agents as an office of clones on your own machine, using subscriptions you already pay for. It now includes the Stapler for local dictation and meeting notes.", "keywords": [{"text": "agent harness", "domain": "ai-ml"}, {"text": "Claude Code", "domain": "ai-ml"}, {"text": "Codex", "domain": "ai-ml"}, {"text": "open-source", "domain": "software"}], "is_highlight": false}, {"title": "Anthropic appears to be A/B testing reduced effort levels in Claude Code", "url": "https://twitter.com/argofowl/status/2091150597374537729", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "Anthropic 疑似在 Claude Code 中 A/B 测试更低的 effort 档位", "summary": "A post on X says Anthropic appears to be A/B testing reduced effort levels in Claude Code.", "keywords": [{"text": "Claude Code", "domain": "ai-ml"}, {"text": "Anthropic", "domain": "org-product"}, {"text": "A/B testing", "domain": "software"}], "is_highlight": false}, {"title": "NanoGPT Speedrun Frontier", "url": "https://www.primeintellect.ai/research/nanogpt-speedrun", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "NanoGPT Speedrun 前沿榜", "summary": "Prime Intellect compares 153 autonomous runs from 18 frontier models on the nanoGPT optimizer speedrun.", "keywords": [{"text": "nanoGPT", "domain": "ai-ml"}, {"text": "benchmark", "domain": "ai-ml"}, {"text": "frontier models", "domain": "ai-ml"}, {"text": "optimizer", "domain": "ai-ml"}], "is_highlight": false}, {"title": "Initial focus for our partnership with Motorola is a regular non-folding device", "url": "https://grapheneos.social/@GrapheneOS/117136278553665985", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "GrapheneOS：与 Motorola 合作的首要目标是一款非折叠设备", "summary": "GrapheneOS says its partnership with Motorola will initially focus on a regular non-folding device. It notes that the current Motorola Signature, Razr Fold and Razr Ultra (all 2026) are close to meeting its requirements but lack MTE, adequate secure element integration and other features being added for 2027.", "keywords": [{"text": "GrapheneOS", "domain": "software"}, {"text": "Motorola", "domain": "hardware"}, {"text": "Android", "domain": "software"}, {"text": "secure element", "domain": "hardware"}], "is_highlight": false}, {"title": "Stalking the Wily Hacker: 40 years later – Cliff Stoll [video]", "url": "https://www.youtube.com/watch?v=656058JxTM0", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "追踪狡猾的黑客：40 年后——Cliff Stoll（视频）", "summary": "Cliff Stoll recalls tripping over a 75-cent accounting glitch in a Unix system 40 years ago, a clue that led to a year-long chase across networks and modem banks.", "keywords": [{"text": "cybersecurity", "domain": "safety"}, {"text": "Unix", "domain": "software"}, {"text": "hacking history", "domain": "other"}], "is_highlight": false}, {"title": "Canada will match US tariffs 'dollar for dollar' as trade talks break down", "url": "https://www.bbc.com/news/articles/cvgvyy4x2mvo", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "贸易谈判破裂，加拿大将“逐美元”对等回应美国关税", "summary": "Canada will match US tariffs dollar for dollar after trade talks broke down, according to a BBC report.", "keywords": [{"text": "tariffs", "domain": "policy"}, {"text": "Canada", "domain": "policy"}, {"text": "trade", "domain": "policy"}], "is_highlight": false}, {"title": "Z80 – The 1970s Microprocessor Still Alive (2021)", "url": "https://www.computer.org/csdl/magazine/mi/2021/06/09623402/1yJTvlRLmhi", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "Z80——仍然存活的 1970 年代微处理器（2021）", "summary": "A 2021 IEEE Micro article revisits the Z80 microprocessor from the 1970s, which the piece describes as still alive.", "keywords": [{"text": "Z80", "domain": "hardware"}, {"text": "microprocessor", "domain": "hardware"}, {"text": "retro computing", "domain": "other"}], "is_highlight": false}, {"title": "Hook, hold, harvest and hide: Meta's alleged strategy laid out in first week", "url": "https://www.theguardian.com/technology/2026/aug/22/meta-trial-children-privacy", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "钩住、留住、收割、隐藏：Meta 被指的策略在庭审首周曝光", "summary": "In a trial that opened on Tuesday, California and 28 other states accused Meta of designing addictive sites and violating laws protecting children's privacy, The Guardian reports.", "keywords": [{"text": "Meta", "domain": "org-product"}, {"text": "child privacy", "domain": "safety"}, {"text": "litigation", "domain": "policy"}, {"text": "social media", "domain": "org-product"}], "is_highlight": true}, {"title": "A Kantian Critique of \"Sorry\" by Justin Bieber", "url": "https://decodingvibes.com/blog/a-kantian-critique-of-sorry-by-justin-bieber/", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "对 Justin Bieber《Sorry》的康德式批判", "summary": "A blog post examines Justin Bieber's “Sorry” through a Kantian lens, asking what makes an apology morally meaningful.", "keywords": [{"text": "philosophy", "domain": "other"}, {"text": "Kant", "domain": "other"}, {"text": "music", "domain": "other"}], "is_highlight": false}, {"title": "New MCP Roadmap", "url": "https://blog.modelcontextprotocol.io/posts/mcp-roadmap/", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "新版 MCP 路线图", "summary": "The Model Context Protocol project published an update on its roadmap and the focus areas for upcoming specification releases.", "keywords": [{"text": "MCP", "domain": "software"}, {"text": "protocol", "domain": "software"}, {"text": "specification", "domain": "software"}], "is_highlight": false}, {"title": "Nostr is an inclusive communication commons", "url": "https://nostr.org/", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "Nostr 是包容性的通信公地", "summary": "Nostr is presented as a simple standard defining a scalable architecture of clients and servers that lets information spread freely without control by any corporation or government. It is described as embracing the chaos of the early internet, with multiple kinds of data and clients offering their own perspectives on the same underlying information.", "keywords": [{"text": "Nostr", "domain": "software"}, {"text": "decentralization", "domain": "software"}, {"text": "protocol", "domain": "software"}], "is_highlight": false}, {"title": "Belgian car salesman becomes prince after DNA test proves royal parentage", "url": "https://www.cnn.com/2026/08/22/europe/prince-belgium-secret-son-scli-intl", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "比利时汽车销售员因 DNA 检测证实王室血统成为王子", "summary": "A 26-year-old car salesman has formally become a prince after being acknowledged as the son of Prince Laurent, the brother of Belgium's king, CNN reports.", "keywords": [{"text": "Belgium", "domain": "other"}, {"text": "royal family", "domain": "other"}, {"text": "DNA test", "domain": "other"}], "is_highlight": false}, {"title": "Scrap (2006)", "url": "https://twitter.com/moxie/status/2091218652133732491", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "Scrap（2006）", "summary": "A Hacker News submission points to a 2006 item titled “Scrap” through a link to Moxie Marlinspike's X account; no further description is provided.", "keywords": [{"text": "Scrap", "domain": "other"}, {"text": "2006", "domain": "other"}, {"text": "Moxie Marlinspike", "domain": "other"}], "is_highlight": false}, {"title": "Thinking in Python", "url": "https://thinkinginpython.com/", "source": "Hacker News", "language": "en", "section": "us_news", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "用 Python 思考", "summary": "Bruce Eckel's book “Thinking in Python” is freely readable online under a CC BY-NC-ND 4.0 license, with optional support through GitHub Sponsors or Ko-fi. Commercial publication requires a contract with the author.", "keywords": [{"text": "Python", "domain": "software"}, {"text": "Bruce Eckel", "domain": "other"}, {"text": "Creative Commons", "domain": "other"}, {"text": "free book", "domain": "other"}], "is_highlight": false}]}, {"id": "github_trending", "label": "GitHub Trending", "items": [{"title": "FireRedTeam/FireRedAudio", "url": "https://github.com/FireRedTeam/FireRedAudio", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "FireRedTeam/FireRedAudio（Python）", "summary": "FireRedAudio is a Python repository from the FireRedTeam organization that is trending on GitHub; the listing provides no further description.", "keywords": [{"text": "FireRedAudio", "domain": "software"}, {"text": "Python", "domain": "software"}, {"text": "GitHub Trending", "domain": "software"}], "is_highlight": false}, {"title": "bojieli/ai-infra-book", "url": "https://github.com/bojieli/ai-infra-book", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "bojieli/ai-infra-book：开源 AI Infra 书稿", "summary": "An open-source book manuscript, “Understanding AI Infra: Quantitative Analysis and System Design”, derives LLM inference and training system designs from hardware constraints and model architectures. The repository includes the full text, a PDF, companion calculation tools and experiments.", "keywords": [{"text": "AI infrastructure", "domain": "ai-ml"}, {"text": "LLM inference", "domain": "ai-ml"}, {"text": "open-source book", "domain": "software"}, {"text": "systems design", "domain": "hardware"}], "is_highlight": false}, {"title": "totec448-spec/chat-on-steroids", "url": "https://github.com/totec448-spec/chat-on-steroids", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "totec448-spec/chat-on-steroids", "summary": "The project provides cross-platform local MCP capabilities for ChatGPT, with Chrome integration, Goal, Compact and Resume features, and durable multi-agent workflows. It is written in TypeScript.", "keywords": [{"text": "ChatGPT", "domain": "ai-ml"}, {"text": "MCP", "domain": "software"}, {"text": "multi-agent", "domain": "ai-ml"}, {"text": "TypeScript", "domain": "software"}], "is_highlight": false}, {"title": "nateherkai/scroll-craft", "url": "https://github.com/nateherkai/scroll-craft", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "nateherkai/scroll-craft：滚动叙事网站构建技能", "summary": "Scroll Craft is an agent skill for building premium, immersive, scroll-driven websites that works with Codex, Claude Code and other coding agents. It is also available as a Claude Code plugin and is written in JavaScript.", "keywords": [{"text": "agent skill", "domain": "ai-ml"}, {"text": "Claude Code", "domain": "ai-ml"}, {"text": "web design", "domain": "software"}, {"text": "JavaScript", "domain": "software"}], "is_highlight": false}, {"title": "Vincentwei1021/video-talkcraft", "url": "https://github.com/Vincentwei1021/video-talkcraft", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "Vincentwei1021/video-talkcraft：口播讲解视频生成技能", "summary": "Video Talkcraft is an agent skill that turns Claude Code or Codex into a motion-design studio for voiceover-driven explainer videos. It offers word-level voiceover sync, 109 motion recipe cards, an anti-slideshow camera system and Remotion rendering.", "keywords": [{"text": "agent skill", "domain": "ai-ml"}, {"text": "Remotion", "domain": "software"}, {"text": "motion design", "domain": "software"}, {"text": "Claude Code", "domain": "ai-ml"}], "is_highlight": false}, {"title": "ApodexAI/FrontierAgent", "url": "https://github.com/ApodexAI/FrontierAgent", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "ApodexAI/FrontierAgent：开源 Agent 框架", "summary": "ApodexAI open-sourced FrontierAgent, an agent framework with a native command-line TUI and ReAct and Agent Team modes. It runs with one command on macOS and Linux, requires no preinstall and has no hard Docker dependency.", "keywords": [{"text": "agent framework", "domain": "ai-ml"}, {"text": "ReAct", "domain": "ai-ml"}, {"text": "TUI", "domain": "software"}, {"text": "Python", "domain": "software"}], "is_highlight": false}, {"title": "vladelaina/BongoCat", "url": "https://github.com/vladelaina/BongoCat", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "vladelaina/BongoCat", "summary": "BongoCat is a C project that combines SDL3 and OpenGL, described by its author as three mysterious forces united as one. The repository links to a Discord community.", "keywords": [{"text": "BongoCat", "domain": "software"}, {"text": "SDL3", "domain": "software"}, {"text": "OpenGL", "domain": "software"}, {"text": "C", "domain": "software"}], "is_highlight": false}, {"title": "duty1g/x64dbg-mcp-server", "url": "https://github.com/duty1g/x64dbg-mcp-server", "source": "GitHub Trending", "language": "en", "section": "github_trending", "organization": "", "arxiv_id": "", "link_verified": true, "title_zh": "duty1g/x64dbg-mcp-server：x64dbg 的 MCP 插件", "summary": "x64dbg-MCP Server is a native MCP plugin for x64dbg that exposes the debugger's functionality over HTTP, letting MCP-compatible AI assistants set breakpoints, step through code, read memory and dump registers. It is built with Zig as a zero-dependency, single-binary, cross-platform tool.", "keywords": [{"text": "x64dbg", "domain": "software"}, {"text": "MCP", "domain": "software"}, {"text": "reverse engineering", "domain": "safety"}, {"text": "Zig", "domain": "software"}], "is_highlight": false}]}, {"id": "arxiv_top", "label": "arXiv · Affiliated Labs", "items": [{"title": "Development and Feasibility Evaluation of an Edge AI as Medical Device System for Breast Cancer Multidisciplinary Team Meetings", "title_zh": "面向乳腺癌多学科团队会议的边缘 AI 医疗器械系统开发与可行性评估", "url": "http://arxiv.org/abs/2608.22108v2", "source": "arXiv", "section": "arxiv_top", "organization": "NVIDIA", "language": "en", "arxiv_id": "2608.22108", "summary": "The authors developed a fully on-device pipeline using open-source ASR and LLMs on a single NVIDIA Jetson AGX Orin to transcribe breast cancer MDT discussions, structure clinical information, and generate NICE-grounded treatment recommendations via RAG. Evaluation on recorded and synthetic discussions found reduced ASR word error rates and more MDT-concordant interventions than a proprietary cloud comparator, supporting the feasibility of privacy-preserving on-device decision support.", "keywords": [{"text": "edge AI", "domain": "ai-ml"}, {"text": "medical device", "domain": "safety"}, {"text": "breast cancer MDT", "domain": "other"}, {"text": "automatic speech recognition", "domain": "ai-ml"}, {"text": "retrieval-augmented generation", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}, {"title": "TANGO: Treating Tokens as Operators", "title_zh": "TANGO：将 token 视为算子", "url": "http://arxiv.org/abs/2608.22117v2", "source": "arXiv", "section": "arxiv_top", "organization": "DeepMind", "language": "en", "arxiv_id": "2608.22117", "summary": "TANGO computes a nonlinear feature-wise gate at each source token, averages these gates per destination, and uses the average to modulate a linear projection of the destination, forming the diagonal core of a source-conditioned linear operator. At matched parameters and training data, full-prefix TANGO has the lowest mean test negative log-likelihood in all 16 settings, and a narrower three-set variant reaches 3.26 to 3.45 times its throughput.", "keywords": [{"text": "Transformer architecture", "domain": "ai-ml"}, {"text": "attention mechanisms", "domain": "ai-ml"}, {"text": "gating", "domain": "ai-ml"}, {"text": "language modeling", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}, {"title": "How Weight Encoding Affects Language Model Placement and Performance on the Apple Neural Engine", "title_zh": "权重编码如何影响语言模型在 Apple Neural Engine 上的部署与性能", "url": "http://arxiv.org/abs/2608.22110v2", "source": "arXiv", "section": "arxiv_top", "organization": "Apple", "language": "en", "arxiv_id": "2608.22110", "summary": "Using the public Core ML deployment path, the study combines compiler device plans, synchronized memory-controller measurements, and compute-unit exclusion controls to examine how dense fp16, int8, and ternary weight encodings affect where language-model checkpoints execute. It finds encoding-dependent placement, with a smaller fp16 export running on the CPU while compressed counterparts show ANE activity, and reports a 1.9x reduction in warm forward latency for the int8 export.", "keywords": [{"text": "Apple Neural Engine", "domain": "hardware"}, {"text": "weight compression", "domain": "ai-ml"}, {"text": "Core ML", "domain": "software"}, {"text": "quantization", "domain": "ai-ml"}, {"text": "inference latency", "domain": "hardware"}], "link_verified": true, "is_highlight": false}, {"title": "CST: Collaborative Selective Transmission for Communication-Efficient Multimodal Edge Inference", "title_zh": "CST：面向通信高效多模态边缘推理的协同选择性传输", "url": "http://arxiv.org/abs/2608.22115v1", "source": "arXiv", "section": "arxiv_top", "organization": "NVIDIA", "language": "en", "arxiv_id": "2608.22115", "summary": "Collaborative Selective Transmission is a main-directed query-response framework that retrieves only helper information complementary to the main device's current representation, sending sparse support indices instead of dense helper features. Across three multimodal sensing benchmarks it transmits at most 14.18% of helper feature values and achieves up to 4.27x end-to-end speedup over Transmit-All on a five-node NVIDIA Jetson Orin Nano testbed.", "keywords": [{"text": "multimodal inference", "domain": "ai-ml"}, {"text": "edge computing", "domain": "hardware"}, {"text": "communication efficiency", "domain": "software"}, {"text": "feature selection", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}]}, {"id": "arxiv_other", "label": "arXiv · Research", "items": [{"title": "Decoupled Physical Modeling and Execution for Physics Reasoning", "title_zh": "面向物理推理的解耦式物理建模与执行", "url": "http://arxiv.org/abs/2608.22126v2", "source": "arXiv", "section": "arxiv_other", "organization": "", "language": "en", "arxiv_id": "2608.22126", "summary": "The paper introduces a framework that distills intermediate representations explicitly encoding the physical modeling process and uses two-stage post-training, with supervised fine-tuning for structured modeling followed by rubric-based reinforcement learning to improve modeling quality. Across PhysReason, PhyX, and SeePhys, physical modeling outperforms GRPO by about 3% on average for small vision-language models.", "keywords": [{"text": "physics reasoning", "domain": "ai-ml"}, {"text": "vision-language models", "domain": "ai-ml"}, {"text": "reinforcement learning", "domain": "ai-ml"}, {"text": "post-training", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}, {"title": "Task-Driven 3D Printability Assistance via Geometry- and Knowledge-Grounded LLM Reasoning", "title_zh": "任务驱动的 3D 打印可行性辅助：以几何与知识为依据的 LLM 推理", "url": "http://arxiv.org/abs/2608.22128v1", "source": "arXiv", "section": "arxiv_other", "organization": "", "language": "en", "arxiv_id": "2608.22128", "summary": "The framework grounds LLM reasoning in STL geometry evidence and structured material and printer knowledge to produce pre-print recommendations covering printability, material choice, process parameters, design guidance, risks, and explanations for a natural-language task description. It achieved 75.0% printability over 96 physical validation trials and raised Gemini 2.5 Flash-Lite material-selection accuracy from 37.5% to 90.0%.", "keywords": [{"text": "additive manufacturing", "domain": "other"}, {"text": "3D printability", "domain": "other"}, {"text": "LLM reasoning", "domain": "ai-ml"}, {"text": "material selection", "domain": "other"}, {"text": "knowledge grounding", "domain": "ai-ml"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
