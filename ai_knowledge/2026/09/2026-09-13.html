@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-09-13</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">mutable RAG</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">semantic shadowing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory conflict resolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt framing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">domain knowledge base</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">grounded generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">abstention</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual pretraining</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multilingual knowledge</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">reusable memory</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="mutable RAG semantic shadowing conflict resolution contradiction detection retrieval evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.16073</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Immutable Past: Formalizing State Mutability and Conflict Resolution in Mutable RAG<div class="title-zh">不可变的过去：形式化可变 RAG 中的状态可变性与冲突消解</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">mutable RAG</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">semantic shadowing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">conflict resolution</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">contradiction detection</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval evaluation</span></div>
+  <div class="item-summary">The paper formalizes State Mutability in mutable RAG memory for long-horizon agents, identifying Semantic Shadowing, in which conflicting historical observations statistically dominate recent updates, and proves that standard dense retrieval suffers Asymptotic Recall Decay and a Majority Vote Trap. It introduces GC-Mem, an inference-time consistency protocol that pairs a temporal dominance operator with contradiction detection and recovers over 90% conflict-resolution accuracy on a benchmark of 137,760 memory chunks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.16073v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="mutable RAG semantic shadowing conflict resolution contradiction detection retrieval evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.16073</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Immutable Past: Formalizing State Mutability and Conflict Resolution in Mutable RAG<div class="title-zh">不可变的过去：形式化可变 RAG 中的状态可变性与冲突消解</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">mutable RAG</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">semantic shadowing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">conflict resolution</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">contradiction detection</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval evaluation</span></div>
+  <div class="item-summary">The paper formalizes State Mutability in mutable RAG memory for long-horizon agents, identifying Semantic Shadowing, in which conflicting historical observations statistically dominate recent updates, and proves that standard dense retrieval suffers Asymptotic Recall Decay and a Majority Vote Trap. It introduces GC-Mem, an inference-time consistency protocol that pairs a temporal dominance operator with contradiction detection and recovers over 90% conflict-resolution accuracy on a benchmark of 137,760 memory chunks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.16073v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation root cause analysis AIOps prompt calibration benchmark">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    <span class="arxiv-tag">arxiv:2609.14762</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TriCalRAG: A Three-Strategy, Retrieval-Augmented Benchmark for On-Premise LLM-Based Root Cause Analysis in AIOps<div class="title-zh">TriCalRAG：面向 AIOps 本地化 LLM 根因分析的三策略检索增强基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">root cause analysis</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AIOps</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt calibration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">TriCalRAG is a reproducible benchmark for on-premise log-anomaly detection and root-cause analysis across BGL, HDFS, Thunderbird and OpenStack, comparing Qwen2.5-14B and Mistral-Small-22B under zero-shot, few-shot and RAG prompting; Mistral-Small attains higher macro-averaged F1 (0.644 versus 0.560) while Qwen provides roughly twice the throughput. Supplementary runs with 4-bit Llama-3.1-70B and Claude Haiku 4.5 found RAG improved F1 on all four datasets for both models, with Claude's aggregate F1 rising from 0.566 to 0.695 as estimated API cost rose from $0.94 to $2.15 per 1,000 incidents.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.14762v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent orchestration spatial reasoning multi-agent system provenance uncertainty handling">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.14824</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ANASSA: An Agentic AI Orchestration Framework for Spatial Intelligence<div class="title-zh">ANASSA：面向空间智能的智能体 AI 编排框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">spatial reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">provenance</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">uncertainty handling</span></div>
+  <div class="item-summary">ANASSA is an architecture-level agentic orchestration framework for geospatial workflows that integrates structured spatial reasoning, multi-agent orchestration, execution feedback, authoritative spatial validation, provenance, uncertainty handling and human decision authority. It specifies eleven components across four layers and a six-step Geospatial AI Cognitive Loop, and notes that empirical evaluation is reserved for implementation and deployment studies.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.14824v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt framing architecture convergence persistent latent state model behavior">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2609.14803</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Another Blueprint In The Wall: How to Ask Frontier AI Like a Kid?<div class="title-zh">墙上的另一张蓝图：如何像孩子一样向前沿 AI 提问？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt framing</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">architecture convergence</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">persistent latent state</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model behavior</span></div>
+  <div class="item-summary">The paper reports ten sessions per model type for six frontier models from OpenAI, Anthropic, xAI and Google DeepMind, using a three-stage prompt sequence, and finds that a school-audience framing led responses to converge on a shared architecture motif built around persistent latent state, adaptive computation, memory, specialist routing, verification and delayed decoding. Control runs without the school framing produced substantially more heterogeneous answers, and the author uses the term epistemic jailbreak for the loss of technical provenance as requested specificity increases.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.14803v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="domain RAG knowledge base curation notation-aware retrieval pedagogical evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.14572</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AlgoRAG: Retrieval-Augmented Generation for Theoretical Computer Science Education -- A Comprehensive Evaluation Framework for Algorithm Analysis and Complexity Theory<div class="title-zh">AlgoRAG：面向理论计算机科学教育的检索增强生成——算法分析与复杂性理论的综合评估框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">domain RAG</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge base curation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">notation-aware retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">pedagogical evaluation</span></div>
+  <div class="item-summary">AlgoRAG couples an LLM with a curated theoretical-computer-science knowledge base of textbooks, 847 lecture slides, 312 practice problems, 156 proof templates and 89 complexity worksheets, adding mathematical entity recognition, notation-aware retrieval and pedagogical re-ranking. On 179 exam-style questions it reports a 100% success rate with a 38-second mean response time and a pedagogical quality score of 0.7620, though the authors note BLEU-4 is zero because n-gram matching fits mathematical proofs poorly.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.14572v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reward models grounded generation abstention preference data legal knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.14739</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Building Legal Reward Models for Grounding and Abstention<div class="title-zh">构建面向证据接地与弃权的法律奖励模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reward models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">grounded generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">abstention</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">preference data</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">legal knowledge</span></div>
+  <div class="item-summary">The paper converts existing legal QA datasets into contextual preference data to build LegalRewardBench, a benchmark for grounded legal generation under noisy and insufficient retrieval. Contextual DPO with length-balanced legal and general preference data improves grounded evaluation by up to 25.6 points over baseline, and models refined primarily on Victorian criminal-law data transfer to US legal benchmarks with a 16.2-point gain on Housing Statute QA.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.14739v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="typed execution graphs LLM planning scientific agents reproducibility">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.14840</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">El Agente Potente: High-Throughput Agentic Atomistic Simulations<div class="title-zh">El Agente Potente：高通量智能体原子尺度模拟</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">typed execution graphs</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">LLM planning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reproducibility</span></div>
+  <div class="item-summary">El Agente Potente is an agentic system for machine-learning interatomic potential simulations that combines typed execution graphs, in which LLMs are restricted to planning and routing while deterministic Python components perform computation and validation, with a complementary coding mode for customized workflows. It is demonstrated on computational materials discovery, molecular energy-landscape exploration and adsorption and catalytic reaction workflows, alongside benchmarks of reproducibility and LLM token cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.14840v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-agent system recursive self-improvement reusable memory autonomous exploration">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AetherLabsAI/RSIAgent<div class="title-zh">RSIAgent：无需训练的多智能体递归自我改进框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">recursive self-improvement</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">reusable memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous exploration</span></div>
+  <div class="item-summary">RSIAgent is a training-free multi-agent framework for recursive self-improvement in new environments, using broad-then-deep autonomous exploration and reusable memory.</div>
+  <a class="item-link" href="https://github.com/AetherLabsAI/RSIAgent" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="continual pretraining low-resource language stability-plasticity multilingual evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.14829</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Enemray: Toward Capable Language Models for Hassaniya<div class="title-zh">Enemray：迈向具备能力的哈桑尼亚语语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual pretraining</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-resource language</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">stability-plasticity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multilingual evaluation</span></div>
+  <div class="item-summary">Enemray is a Hassaniya-centric language model trained with a stability-plasticity objective that separates language acquisition from behavioral specialization through layer-selective continual pretraining and supervised post-training with policy-generated replay. It reports the strongest English-to-Hassaniya translation among the compared open and proprietary models and the highest overall score on Mauritanian translation error detection, while retaining most general capabilities of its instruction-tuned base on mathematical reasoning, knowledge, code generation and function calling.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.14829v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-09-13", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 2, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 7, "tools_frameworks": 1, "models_embeddings": 1}}, "daily_keywords": [{"text": "mutable RAG", "domain": "rag-retrieval"}, {"text": "semantic shadowing", "domain": "agent-memory"}, {"text": "memory conflict resolution", "domain": "knowledge-lifecycle"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}, {"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "prompt framing", "domain": "context-prompting"}, {"text": "domain knowledge base", "domain": "knowledge-lifecycle"}, {"text": "grounded generation", "domain": "rag-retrieval"}, {"text": "abstention", "domain": "ai-knowledge"}, {"text": "continual pretraining", "domain": "knowledge-lifecycle"}, {"text": "multilingual knowledge", "domain": "ai-knowledge"}, {"text": "reusable memory", "domain": "agent-memory"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "The Immutable Past: Formalizing State Mutability and Conflict Resolution in Mutable RAG", "title_zh": "不可变的过去：形式化可变 RAG 中的状态可变性与冲突消解", "url": "http://arxiv.org/abs/2609.16073v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.16073", "summary": "The paper formalizes State Mutability in mutable RAG memory for long-horizon agents, identifying Semantic Shadowing, in which conflicting historical observations statistically dominate recent updates, and proves that standard dense retrieval suffers Asymptotic Recall Decay and a Majority Vote Trap. It introduces GC-Mem, an inference-time consistency protocol that pairs a temporal dominance operator with contradiction detection and recovers over 90% conflict-resolution accuracy on a benchmark of 137,760 memory chunks.", "keywords": [{"text": "mutable RAG", "domain": "rag-retrieval"}, {"text": "semantic shadowing", "domain": "agent-memory"}, {"text": "conflict resolution", "domain": "knowledge-lifecycle"}, {"text": "contradiction detection", "domain": "ai-knowledge"}, {"text": "retrieval evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "The Immutable Past: Formalizing State Mutability and Conflict Resolution in Mutable RAG", "title_zh": "不可变的过去：形式化可变 RAG 中的状态可变性与冲突消解", "url": "http://arxiv.org/abs/2609.16073v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.16073", "summary": "The paper formalizes State Mutability in mutable RAG memory for long-horizon agents, identifying Semantic Shadowing, in which conflicting historical observations statistically dominate recent updates, and proves that standard dense retrieval suffers Asymptotic Recall Decay and a Majority Vote Trap. It introduces GC-Mem, an inference-time consistency protocol that pairs a temporal dominance operator with contradiction detection and recovers over 90% conflict-resolution accuracy on a benchmark of 137,760 memory chunks.", "keywords": [{"text": "mutable RAG", "domain": "rag-retrieval"}, {"text": "semantic shadowing", "domain": "agent-memory"}, {"text": "conflict resolution", "domain": "knowledge-lifecycle"}, {"text": "contradiction detection", "domain": "ai-knowledge"}, {"text": "retrieval evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "TriCalRAG: A Three-Strategy, Retrieval-Augmented Benchmark for On-Premise LLM-Based Root Cause Analysis in AIOps", "title_zh": "TriCalRAG：面向 AIOps 本地化 LLM 根因分析的三策略检索增强基准", "url": "http://arxiv.org/abs/2609.14762v2", "source": "arXiv", "section": "research_papers", "organization": "Anthropic", "language": "en", "arxiv_id": "2609.14762", "summary": "TriCalRAG is a reproducible benchmark for on-premise log-anomaly detection and root-cause analysis across BGL, HDFS, Thunderbird and OpenStack, comparing Qwen2.5-14B and Mistral-Small-22B under zero-shot, few-shot and RAG prompting; Mistral-Small attains higher macro-averaged F1 (0.644 versus 0.560) while Qwen provides roughly twice the throughput. Supplementary runs with 4-bit Llama-3.1-70B and Claude Haiku 4.5 found RAG improved F1 on all four datasets for both models, with Claude's aggregate F1 rising from 0.566 to 0.695 as estimated API cost rose from $0.94 to $2.15 per 1,000 incidents.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "root cause analysis", "domain": "ai-knowledge"}, {"text": "AIOps", "domain": "ai-knowledge"}, {"text": "prompt calibration", "domain": "context-prompting"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ANASSA: An Agentic AI Orchestration Framework for Spatial Intelligence", "title_zh": "ANASSA：面向空间智能的智能体 AI 编排框架", "url": "http://arxiv.org/abs/2609.14824v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.14824", "summary": "ANASSA is an architecture-level agentic orchestration framework for geospatial workflows that integrates structured spatial reasoning, multi-agent orchestration, execution feedback, authoritative spatial validation, provenance, uncertainty handling and human decision authority. It specifies eleven components across four layers and a six-step Geospatial AI Cognitive Loop, and notes that empirical evaluation is reserved for implementation and deployment studies.", "keywords": [{"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "spatial reasoning", "domain": "cognition-reasoning"}, {"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "provenance", "domain": "knowledge-lifecycle"}, {"text": "uncertainty handling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Another Blueprint In The Wall: How to Ask Frontier AI Like a Kid?", "title_zh": "墙上的另一张蓝图：如何像孩子一样向前沿 AI 提问？", "url": "http://arxiv.org/abs/2609.14803v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2609.14803", "summary": "The paper reports ten sessions per model type for six frontier models from OpenAI, Anthropic, xAI and Google DeepMind, using a three-stage prompt sequence, and finds that a school-audience framing led responses to converge on a shared architecture motif built around persistent latent state, adaptive computation, memory, specialist routing, verification and delayed decoding. Control runs without the school framing produced substantially more heterogeneous answers, and the author uses the term epistemic jailbreak for the loss of technical provenance as requested specificity increases.", "keywords": [{"text": "prompt framing", "domain": "context-prompting"}, {"text": "architecture convergence", "domain": "cognition-reasoning"}, {"text": "persistent latent state", "domain": "agent-architecture"}, {"text": "model behavior", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "AlgoRAG: Retrieval-Augmented Generation for Theoretical Computer Science Education -- A Comprehensive Evaluation Framework for Algorithm Analysis and Complexity Theory", "title_zh": "AlgoRAG：面向理论计算机科学教育的检索增强生成——算法分析与复杂性理论的综合评估框架", "url": "http://arxiv.org/abs/2609.14572v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.14572", "summary": "AlgoRAG couples an LLM with a curated theoretical-computer-science knowledge base of textbooks, 847 lecture slides, 312 practice problems, 156 proof templates and 89 complexity worksheets, adding mathematical entity recognition, notation-aware retrieval and pedagogical re-ranking. On 179 exam-style questions it reports a 100% success rate with a 38-second mean response time and a pedagogical quality score of 0.7620, though the authors note BLEU-4 is zero because n-gram matching fits mathematical proofs poorly.", "keywords": [{"text": "domain RAG", "domain": "rag-retrieval"}, {"text": "knowledge base curation", "domain": "knowledge-lifecycle"}, {"text": "notation-aware retrieval", "domain": "rag-retrieval"}, {"text": "pedagogical evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Building Legal Reward Models for Grounding and Abstention", "title_zh": "构建面向证据接地与弃权的法律奖励模型", "url": "http://arxiv.org/abs/2609.14739v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.14739", "summary": "The paper converts existing legal QA datasets into contextual preference data to build LegalRewardBench, a benchmark for grounded legal generation under noisy and insufficient retrieval. Contextual DPO with length-balanced legal and general preference data improves grounded evaluation by up to 25.6 points over baseline, and models refined primarily on Victorian criminal-law data transfer to US legal benchmarks with a 16.2-point gain on Housing Statute QA.", "keywords": [{"text": "reward models", "domain": "evaluation-benchmark"}, {"text": "grounded generation", "domain": "rag-retrieval"}, {"text": "abstention", "domain": "ai-knowledge"}, {"text": "preference data", "domain": "cognition-reasoning"}, {"text": "legal knowledge", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "El Agente Potente: High-Throughput Agentic Atomistic Simulations", "title_zh": "El Agente Potente：高通量智能体原子尺度模拟", "url": "http://arxiv.org/abs/2609.14840v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.14840", "summary": "El Agente Potente is an agentic system for machine-learning interatomic potential simulations that combines typed execution graphs, in which LLMs are restricted to planning and routing while deterministic Python components perform computation and validation, with a complementary coding mode for customized workflows. It is demonstrated on computational materials discovery, molecular energy-landscape exploration and adsorption and catalytic reaction workflows, alongside benchmarks of reproducibility and LLM token cost.", "keywords": [{"text": "typed execution graphs", "domain": "agent-architecture"}, {"text": "LLM planning", "domain": "cognition-reasoning"}, {"text": "scientific agents", "domain": "ai-knowledge"}, {"text": "reproducibility", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "AetherLabsAI/RSIAgent", "title_zh": "RSIAgent：无需训练的多智能体递归自我改进框架", "url": "https://github.com/AetherLabsAI/RSIAgent", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "RSIAgent is a training-free multi-agent framework for recursive self-improvement in new environments, using broad-then-deep autonomous exploration and reusable memory.", "keywords": [{"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "recursive self-improvement", "domain": "cognition-reasoning"}, {"text": "reusable memory", "domain": "agent-memory"}, {"text": "autonomous exploration", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Enemray: Toward Capable Language Models for Hassaniya", "title_zh": "Enemray：迈向具备能力的哈桑尼亚语语言模型", "url": "http://arxiv.org/abs/2609.14829v1", "source": "arXiv", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "2609.14829", "summary": "Enemray is a Hassaniya-centric language model trained with a stability-plasticity objective that separates language acquisition from behavioral specialization through layer-selective continual pretraining and supervised post-training with policy-generated replay. It reports the strongest English-to-Hassaniya translation among the compared open and proprietary models and the highest overall score on Mauritanian translation error detection, while retaining most general capabilities of its instruction-tuned base on mathematical reasoning, knowledge, code generation and function calling.", "keywords": [{"text": "continual pretraining", "domain": "knowledge-lifecycle"}, {"text": "low-resource language", "domain": "ai-knowledge"}, {"text": "stability-plasticity", "domain": "agent-memory"}, {"text": "multilingual evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

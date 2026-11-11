@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-09-27</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">event graphs</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill evolution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verification</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop RAG</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">factuality</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">multi-teacher distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">formal verification</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">dynamic graphs</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="skill evolution self-improvement skill library orchestration graph">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.33867</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">R$^2$ Flow: Recursive Self-Improvement via Recursive Skill Evolution<div class="title-zh">R² Flow：通过递归技能进化实现递归自我改进</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill evolution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-improvement</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill library</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration graph</span></div>
+  <div class="item-summary">R² Flow is a recursive self-improvement framework that alternates policy learning, independent verification and versioned skill-library updates on a shared-state orchestration graph that merges histories differing only in the order of independent steps. It improves task accuracy and library-edit precision over heuristic, reinforcement-learning and skill-evolution baselines across question answering, math reasoning, interactive decision making and code generation, with code released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.33867v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent harness verification persistent lessons knowledge synthesis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.33822</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Vestrum: Improving Agent Harnesses by Adapting Their Verification, Structure and Memory<div class="title-zh">Vestrum：通过适配验证、结构与记忆改进智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verification</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">persistent lessons</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge synthesis</span></div>
+  <div class="item-summary">Vestrum turns failures in execution traces into scoped changes to an agent harness's verification, retrieval, decomposition and knowledge synthesis without training the task model, while a persistent lessons file informs later proposals. Frozen harnesses improve held-out performance, including UltraHorizon from 47.6 to 59.8 over GAM and Terminal-Bench 4 Hard from 63.7% to 70.3% of checks over Claude Code at 1.03x test cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.33822v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="benchmark design Kolmogorov complexity LLM evaluation supraintelligence">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.14005</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Artificiality's First Exam: An LLM-Referenced C-test for Supraintelligence<div class="title-zh">人工性的第一场考试：面向超智能的 LLM 参照 C-test</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">Kolmogorov complexity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">supraintelligence</span></div>
+  <div class="item-summary">The paper presents the first C-test built on Levin's Kt with LLMs as representational machines, allowing fresh items to be generated at difficulties estimated in bits before any human or frontier model can solve them. A first battery of certified items was administered to twelve LLMs, producing agent characteristic curves that extend into a high-difficulty supra-intelligence window.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.14005v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="event graphs multi-tier memory stock forecasting point-in-time evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.34004</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RICE-Alpha: Reliability-Informed Correction with Event Graphs for LLM-Agent Stock Forecasting<div class="title-zh">RICE-Alpha：面向 LLM 智能体股票预测的事件图可靠性校正</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">event graphs</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">multi-tier memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">stock forecasting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">point-in-time evaluation</span></div>
+  <div class="item-summary">RICE-Alpha is a point-in-time stock-scoring framework that separates a history-aware multi-view Base Alpha from a reliability-calibrated residual correction derived from historical event continuation, using a multi-tier memory layer and typed event graphs. On Nasdaq-100 and Hang Seng panels from 2024 to 2026 it reports the strongest results among evaluated LLM-based agents, with ICIR more than double the strongest baseline and net Sharpe ratios of 1.656 and 1.725.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.34004v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="dynamic graphs agent lifecycle delayed feedback anomaly detection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.33980</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DynGraphAgentBench: A Benchmark for Agentic Lifecycle Control in Dynamic Graph Anomaly Detection<div class="title-zh">DynGraphAgentBench：动态图异常检测中智能体生命周期控制的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">dynamic graphs</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent lifecycle</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">delayed feedback</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">anomaly detection</span></div>
+  <div class="item-summary">DynGraphAgentBench is an executable benchmark for agentic lifecycle control under delayed feedback, spanning seven temporal graph datasets, eleven selectable detectors and eight chronological deployment windows per dataset. Controllers see only time-causal aggregate context, model cards and their own matured history, and must choose a detector before current-window training or scores exist.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.33980v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="skill evolution self-improvement skill library orchestration graph">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.33867</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">R$^2$ Flow: Recursive Self-Improvement via Recursive Skill Evolution<div class="title-zh">R² Flow：通过递归技能进化实现递归自我改进</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill evolution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-improvement</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill library</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration graph</span></div>
+  <div class="item-summary">R² Flow is a recursive self-improvement framework that alternates policy learning, independent verification and versioned skill-library updates on a shared-state orchestration graph that merges histories differing only in the order of independent steps. It improves task accuracy and library-edit precision over heuristic, reinforcement-learning and skill-evolution baselines across question answering, math reasoning, interactive decision making and code generation, with code released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.33867v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent harness verification persistent lessons knowledge synthesis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.33822</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Vestrum: Improving Agent Harnesses by Adapting Their Verification, Structure and Memory<div class="title-zh">Vestrum：通过适配验证、结构与记忆改进智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verification</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">persistent lessons</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge synthesis</span></div>
+  <div class="item-summary">Vestrum turns failures in execution traces into scoped changes to an agent harness's verification, retrieval, decomposition and knowledge synthesis without training the task model, while a persistent lessons file informs later proposals. Frozen harnesses improve held-out performance, including UltraHorizon from 47.6 to 59.8 over GAM and Terminal-Bench 4 Hard from 63.7% to 70.3% of checks over Claude Code at 1.03x test cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.33822v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="benchmark design Kolmogorov complexity LLM evaluation supraintelligence">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.14005</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Artificiality's First Exam: An LLM-Referenced C-test for Supraintelligence<div class="title-zh">人工性的第一场考试：面向超智能的 LLM 参照 C-test</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">Kolmogorov complexity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">supraintelligence</span></div>
+  <div class="item-summary">The paper presents the first C-test built on Levin's Kt with LLMs as representational machines, allowing fresh items to be generated at difficulties estimated in bits before any human or frontier model can solve them. A first battery of certified items was administered to twelve LLMs, producing agent characteristic curves that extend into a high-difficulty supra-intelligence window.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.14005v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="conformal prediction multi-hop RAG factuality abstention">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.38222</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Conformal Factuality Control for Multi-Hop Retrieval-Augmented Generation<div class="title-zh">多跳检索增强生成中的保形事实性控制</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">conformal prediction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop RAG</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">factuality</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">abstention</span></div>
+  <div class="item-summary">The study applies split-conformal claim filtering to multi-hop RAG on HotpotQA, Natural Questions and TriviaQA with Llama 3.1 8B and GPT-4o-mini. At a 95% target, the share of responses whose retained claims are fully supported rises to 95.80%-97.20%, but only 4.41%-31.09% of generated claims are retained and 9.70%-51.40% of responses remain non-empty.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.38222v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-teacher distillation capability integration chemical reasoning specialization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.33838</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ChemOPD: Multi-Teacher On-Policy Distillation for Multi-Task Chemical Reasoning<div class="title-zh">ChemOPD：面向多任务化学推理的多教师同策略蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">multi-teacher distillation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">capability integration</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chemical reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">specialization</span></div>
+  <div class="item-summary">ChemOPD organizes chemical reasoning specialists into partially overlapping groups using task affinities estimated from supervised fine-tuning gradients and a constrained mixed-integer program, then distils them while retaining a generalist teacher. On ChemCoTBench, affinity-guided specialization yields task-dependent gains, and its anchor-residual objective improves most metrics over specialist-only distillation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.33838v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="formal verification agentic coding specification">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The internet discovers TLA+. Now what?<div class="title-zh">互联网发现了 TLA+，然后呢？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">formal verification</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic coding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">specification</span></div>
+  <div class="item-summary">A practical introduction to TLA+ argues that the specification language matters for agentic coding and explores how AI could move formal verification from models to machine-checked proofs and eventually verified software.</div>
+  <a class="item-link" href="https://reasonable.io/blog/tla-tutorial/" target="_blank" rel="noopener">&rarr; reasonable.io</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-09-27", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 2, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 7, "blogs_insights": 1}}, "daily_keywords": [{"text": "event graphs", "domain": "knowledge-graph"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "skill evolution", "domain": "knowledge-lifecycle"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "verification", "domain": "evaluation-benchmark"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}, {"text": "multi-hop RAG", "domain": "rag-retrieval"}, {"text": "factuality", "domain": "ai-knowledge"}, {"text": "multi-teacher distillation", "domain": "knowledge-lifecycle"}, {"text": "formal verification", "domain": "cognition-reasoning"}, {"text": "dynamic graphs", "domain": "knowledge-graph"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "R$^2$ Flow: Recursive Self-Improvement via Recursive Skill Evolution", "title_zh": "R² Flow：通过递归技能进化实现递归自我改进", "url": "http://arxiv.org/abs/2609.33867v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.33867", "summary": "R² Flow is a recursive self-improvement framework that alternates policy learning, independent verification and versioned skill-library updates on a shared-state orchestration graph that merges histories differing only in the order of independent steps. It improves task accuracy and library-edit precision over heuristic, reinforcement-learning and skill-evolution baselines across question answering, math reasoning, interactive decision making and code generation, with code released.", "keywords": [{"text": "skill evolution", "domain": "knowledge-lifecycle"}, {"text": "self-improvement", "domain": "agent-architecture"}, {"text": "skill library", "domain": "knowledge-lifecycle"}, {"text": "orchestration graph", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Vestrum: Improving Agent Harnesses by Adapting Their Verification, Structure and Memory", "title_zh": "Vestrum：通过适配验证、结构与记忆改进智能体框架", "url": "http://arxiv.org/abs/2609.33822v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.33822", "summary": "Vestrum turns failures in execution traces into scoped changes to an agent harness's verification, retrieval, decomposition and knowledge synthesis without training the task model, while a persistent lessons file informs later proposals. Frozen harnesses improve held-out performance, including UltraHorizon from 47.6 to 59.8 over GAM and Terminal-Bench 4 Hard from 63.7% to 70.3% of checks over Claude Code at 1.03x test cost.", "keywords": [{"text": "agent harness", "domain": "agent-architecture"}, {"text": "verification", "domain": "evaluation-benchmark"}, {"text": "persistent lessons", "domain": "agent-memory"}, {"text": "knowledge synthesis", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Artificiality's First Exam: An LLM-Referenced C-test for Supraintelligence", "title_zh": "人工性的第一场考试：面向超智能的 LLM 参照 C-test", "url": "http://arxiv.org/abs/2610.14005v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2610.14005", "summary": "The paper presents the first C-test built on Levin's Kt with LLMs as representational machines, allowing fresh items to be generated at difficulties estimated in bits before any human or frontier model can solve them. A first battery of certified items was administered to twelve LLMs, producing agent characteristic curves that extend into a high-difficulty supra-intelligence window.", "keywords": [{"text": "benchmark design", "domain": "evaluation-benchmark"}, {"text": "Kolmogorov complexity", "domain": "cognition-reasoning"}, {"text": "LLM evaluation", "domain": "evaluation-benchmark"}, {"text": "supraintelligence", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "RICE-Alpha: Reliability-Informed Correction with Event Graphs for LLM-Agent Stock Forecasting", "title_zh": "RICE-Alpha：面向 LLM 智能体股票预测的事件图可靠性校正", "url": "http://arxiv.org/abs/2609.34004v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.34004", "summary": "RICE-Alpha is a point-in-time stock-scoring framework that separates a history-aware multi-view Base Alpha from a reliability-calibrated residual correction derived from historical event continuation, using a multi-tier memory layer and typed event graphs. On Nasdaq-100 and Hang Seng panels from 2024 to 2026 it reports the strongest results among evaluated LLM-based agents, with ICIR more than double the strongest baseline and net Sharpe ratios of 1.656 and 1.725.", "keywords": [{"text": "event graphs", "domain": "knowledge-graph"}, {"text": "multi-tier memory", "domain": "agent-memory"}, {"text": "stock forecasting", "domain": "ai-knowledge"}, {"text": "point-in-time evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "DynGraphAgentBench: A Benchmark for Agentic Lifecycle Control in Dynamic Graph Anomaly Detection", "title_zh": "DynGraphAgentBench：动态图异常检测中智能体生命周期控制的基准", "url": "http://arxiv.org/abs/2609.33980v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.33980", "summary": "DynGraphAgentBench is an executable benchmark for agentic lifecycle control under delayed feedback, spanning seven temporal graph datasets, eleven selectable detectors and eight chronological deployment windows per dataset. Controllers see only time-causal aggregate context, model cards and their own matured history, and must choose a detector before current-window training or scores exist.", "keywords": [{"text": "dynamic graphs", "domain": "knowledge-graph"}, {"text": "agent lifecycle", "domain": "agent-architecture"}, {"text": "delayed feedback", "domain": "evaluation-benchmark"}, {"text": "anomaly detection", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "R$^2$ Flow: Recursive Self-Improvement via Recursive Skill Evolution", "title_zh": "R² Flow：通过递归技能进化实现递归自我改进", "url": "http://arxiv.org/abs/2609.33867v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.33867", "summary": "R² Flow is a recursive self-improvement framework that alternates policy learning, independent verification and versioned skill-library updates on a shared-state orchestration graph that merges histories differing only in the order of independent steps. It improves task accuracy and library-edit precision over heuristic, reinforcement-learning and skill-evolution baselines across question answering, math reasoning, interactive decision making and code generation, with code released.", "keywords": [{"text": "skill evolution", "domain": "knowledge-lifecycle"}, {"text": "self-improvement", "domain": "agent-architecture"}, {"text": "skill library", "domain": "knowledge-lifecycle"}, {"text": "orchestration graph", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Vestrum: Improving Agent Harnesses by Adapting Their Verification, Structure and Memory", "title_zh": "Vestrum：通过适配验证、结构与记忆改进智能体框架", "url": "http://arxiv.org/abs/2609.33822v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.33822", "summary": "Vestrum turns failures in execution traces into scoped changes to an agent harness's verification, retrieval, decomposition and knowledge synthesis without training the task model, while a persistent lessons file informs later proposals. Frozen harnesses improve held-out performance, including UltraHorizon from 47.6 to 59.8 over GAM and Terminal-Bench 4 Hard from 63.7% to 70.3% of checks over Claude Code at 1.03x test cost.", "keywords": [{"text": "agent harness", "domain": "agent-architecture"}, {"text": "verification", "domain": "evaluation-benchmark"}, {"text": "persistent lessons", "domain": "agent-memory"}, {"text": "knowledge synthesis", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Artificiality's First Exam: An LLM-Referenced C-test for Supraintelligence", "title_zh": "人工性的第一场考试：面向超智能的 LLM 参照 C-test", "url": "http://arxiv.org/abs/2610.14005v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2610.14005", "summary": "The paper presents the first C-test built on Levin's Kt with LLMs as representational machines, allowing fresh items to be generated at difficulties estimated in bits before any human or frontier model can solve them. A first battery of certified items was administered to twelve LLMs, producing agent characteristic curves that extend into a high-difficulty supra-intelligence window.", "keywords": [{"text": "benchmark design", "domain": "evaluation-benchmark"}, {"text": "Kolmogorov complexity", "domain": "cognition-reasoning"}, {"text": "LLM evaluation", "domain": "evaluation-benchmark"}, {"text": "supraintelligence", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Conformal Factuality Control for Multi-Hop Retrieval-Augmented Generation", "title_zh": "多跳检索增强生成中的保形事实性控制", "url": "http://arxiv.org/abs/2609.38222v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.38222", "summary": "The study applies split-conformal claim filtering to multi-hop RAG on HotpotQA, Natural Questions and TriviaQA with Llama 3.1 8B and GPT-4o-mini. At a 95% target, the share of responses whose retained claims are fully supported rises to 95.80%-97.20%, but only 4.41%-31.09% of generated claims are retained and 9.70%-51.40% of responses remain non-empty.", "keywords": [{"text": "conformal prediction", "domain": "evaluation-benchmark"}, {"text": "multi-hop RAG", "domain": "rag-retrieval"}, {"text": "factuality", "domain": "ai-knowledge"}, {"text": "abstention", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "ChemOPD: Multi-Teacher On-Policy Distillation for Multi-Task Chemical Reasoning", "title_zh": "ChemOPD：面向多任务化学推理的多教师同策略蒸馏", "url": "http://arxiv.org/abs/2609.33838v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.33838", "summary": "ChemOPD organizes chemical reasoning specialists into partially overlapping groups using task affinities estimated from supervised fine-tuning gradients and a constrained mixed-integer program, then distils them while retaining a generalist teacher. On ChemCoTBench, affinity-guided specialization yields task-dependent gains, and its anchor-residual objective improves most metrics over specialist-only distillation.", "keywords": [{"text": "multi-teacher distillation", "domain": "knowledge-lifecycle"}, {"text": "capability integration", "domain": "knowledge-lifecycle"}, {"text": "chemical reasoning", "domain": "cognition-reasoning"}, {"text": "specialization", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "The internet discovers TLA+. Now what?", "title_zh": "互联网发现了 TLA+，然后呢？", "url": "https://reasonable.io/blog/tla-tutorial/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A practical introduction to TLA+ argues that the specification language matters for agentic coding and explores how AI could move formal verification from models to machine-checked proofs and eventually verified software.", "keywords": [{"text": "formal verification", "domain": "cognition-reasoning"}, {"text": "agentic coding", "domain": "agent-architecture"}, {"text": "specification", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

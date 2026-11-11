@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-09-06</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-context agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">parallel retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context layer</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent safety</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">fact verification</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multilingual representations</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">research acceleration</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long-context agents parallel reading iterative retrieval reinforcement learning agent memory">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.06702</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PARSER: Read in Parallel, Reason in Depth for Long-Context LLM Agents<div class="title-zh">PARSER：面向长上下文 LLM 智能体的并行阅读与深度推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-context agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">parallel reading</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">iterative retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span></div>
+  <div class="item-summary">PARSER decouples reading from reasoning by assigning lightweight subagents to individual document chunks that read in parallel while a lead agent runs iterative scatter–gather rounds, broadcasting queries, aggregating evidence and forming deeper follow-ups; only the lead agent is trained with reinforcement learning. On multi-hop QA with contexts from 7K to 896K tokens, a 4B-backbone PARSER beats the strongest sequential memory baseline by 5.7 points on average and 12.0 points at 896K tokens, and a 9B version surpasses DeepSeek-V4-Pro by 6.3 points while cutting latency up to 11x.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06702v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="coding agents research acceleration experiment velocity AI research workflows">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Research acceleration: The view inside OpenAI<div class="title-zh">研究加速：OpenAI 内部视角</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">research acceleration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">experiment velocity</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI research workflows</span></div>
+  <div class="item-summary">OpenAI's post describes how coding agents are reshaping AI research inside the lab and presents early data on agent usage, experiment velocity, task complexity and research acceleration.</div>
+  <a class="item-link" href="https://openai.com/index/research-acceleration-view-inside-openai" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="context layer semantic content retrieval scaffolding text-to-SQL ablation study">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.22259</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Which Part of the Context Layer Does the Work? Separating Semantic Content from Retrieval Scaffolding in Text-to-SQL Agents<div class="title-zh">上下文层的哪一部分在起作用？区分 text-to-SQL 智能体中的语义内容与检索脚手架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context layer</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">semantic content</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval scaffolding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">text-to-SQL</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ablation study</span></div>
+  <div class="item-summary">A four-arm ablation on DABStep across four models separates the semantic content of a curated context layer from the retrieval scaffolding that delivers it and from accompanying precomputed views. Content dominates, raising hard-task accuracy from 13.9% to 55.1%, 22.6% to 56.6%, 22.9% to 68.4% and 37.0% to 77.4%, while scaffolding without content is worth 0 to 5 points on two flash models and 14 to 15 on two frontier models; the contract also beats pasting the same knowledge into the prompt.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.22259v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long-context agents parallel reading iterative retrieval reinforcement learning agent memory">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.06702</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PARSER: Read in Parallel, Reason in Depth for Long-Context LLM Agents<div class="title-zh">PARSER：面向长上下文 LLM 智能体的并行阅读与深度推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-context agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">parallel reading</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">iterative retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span></div>
+  <div class="item-summary">PARSER decouples reading from reasoning by assigning lightweight subagents to individual document chunks that read in parallel while a lead agent runs iterative scatter–gather rounds, broadcasting queries, aggregating evidence and forming deeper follow-ups; only the lead agent is trained with reinforcement learning. On multi-hop QA with contexts from 7K to 896K tokens, a 4B-backbone PARSER beats the strongest sequential memory baseline by 5.7 points on average and 12.0 points at 896K tokens, and a 9B version surpasses DeepSeek-V4-Pro by 6.3 points while cutting latency up to 11x.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06702v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context layer semantic content retrieval scaffolding text-to-SQL ablation study">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.22259</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Which Part of the Context Layer Does the Work? Separating Semantic Content from Retrieval Scaffolding in Text-to-SQL Agents<div class="title-zh">上下文层的哪一部分在起作用？区分 text-to-SQL 智能体中的语义内容与检索脚手架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context layer</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">semantic content</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval scaffolding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">text-to-SQL</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ablation study</span></div>
+  <div class="item-summary">A four-arm ablation on DABStep across four models separates the semantic content of a curated context layer from the retrieval scaffolding that delivers it and from accompanying precomputed views. Content dominates, raising hard-task accuracy from 13.9% to 55.1%, 22.6% to 56.6%, 22.9% to 68.4% and 37.0% to 77.4%, while scaffolding without content is worth 0 to 5 points on two flash models and 14 to 15 on two frontier models; the contract also beats pasting the same knowledge into the prompt.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.22259v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning catastrophic forgetting knowledge retention GUI agents gradient surgery">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.06530</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Selective Knowledge Control for Continual GUI Agent Learning over Application Streams<div class="title-zh">面向应用流上持续 GUI 智能体学习的选择性知识控制</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge retention</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GUI agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">gradient surgery</span></div>
+  <div class="item-summary">The paper proposes activation-conditioned selective knowledge control for GUI agents that learn over streams of applications, using neuron-level gradient manipulation to protect highly activated MLP neurons that hold prior knowledge. When a new application arrives, gradients for unactivated neurons carrying specific knowledge are truncated while those for activated neurons carrying shared knowledge are orthogonally projected, and newly identified critical neurons are merged into a compact historical state; experiments on a multi-app sequential benchmark show reduced catastrophic forgetting with continued adaptation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06530v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph reasoning drug repurposing multi-hop reasoning expert routing knowledge distillation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.06779</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DrugReason: Dynamic Multi-View Reasoning over Knowledge Graph and Language Evidence for Drug Repurposing<div class="title-zh">DrugReason：面向药物重定位的知识图谱与语言证据动态多视角推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">drug repurposing</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-hop reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">expert routing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge distillation</span></div>
+  <div class="item-summary">DrugReason combines knowledge-graph-based grounded multi-hop reasoning with LLM-generated mechanistic inference for drug repurposing, adaptively routing reasoning paths to specialized experts based on query context. A cross-expert distillation objective shares knowledge without sacrificing specialization, and experiments on PharmaDB, DDInter and DrugBank show gains over strong single-view baselines with interpretable routing-based predictions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06779v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="streaming video QA multi-level memory multimodal reasoning egocentric video benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.06721</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Companion-style QA Assistance in Ego-Vision<div class="title-zh">自我视角中的伴侣式问答辅助</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">streaming video QA</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">multi-level memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multimodal reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">egocentric video</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">BuddyVQA is a benchmark for companion-style question answering on egocentric streaming video, containing 21.6K questions linked to 6K highlight moments across 1,012 long first-person videos, with ego-deictic expressions and interactively chained questions. The MyBuddy assistant adds multimodal chain-of-thought reasoning, a question filter and multi-level memory for efficient retrieval under streaming QA, improving foundation-model performance on BuddyVQA and generalizing to other streaming and standard video QA benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06721v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="cultural norms multimodal reasoning visual benchmark fine-tuning cross-cultural grounding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.06831</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">NormViz: A Benchmark and Framework for Grounding Multimodal Reasoning in Global Cultures<div class="title-zh">NormViz：将多模态推理锚定于全球文化的基准与框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cultural norms</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multimodal reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">visual benchmark</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">fine-tuning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cross-cultural grounding</span></div>
+  <div class="item-summary">NormViz-Bench is a human-validated benchmark of 3,268 contrastive image pairs from 16 countries that asks whether a visually observable behavior conforms to, violates or is irrelevant to local social norms, requiring both images in a pair to be judged correctly. The authors also release a 64K-image training set with explanations; the strongest VLM solves only 26.6% and 21.6% of pairs, while fine-tuning on NormViz-Train improves Qwen3-VL 4B and 8B pair accuracy by up to 125% and 36% relative.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06831v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="authorship representation same-author retrieval multilingual benchmark zero-shot evaluation representation learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.06771</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AuthBench: A Large-Scale Multilingual Benchmark for Authorship Representation across Genres and Lengths<div class="title-zh">AuthBench：跨体裁与篇幅的大规模多语言作者身份表示基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">authorship representation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">same-author retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multilingual benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">zero-shot evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">representation learning</span></div>
+  <div class="item-summary">AuthBench contains 428,150 documents by 153,825 individuals across ten languages, nine primary genres, 66 fine-grained genres and four length buckets, supporting authorship attribution as same-author retrieval and verification as a binary decision. Benchmarking 47 neural models and three non-neural baselines under a unified zero-shot protocol, the best retrieval model reaches only 0.258 Success@5 and the best verification model 0.076 EER, showing authorship representation remains far from solved.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06771v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="risk awareness agent safety trajectory evaluation tool-use safety oversight">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.06783</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AURA-Eval: Evaluation Framework for Acting Under Risk Awareness in LLM Agent Trajectories<div class="title-zh">AURA-Eval：LLM 智能体轨迹中的风险意识行动评估框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">risk awareness</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent safety</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">trajectory evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-use safety</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">oversight</span></div>
+  <div class="item-summary">AURA-Eval truncates tool-use trajectories at safety-critical decision points and asks models to generate the next thought and action, varying six risk mechanisms and pairing scenarios by whether a safe fulfillment path exists. From 157 seed trajectories it builds 1,249 evaluation items and tests 20 models, finding unsafe-action rates higher when no safe path exists (27–40% for frontier models versus 5–7%) and that removing pre-execution oversight flips 52.3% of previously safe cases to unsafe.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06783v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="jailbreak defense semantic rewriting intent detection multi-model scoring safety evaluation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.06540</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SRD-GUARD: A Defense Framework of LLMs via Semantic Rewriting and Joint Multi-Model Scoring for Latent Intent Exposure<div class="title-zh">SRD-GUARD：通过语义重写与多模型联合评分防御潜在意图暴露的 LLM 框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">jailbreak defense</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">semantic rewriting</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">intent detection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-model scoring</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">safety evaluation</span></div>
+  <div class="item-summary">SRD-GUARD is a parameter-free black-box jailbreak defense that generates five semantically related rewrites of a prompt to strip contextual packaging, then has multiple LLM safety scorers rate the original and rewrites on a continuous risk scale. A decision module combines absolute thresholds with relative risk changes to intercept, preserve or warn, achieving average defense success rates of 91.44% and 100% on Llama-3-8B-Uncensored and DeepSeek-V4-Flash with over-refusal rates of 8.00% and 12.00%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.06540v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="fact verification provenance claim-evidence loop reproducible evaluation">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">superwesleyhys-ux/factcircuit<div class="title-zh">superwesleyhys-ux/factcircuit：可审计的事实核查回路</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">fact verification</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">provenance</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">claim-evidence loop</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reproducible evaluation</span></div>
+  <div class="item-summary">FactCircuit implements an auditable claim-and-evidence verification loop with immutable provenance, staged checks, bounded retrieval and reproducible evaluation.</div>
+  <a class="item-link" href="https://github.com/superwesleyhys-ux/factcircuit" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding agents research acceleration experiment velocity AI research workflows">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Research acceleration: The view inside OpenAI<div class="title-zh">研究加速：OpenAI 内部视角</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">research acceleration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">experiment velocity</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI research workflows</span></div>
+  <div class="item-summary">OpenAI's post describes how coding agents are reshaping AI research inside the lab and presents early data on agent usage, experiment velocity, task complexity and research acceleration.</div>
+  <a class="item-link" href="https://openai.com/index/research-acceleration-view-inside-openai" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-09-06", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 3, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 9, "tools_frameworks": 1, "blogs_insights": 1}}, "daily_keywords": [{"text": "long-context agents", "domain": "agent-architecture"}, {"text": "parallel retrieval", "domain": "rag-retrieval"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "knowledge graph reasoning", "domain": "knowledge-graph"}, {"text": "context layer", "domain": "context-prompting"}, {"text": "agent safety", "domain": "agent-architecture"}, {"text": "fact verification", "domain": "ai-knowledge"}, {"text": "multilingual representations", "domain": "embeddings-vectors"}, {"text": "research acceleration", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "PARSER: Read in Parallel, Reason in Depth for Long-Context LLM Agents", "title_zh": "PARSER：面向长上下文 LLM 智能体的并行阅读与深度推理", "url": "http://arxiv.org/abs/2609.06702v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.06702", "summary": "PARSER decouples reading from reasoning by assigning lightweight subagents to individual document chunks that read in parallel while a lead agent runs iterative scatter–gather rounds, broadcasting queries, aggregating evidence and forming deeper follow-ups; only the lead agent is trained with reinforcement learning. On multi-hop QA with contexts from 7K to 896K tokens, a 4B-backbone PARSER beats the strongest sequential memory baseline by 5.7 points on average and 12.0 points at 896K tokens, and a 9B version surpasses DeepSeek-V4-Pro by 6.3 points while cutting latency up to 11x.", "keywords": [{"text": "long-context agents", "domain": "agent-architecture"}, {"text": "parallel reading", "domain": "rag-retrieval"}, {"text": "iterative retrieval", "domain": "rag-retrieval"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "agent memory", "domain": "agent-memory"}], "link_verified": true, "is_highlight": true}, {"title": "Research acceleration: The view inside OpenAI", "title_zh": "研究加速：OpenAI 内部视角", "url": "https://openai.com/index/research-acceleration-view-inside-openai", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI's post describes how coding agents are reshaping AI research inside the lab and presents early data on agent usage, experiment velocity, task complexity and research acceleration.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "research acceleration", "domain": "ai-knowledge"}, {"text": "experiment velocity", "domain": "evaluation-benchmark"}, {"text": "AI research workflows", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Which Part of the Context Layer Does the Work? Separating Semantic Content from Retrieval Scaffolding in Text-to-SQL Agents", "title_zh": "上下文层的哪一部分在起作用？区分 text-to-SQL 智能体中的语义内容与检索脚手架", "url": "http://arxiv.org/abs/2609.22259v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.22259", "summary": "A four-arm ablation on DABStep across four models separates the semantic content of a curated context layer from the retrieval scaffolding that delivers it and from accompanying precomputed views. Content dominates, raising hard-task accuracy from 13.9% to 55.1%, 22.6% to 56.6%, 22.9% to 68.4% and 37.0% to 77.4%, while scaffolding without content is worth 0 to 5 points on two flash models and 14 to 15 on two frontier models; the contract also beats pasting the same knowledge into the prompt.", "keywords": [{"text": "context layer", "domain": "context-prompting"}, {"text": "semantic content", "domain": "ai-knowledge"}, {"text": "retrieval scaffolding", "domain": "rag-retrieval"}, {"text": "text-to-SQL", "domain": "agent-architecture"}, {"text": "ablation study", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "PARSER: Read in Parallel, Reason in Depth for Long-Context LLM Agents", "title_zh": "PARSER：面向长上下文 LLM 智能体的并行阅读与深度推理", "url": "http://arxiv.org/abs/2609.06702v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.06702", "summary": "PARSER decouples reading from reasoning by assigning lightweight subagents to individual document chunks that read in parallel while a lead agent runs iterative scatter–gather rounds, broadcasting queries, aggregating evidence and forming deeper follow-ups; only the lead agent is trained with reinforcement learning. On multi-hop QA with contexts from 7K to 896K tokens, a 4B-backbone PARSER beats the strongest sequential memory baseline by 5.7 points on average and 12.0 points at 896K tokens, and a 9B version surpasses DeepSeek-V4-Pro by 6.3 points while cutting latency up to 11x.", "keywords": [{"text": "long-context agents", "domain": "agent-architecture"}, {"text": "parallel reading", "domain": "rag-retrieval"}, {"text": "iterative retrieval", "domain": "rag-retrieval"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "agent memory", "domain": "agent-memory"}], "link_verified": true, "is_highlight": true}, {"title": "Which Part of the Context Layer Does the Work? Separating Semantic Content from Retrieval Scaffolding in Text-to-SQL Agents", "title_zh": "上下文层的哪一部分在起作用？区分 text-to-SQL 智能体中的语义内容与检索脚手架", "url": "http://arxiv.org/abs/2609.22259v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.22259", "summary": "A four-arm ablation on DABStep across four models separates the semantic content of a curated context layer from the retrieval scaffolding that delivers it and from accompanying precomputed views. Content dominates, raising hard-task accuracy from 13.9% to 55.1%, 22.6% to 56.6%, 22.9% to 68.4% and 37.0% to 77.4%, while scaffolding without content is worth 0 to 5 points on two flash models and 14 to 15 on two frontier models; the contract also beats pasting the same knowledge into the prompt.", "keywords": [{"text": "context layer", "domain": "context-prompting"}, {"text": "semantic content", "domain": "ai-knowledge"}, {"text": "retrieval scaffolding", "domain": "rag-retrieval"}, {"text": "text-to-SQL", "domain": "agent-architecture"}, {"text": "ablation study", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Selective Knowledge Control for Continual GUI Agent Learning over Application Streams", "title_zh": "面向应用流上持续 GUI 智能体学习的选择性知识控制", "url": "http://arxiv.org/abs/2609.06530v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.06530", "summary": "The paper proposes activation-conditioned selective knowledge control for GUI agents that learn over streams of applications, using neuron-level gradient manipulation to protect highly activated MLP neurons that hold prior knowledge. When a new application arrives, gradients for unactivated neurons carrying specific knowledge are truncated while those for activated neurons carrying shared knowledge are orthogonally projected, and newly identified critical neurons are merged into a compact historical state; experiments on a multi-app sequential benchmark show reduced catastrophic forgetting with continued adaptation.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "knowledge retention", "domain": "knowledge-lifecycle"}, {"text": "GUI agents", "domain": "agent-architecture"}, {"text": "gradient surgery", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "DrugReason: Dynamic Multi-View Reasoning over Knowledge Graph and Language Evidence for Drug Repurposing", "title_zh": "DrugReason：面向药物重定位的知识图谱与语言证据动态多视角推理", "url": "http://arxiv.org/abs/2609.06779v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.06779", "summary": "DrugReason combines knowledge-graph-based grounded multi-hop reasoning with LLM-generated mechanistic inference for drug repurposing, adaptively routing reasoning paths to specialized experts based on query context. A cross-expert distillation objective shares knowledge without sacrificing specialization, and experiments on PharmaDB, DDInter and DrugBank show gains over strong single-view baselines with interpretable routing-based predictions.", "keywords": [{"text": "knowledge graph reasoning", "domain": "knowledge-graph"}, {"text": "drug repurposing", "domain": "ai-knowledge"}, {"text": "multi-hop reasoning", "domain": "cognition-reasoning"}, {"text": "expert routing", "domain": "agent-architecture"}, {"text": "knowledge distillation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Companion-style QA Assistance in Ego-Vision", "title_zh": "自我视角中的伴侣式问答辅助", "url": "http://arxiv.org/abs/2609.06721v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.06721", "summary": "BuddyVQA is a benchmark for companion-style question answering on egocentric streaming video, containing 21.6K questions linked to 6K highlight moments across 1,012 long first-person videos, with ego-deictic expressions and interactively chained questions. The MyBuddy assistant adds multimodal chain-of-thought reasoning, a question filter and multi-level memory for efficient retrieval under streaming QA, improving foundation-model performance on BuddyVQA and generalizing to other streaming and standard video QA benchmarks.", "keywords": [{"text": "streaming video QA", "domain": "rag-retrieval"}, {"text": "multi-level memory", "domain": "agent-memory"}, {"text": "multimodal reasoning", "domain": "cognition-reasoning"}, {"text": "egocentric video", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "NormViz: A Benchmark and Framework for Grounding Multimodal Reasoning in Global Cultures", "title_zh": "NormViz：将多模态推理锚定于全球文化的基准与框架", "url": "http://arxiv.org/abs/2609.06831v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.06831", "summary": "NormViz-Bench is a human-validated benchmark of 3,268 contrastive image pairs from 16 countries that asks whether a visually observable behavior conforms to, violates or is irrelevant to local social norms, requiring both images in a pair to be judged correctly. The authors also release a 64K-image training set with explanations; the strongest VLM solves only 26.6% and 21.6% of pairs, while fine-tuning on NormViz-Train improves Qwen3-VL 4B and 8B pair accuracy by up to 125% and 36% relative.", "keywords": [{"text": "cultural norms", "domain": "ai-knowledge"}, {"text": "multimodal reasoning", "domain": "cognition-reasoning"}, {"text": "visual benchmark", "domain": "evaluation-benchmark"}, {"text": "fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "cross-cultural grounding", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "AuthBench: A Large-Scale Multilingual Benchmark for Authorship Representation across Genres and Lengths", "title_zh": "AuthBench：跨体裁与篇幅的大规模多语言作者身份表示基准", "url": "http://arxiv.org/abs/2609.06771v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.06771", "summary": "AuthBench contains 428,150 documents by 153,825 individuals across ten languages, nine primary genres, 66 fine-grained genres and four length buckets, supporting authorship attribution as same-author retrieval and verification as a binary decision. Benchmarking 47 neural models and three non-neural baselines under a unified zero-shot protocol, the best retrieval model reaches only 0.258 Success@5 and the best verification model 0.076 EER, showing authorship representation remains far from solved.", "keywords": [{"text": "authorship representation", "domain": "embeddings-vectors"}, {"text": "same-author retrieval", "domain": "rag-retrieval"}, {"text": "multilingual benchmark", "domain": "evaluation-benchmark"}, {"text": "zero-shot evaluation", "domain": "evaluation-benchmark"}, {"text": "representation learning", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "AURA-Eval: Evaluation Framework for Acting Under Risk Awareness in LLM Agent Trajectories", "title_zh": "AURA-Eval：LLM 智能体轨迹中的风险意识行动评估框架", "url": "http://arxiv.org/abs/2609.06783v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.06783", "summary": "AURA-Eval truncates tool-use trajectories at safety-critical decision points and asks models to generate the next thought and action, varying six risk mechanisms and pairing scenarios by whether a safe fulfillment path exists. From 157 seed trajectories it builds 1,249 evaluation items and tests 20 models, finding unsafe-action rates higher when no safe path exists (27–40% for frontier models versus 5–7%) and that removing pre-execution oversight flips 52.3% of previously safe cases to unsafe.", "keywords": [{"text": "risk awareness", "domain": "cognition-reasoning"}, {"text": "agent safety", "domain": "agent-architecture"}, {"text": "trajectory evaluation", "domain": "evaluation-benchmark"}, {"text": "tool-use safety", "domain": "agent-architecture"}, {"text": "oversight", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "SRD-GUARD: A Defense Framework of LLMs via Semantic Rewriting and Joint Multi-Model Scoring for Latent Intent Exposure", "title_zh": "SRD-GUARD：通过语义重写与多模型联合评分防御潜在意图暴露的 LLM 框架", "url": "http://arxiv.org/abs/2609.06540v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.06540", "summary": "SRD-GUARD is a parameter-free black-box jailbreak defense that generates five semantically related rewrites of a prompt to strip contextual packaging, then has multiple LLM safety scorers rate the original and rewrites on a continuous risk scale. A decision module combines absolute thresholds with relative risk changes to intercept, preserve or warn, achieving average defense success rates of 91.44% and 100% on Llama-3-8B-Uncensored and DeepSeek-V4-Flash with over-refusal rates of 8.00% and 12.00%.", "keywords": [{"text": "jailbreak defense", "domain": "context-prompting"}, {"text": "semantic rewriting", "domain": "context-prompting"}, {"text": "intent detection", "domain": "cognition-reasoning"}, {"text": "multi-model scoring", "domain": "agent-architecture"}, {"text": "safety evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "superwesleyhys-ux/factcircuit", "title_zh": "superwesleyhys-ux/factcircuit：可审计的事实核查回路", "url": "https://github.com/superwesleyhys-ux/factcircuit", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "FactCircuit implements an auditable claim-and-evidence verification loop with immutable provenance, staged checks, bounded retrieval and reproducible evaluation.", "keywords": [{"text": "fact verification", "domain": "ai-knowledge"}, {"text": "provenance", "domain": "knowledge-lifecycle"}, {"text": "claim-evidence loop", "domain": "rag-retrieval"}, {"text": "reproducible evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Research acceleration: The view inside OpenAI", "title_zh": "研究加速：OpenAI 内部视角", "url": "https://openai.com/index/research-acceleration-view-inside-openai", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI's post describes how coding agents are reshaping AI research inside the lab and presents early data on agent usage, experiment velocity, task complexity and research acceleration.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "research acceleration", "domain": "ai-knowledge"}, {"text": "experiment velocity", "domain": "evaluation-benchmark"}, {"text": "AI research workflows", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

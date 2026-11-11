@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-09-20</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-sequence retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multi-interest modeling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic decision-making</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep search agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation robustness</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">information extraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">edge AI</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="deep search search agents anchor reasoning expert trajectories">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.35816</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PrimeSeeker: Capability-Oriented Supervision for Deep Search Agents<div class="title-zh">PrimeSeeker：面向深度搜索智能体的能力导向监督</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">search agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">anchor reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">expert trajectories</span></div>
+  <div class="item-summary">PrimeSeeker introduces latent anchor reasoning, which resolves an unnamed retrieval anchor from descriptive specifications and transfers it into a subsequent information demand, to organize deep-search training around local retrieval capabilities. Using 9,221 expert trajectories to train a 30B search agent, it reports strong performance on five deep-search benchmarks with low retrieval redundancy and fewer tool calls than long-horizon systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.35816v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="evaluation robustness misleading suggestions agent behavior benchmark mutation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.23939</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">XYEval: Agents say yes to bad advice<div class="title-zh">XYEval：智能体对糟糕建议说“是”</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation robustness</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">misleading suggestions</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent behavior</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark mutation</span></div>
+  <div class="item-summary">XYEval is a meta-evaluation framework that converts existing benchmarks into XY-problem tests of whether agents resist plausible but misleading user suggestions and explain their reasoning, across five models and six benchmark suites. It reports relative performance drops of up to 46.7% under XY mutation, further declines with a pedantic user, and only partial mitigation from a simple system-instruction baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.23939v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent orchestration declarative workflows sandboxing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AX – Google’s Open Agentic Orchestrator<div class="title-zh">AX——Google 的开源智能体编排器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">declarative workflows</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandboxing</span></div>
+  <div class="item-summary">Google's AX lets users declare an agentic task in YAML, after which it sandboxes the task, wires up its workspace, fences its network and helps run it at scale.</div>
+  <a class="item-link" href="https://agentexecutor.io" target="_blank" rel="noopener">&rarr; agentexecutor.io</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long-sequence retrieval multi-interest modeling user history compression industrial recommender">
+  <div class="item-meta">
+    <span class="item-org">Baidu</span>
+    <span class="arxiv-tag">arxiv:2609.23677</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MuSeR: Scalable Long-sequence Recommendation with Multi-interest Modeling<div class="title-zh">MuSeR：面向多兴趣建模的可扩展长序列推荐</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-sequence retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multi-interest modeling</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">user history compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">industrial recommender</span></div>
+  <div class="item-summary">MuSeR is a retrieval framework built on Baidu's deployed MGS system that combines hierarchical temporal compression, disentangled multi-query interest extraction and LLM-distilled multimodal semantic alignment to model histories of 10^4 to 10^5 interactions. Online A/B tests on Baidu APP feeds report +0.26% daily active users and +0.89% total session duration, both statistically significant.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.23677v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic decision-making benchmark MCP tool calls physical AI">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.23695</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PhysAI-Bench: A Benchmark for LLM-Based Agentic Decision-Making in Autonomous UAV-Centric Physical AI<div class="title-zh">PhysAI-Bench：面向自主无人机物理 AI 的 LLM 智能体决策基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic decision-making</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">MCP tool calls</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">physical AI</span></div>
+  <div class="item-summary">PhysAI-Bench contains 10,178 decision instances extracted from conversational traces of autonomous UAV missions, preserving mission context, MCP tool calls, A2A interactions and AI-native 6G network conditions while exposing only information preceding each decision. Evaluating 29 foundation models, GPT-5.3 achieves the highest accuracy at 52.00%, followed by GPT-5.2 at 49.40% and Grok 4.5 at 49.07%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.23695v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep search search agents anchor reasoning expert trajectories">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.35816</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PrimeSeeker: Capability-Oriented Supervision for Deep Search Agents<div class="title-zh">PrimeSeeker：面向深度搜索智能体的能力导向监督</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">search agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">anchor reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">expert trajectories</span></div>
+  <div class="item-summary">PrimeSeeker introduces latent anchor reasoning, which resolves an unnamed retrieval anchor from descriptive specifications and transfers it into a subsequent information demand, to organize deep-search training around local retrieval capabilities. Using 9,221 expert trajectories to train a 30B search agent, it reports strong performance on five deep-search benchmarks with low retrieval redundancy and fewer tool calls than long-horizon systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.35816v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning LoRA catastrophic forgetting backward transfer">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.23594</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Bilinear Optimization Divergence: Diagnosing Factor-Constrained LoRA Continual Learning<div class="title-zh">双线性优化偏离：诊断因子约束下的 LoRA 持续学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LoRA</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">backward transfer</span></div>
+  <div class="item-summary">The paper introduces Bilinear Optimization Divergence, an anchor-relative diagnostic of how LoRA updates respond on selected historical features, and derives Semi-Frozen Orthogonal Routing plus Weight Residual Projection. On Qwen3-8B four-task experiments, SFOR improves backward transfer from -2.47 to -0.86 with nearly unchanged average accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.23594v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent security threat taxonomy memory attacks multi-agent systems">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.23894</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Connecting the Dots in Agentic AI Security: A Cross-Dimensional Threat Taxonomy, Evaluation Maturity, and Open Challenges<div class="title-zh">串联智能体 AI 安全的要点：跨维度威胁分类、评估成熟度与开放挑战</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">threat taxonomy</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory attacks</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span></div>
+  <div class="item-summary">The paper reviews 66 studies published from 2022 to 2026 and proposes T={S, B, P, A}, a cross-dimensional representation linking system surfaces, trust boundaries, violated security properties and examined architectures. It finds that evidence concentrates on prompt/reasoning, memory and tool-mediated attacks in single-agent settings, while persistent, human-agent and complex multi-agent threats receive less coverage.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.23894v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="evaluation robustness misleading suggestions agent behavior benchmark mutation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.23939</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">XYEval: Agents say yes to bad advice<div class="title-zh">XYEval：智能体对糟糕建议说“是”</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation robustness</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">misleading suggestions</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent behavior</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark mutation</span></div>
+  <div class="item-summary">XYEval is a meta-evaluation framework that converts existing benchmarks into XY-problem tests of whether agents resist plausible but misleading user suggestions and explain their reasoning, across five models and six benchmark suites. It reports relative performance drops of up to 46.7% under XY mutation, further declines with a pedantic user, and only partial mitigation from a simple system-instruction baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.23939v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent orchestration declarative workflows sandboxing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AX – Google’s Open Agentic Orchestrator<div class="title-zh">AX——Google 的开源智能体编排器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">declarative workflows</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandboxing</span></div>
+  <div class="item-summary">Google's AX lets users declare an agentic task in YAML, after which it sandboxes the task, wires up its workspace, fences its network and helps run it at scale.</div>
+  <a class="item-link" href="https://agentexecutor.io" target="_blank" rel="noopener">&rarr; agentexecutor.io</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="information extraction edge AI grammar-constrained decoding structured output">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2609.23582</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ARID: A Deployable Edge AI System for Structured Information Extraction from Industrial Maintenance Work Orders<div class="title-zh">ARID：面向工业维修工单结构化信息抽取的可部署边缘 AI 系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">information extraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">edge AI</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">grammar-constrained decoding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">structured output</span></div>
+  <div class="item-summary">ARID extracts component, failure mode, symptom and maintenance action into fixed-schema JSON on an 8 GB NVIDIA Jetson Orin NX, combining dual-teacher filtering, targeted synthesis, 4-bit inference and grammar-constrained decoding. On 300 human-labeled records it reaches 84.8% token-F1 on the reference stack and 82.9% on the deployed Jetson, while zero-shot MaintNet transfer shows output validity transfers but field semantics do not.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.23582v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-09-20", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 2, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 6, "tools_frameworks": 1, "industry_applications": 1}}, "daily_keywords": [{"text": "long-sequence retrieval", "domain": "rag-retrieval"}, {"text": "multi-interest modeling", "domain": "embeddings-vectors"}, {"text": "agentic decision-making", "domain": "agent-architecture"}, {"text": "deep search agents", "domain": "rag-retrieval"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "evaluation robustness", "domain": "evaluation-benchmark"}, {"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "information extraction", "domain": "knowledge-lifecycle"}, {"text": "edge AI", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "PrimeSeeker: Capability-Oriented Supervision for Deep Search Agents", "title_zh": "PrimeSeeker：面向深度搜索智能体的能力导向监督", "url": "http://arxiv.org/abs/2609.35816v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.35816", "summary": "PrimeSeeker introduces latent anchor reasoning, which resolves an unnamed retrieval anchor from descriptive specifications and transfers it into a subsequent information demand, to organize deep-search training around local retrieval capabilities. Using 9,221 expert trajectories to train a 30B search agent, it reports strong performance on five deep-search benchmarks with low retrieval redundancy and fewer tool calls than long-horizon systems.", "keywords": [{"text": "deep search", "domain": "rag-retrieval"}, {"text": "search agents", "domain": "agent-architecture"}, {"text": "anchor reasoning", "domain": "cognition-reasoning"}, {"text": "expert trajectories", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "XYEval: Agents say yes to bad advice", "title_zh": "XYEval：智能体对糟糕建议说“是”", "url": "http://arxiv.org/abs/2609.23939v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.23939", "summary": "XYEval is a meta-evaluation framework that converts existing benchmarks into XY-problem tests of whether agents resist plausible but misleading user suggestions and explain their reasoning, across five models and six benchmark suites. It reports relative performance drops of up to 46.7% under XY mutation, further declines with a pedantic user, and only partial mitigation from a simple system-instruction baseline.", "keywords": [{"text": "evaluation robustness", "domain": "evaluation-benchmark"}, {"text": "misleading suggestions", "domain": "cognition-reasoning"}, {"text": "agent behavior", "domain": "agent-architecture"}, {"text": "benchmark mutation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "AX – Google’s Open Agentic Orchestrator", "title_zh": "AX——Google 的开源智能体编排器", "url": "https://agentexecutor.io", "source": "Hacker News", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Google's AX lets users declare an agentic task in YAML, after which it sandboxes the task, wires up its workspace, fences its network and helps run it at scale.", "keywords": [{"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "declarative workflows", "domain": "context-prompting"}, {"text": "sandboxing", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "MuSeR: Scalable Long-sequence Recommendation with Multi-interest Modeling", "title_zh": "MuSeR：面向多兴趣建模的可扩展长序列推荐", "url": "http://arxiv.org/abs/2609.23677v1", "source": "arXiv", "section": "research_papers", "organization": "Baidu", "language": "en", "arxiv_id": "2609.23677", "summary": "MuSeR is a retrieval framework built on Baidu's deployed MGS system that combines hierarchical temporal compression, disentangled multi-query interest extraction and LLM-distilled multimodal semantic alignment to model histories of 10^4 to 10^5 interactions. Online A/B tests on Baidu APP feeds report +0.26% daily active users and +0.89% total session duration, both statistically significant.", "keywords": [{"text": "long-sequence retrieval", "domain": "rag-retrieval"}, {"text": "multi-interest modeling", "domain": "embeddings-vectors"}, {"text": "user history compression", "domain": "agent-memory"}, {"text": "industrial recommender", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "PhysAI-Bench: A Benchmark for LLM-Based Agentic Decision-Making in Autonomous UAV-Centric Physical AI", "title_zh": "PhysAI-Bench：面向自主无人机物理 AI 的 LLM 智能体决策基准", "url": "http://arxiv.org/abs/2609.23695v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.23695", "summary": "PhysAI-Bench contains 10,178 decision instances extracted from conversational traces of autonomous UAV missions, preserving mission context, MCP tool calls, A2A interactions and AI-native 6G network conditions while exposing only information preceding each decision. Evaluating 29 foundation models, GPT-5.3 achieves the highest accuracy at 52.00%, followed by GPT-5.2 at 49.40% and Grok 4.5 at 49.07%.", "keywords": [{"text": "agentic decision-making", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "MCP tool calls", "domain": "context-prompting"}, {"text": "physical AI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "PrimeSeeker: Capability-Oriented Supervision for Deep Search Agents", "title_zh": "PrimeSeeker：面向深度搜索智能体的能力导向监督", "url": "http://arxiv.org/abs/2609.35816v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.35816", "summary": "PrimeSeeker introduces latent anchor reasoning, which resolves an unnamed retrieval anchor from descriptive specifications and transfers it into a subsequent information demand, to organize deep-search training around local retrieval capabilities. Using 9,221 expert trajectories to train a 30B search agent, it reports strong performance on five deep-search benchmarks with low retrieval redundancy and fewer tool calls than long-horizon systems.", "keywords": [{"text": "deep search", "domain": "rag-retrieval"}, {"text": "search agents", "domain": "agent-architecture"}, {"text": "anchor reasoning", "domain": "cognition-reasoning"}, {"text": "expert trajectories", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Bilinear Optimization Divergence: Diagnosing Factor-Constrained LoRA Continual Learning", "title_zh": "双线性优化偏离：诊断因子约束下的 LoRA 持续学习", "url": "http://arxiv.org/abs/2609.23594v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.23594", "summary": "The paper introduces Bilinear Optimization Divergence, an anchor-relative diagnostic of how LoRA updates respond on selected historical features, and derives Semi-Frozen Orthogonal Routing plus Weight Residual Projection. On Qwen3-8B four-task experiments, SFOR improves backward transfer from -2.47 to -0.86 with nearly unchanged average accuracy.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "LoRA", "domain": "ai-knowledge"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "backward transfer", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Connecting the Dots in Agentic AI Security: A Cross-Dimensional Threat Taxonomy, Evaluation Maturity, and Open Challenges", "title_zh": "串联智能体 AI 安全的要点：跨维度威胁分类、评估成熟度与开放挑战", "url": "http://arxiv.org/abs/2609.23894v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.23894", "summary": "The paper reviews 66 studies published from 2022 to 2026 and proposes T={S, B, P, A}, a cross-dimensional representation linking system surfaces, trust boundaries, violated security properties and examined architectures. It finds that evidence concentrates on prompt/reasoning, memory and tool-mediated attacks in single-agent settings, while persistent, human-agent and complex multi-agent threats receive less coverage.", "keywords": [{"text": "agent security", "domain": "agent-architecture"}, {"text": "threat taxonomy", "domain": "evaluation-benchmark"}, {"text": "memory attacks", "domain": "agent-memory"}, {"text": "multi-agent systems", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "XYEval: Agents say yes to bad advice", "title_zh": "XYEval：智能体对糟糕建议说“是”", "url": "http://arxiv.org/abs/2609.23939v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.23939", "summary": "XYEval is a meta-evaluation framework that converts existing benchmarks into XY-problem tests of whether agents resist plausible but misleading user suggestions and explain their reasoning, across five models and six benchmark suites. It reports relative performance drops of up to 46.7% under XY mutation, further declines with a pedantic user, and only partial mitigation from a simple system-instruction baseline.", "keywords": [{"text": "evaluation robustness", "domain": "evaluation-benchmark"}, {"text": "misleading suggestions", "domain": "cognition-reasoning"}, {"text": "agent behavior", "domain": "agent-architecture"}, {"text": "benchmark mutation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "AX – Google’s Open Agentic Orchestrator", "title_zh": "AX——Google 的开源智能体编排器", "url": "https://agentexecutor.io", "source": "Hacker News", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Google's AX lets users declare an agentic task in YAML, after which it sandboxes the task, wires up its workspace, fences its network and helps run it at scale.", "keywords": [{"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "declarative workflows", "domain": "context-prompting"}, {"text": "sandboxing", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "ARID: A Deployable Edge AI System for Structured Information Extraction from Industrial Maintenance Work Orders", "title_zh": "ARID：面向工业维修工单结构化信息抽取的可部署边缘 AI 系统", "url": "http://arxiv.org/abs/2609.23582v1", "source": "arXiv", "section": "industry_applications", "organization": "NVIDIA", "language": "en", "arxiv_id": "2609.23582", "summary": "ARID extracts component, failure mode, symptom and maintenance action into fixed-schema JSON on an 8 GB NVIDIA Jetson Orin NX, combining dual-teacher filtering, targeted synthesis, 4-bit inference and grammar-constrained decoding. On 300 human-labeled records it reaches 84.8% token-F1 on the reference stack and 82.9% on the deployed Jetson, while zero-shot MaintNet transfer shows output validity transfers but field semantics do not.", "keywords": [{"text": "information extraction", "domain": "knowledge-lifecycle"}, {"text": "edge AI", "domain": "ai-knowledge"}, {"text": "grammar-constrained decoding", "domain": "context-prompting"}, {"text": "structured output", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

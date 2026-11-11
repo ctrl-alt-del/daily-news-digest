@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-09-08</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">10</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:10%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent confidence calibration</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">internal representation probing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">harness effect</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation grounding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">sycophancy</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multi-turn evaluation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multimodal prompt injection</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">harness evolution</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">function calling schemas</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agentic HLS design</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">coding agent productivity</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="confidence calibration internal representations agent reliability latent trajectory">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.09448</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Do Agents Know When They Succeed? Calibrating Agent Confidence from Internal Representations<div class="title-zh">智能体知道自己何时成功吗？从内部表示校准智能体置信度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">confidence calibration</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">internal representations</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent reliability</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent trajectory</span></div>
+  <div class="item-summary">The paper introduces Latent Trajectory Dynamics and an Action Representation Probe to predict task success from residual-stream representations in multi-turn agentic setups. Across Bash, SQL and Python benchmarks and three model families, the methods outperform surface-level and sequence-based calibration baselines without prompt changes or multiple rollouts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09448v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="coding agents harness effect benchmark contamination agent tooling">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2609.11987</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Harness or Model? Isolating the Harness Effect in Agentic Coding with a Contamination-Controlled Private Suite<div class="title-zh">支架还是模型？在受污染控制的私有套件中分离智能体编码的支架效应</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">harness effect</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark contamination</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agent tooling</span></div>
+  <div class="item-summary">The study runs paired same-model contrasts on a private, contamination-controlled suite of 256 repository and contest tasks to test whether vendor-native agent harnesses hold an average advantage. Neither contrast resolves one, though the Opus 4.8 average combines a 9.0-point deficit on repository tasks with a 23.7-point lead on contest tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.11987v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sycophancy multi-turn evaluation reasoning traces robustness">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.09090</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SPINE: Measuring LLM Sycophancy under Sustained Multi-Turn Pressure<div class="title-zh">SPINE：衡量 LLM 在持续多轮压力下的谄媚行为</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">sycophancy</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multi-turn evaluation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning traces</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">robustness</span></div>
+  <div class="item-summary">SPINE uses an LLM proxy as a persistent but mistaken user that adaptively challenges a target model for up to 25 turns on 100 false presuppositions and 100 unethical queries. Across seven models, collapse rates rise from 0%-57% within five turns to 20%-97% within 25 turns, and the correct position remains represented in reasoning traces in 50%-89% of analyzed collapse turns.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09090v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[10]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="confidence calibration internal representations agent reliability latent trajectory">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.09448</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Do Agents Know When They Succeed? Calibrating Agent Confidence from Internal Representations<div class="title-zh">智能体知道自己何时成功吗？从内部表示校准智能体置信度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">confidence calibration</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">internal representations</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent reliability</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent trajectory</span></div>
+  <div class="item-summary">The paper introduces Latent Trajectory Dynamics and an Action Representation Probe to predict task success from residual-stream representations in multi-turn agentic setups. Across Bash, SQL and Python benchmarks and three model families, the methods outperform surface-level and sequence-based calibration baselines without prompt changes or multiple rollouts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09448v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="coding agents harness effect benchmark contamination agent tooling">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2609.11987</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Harness or Model? Isolating the Harness Effect in Agentic Coding with a Contamination-Controlled Private Suite<div class="title-zh">支架还是模型？在受污染控制的私有套件中分离智能体编码的支架效应</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">harness effect</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark contamination</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agent tooling</span></div>
+  <div class="item-summary">The study runs paired same-model contrasts on a private, contamination-controlled suite of 256 repository and contest tasks to test whether vendor-native agent harnesses hold an average advantage. Neither contrast resolves one, though the Opus 4.8 average combines a 9.0-point deficit on repository tasks with a 23.7-point lead on contest tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.11987v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sycophancy multi-turn evaluation reasoning traces robustness">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.09090</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SPINE: Measuring LLM Sycophancy under Sustained Multi-Turn Pressure<div class="title-zh">SPINE：衡量 LLM 在持续多轮压力下的谄媚行为</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">sycophancy</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multi-turn evaluation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning traces</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">robustness</span></div>
+  <div class="item-summary">SPINE uses an LLM proxy as a persistent but mistaken user that adaptively challenges a target model for up to 25 turns on 100 false presuppositions and 100 unethical queries. Across seven models, collapse rates rise from 0%-57% within five turns to 20%-97% within 25 turns, and the correct position remains represented in reasoning traces in 50%-89% of analyzed collapse turns.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09090v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="citation grounding agentic reasoning claim verification academic writing">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.09156</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ReCite: Agentic Reasoning for Faithful Citation<div class="title-zh">ReCite：面向忠实引用的智能体推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation grounding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">claim verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">academic writing</span></div>
+  <div class="item-summary">ReCite is a decoupled agentic framework that combines location perception, intent-aware query planning and reflective verification to check whether a cited paper actually supports a claim. Trained on synthesized reasoning trajectories, it outperforms state-of-the-art massive generative models on strict citation accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09156v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent harness on-policy correction imitation learning context management">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.09134</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Co-Evolving Harnesses and Models: On-Policy Correction Helps Weaker Models Catch Up Where Imitation Fails<div class="title-zh">协同演化支架与模型：在线策略纠错让弱模型在模仿失败处追赶</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy correction</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">imitation learning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span></div>
+  <div class="item-summary">The paper examines how automated harness evolution and lightweight fine-tuning should be combined across seven enterprise agent tasks, finding that imitating a stronger expert's full trajectories regresses performance by 4 to 30 points. It proposes an on-policy expert-correction pipeline that rewrites only the failing turn in the weaker model's own rollout.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09134v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent benchmark hardware design self-verification tool use">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.09526</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Benchmarking Agentic HLS Design Tasks With HLS-Eval<div class="title-zh">用 HLS-Eval 对智能体化 HLS 设计任务进行基准测试</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">hardware design</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-verification</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">tool use</span></div>
+  <div class="item-summary">The authors extend the open HLS-Eval benchmark with a mini-swe-agent pipeline in which agents edit files, call a C++ compiler for self-verification and iterate on designs while logging cost, token use and iteration count. Initial results show open LLMs with the agent framework solve all easy HLS code-generation tasks, indicating the benchmark needs to be harder.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09526v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="dataset construction LLM agents hardware design code extraction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.09519</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">HLSFactory-Agent: Large-Scale Agentic HLS Dataset Construction from Academic and Open-Source Projects<div class="title-zh">HLSFactory-Agent：从学术与开源项目大规模构建智能体化 HLS 数据集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">dataset construction</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">LLM agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">hardware design</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">code extraction</span></div>
+  <div class="item-summary">HLSFactory-Agent is an LLM agent that extracts standalone designs from large codebases and builds and evaluates each design inside Docker using the open-source Pi agent framework. Users provide a GitHub link or code directory and receive a design collection compatible with the HLSFactory dataset framework.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09519v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt injection multimodal security agent benchmark tool calling">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.09404</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Experimental Evaluation of Multimodal Prompt Injection Attacks on Agentic AI Frameworks<div class="title-zh">多模态提示注入攻击对智能体 AI 框架的实验评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">prompt injection</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multimodal security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool calling</span></div>
+  <div class="item-summary">MMPIBench delivers fixed prompt-injection attacks through six visual carriers and records how far each injected instruction travels from perception through planning to tool calls across 720 runs. Attacks complete in about 1% of runs but are attempted in 12.8%, with the model mattering far more than the framework; audio attacks complete in 49% of cells where the signal arrives.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09404v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation Model Context Protocol digital twin industrial knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.09503</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic AI-enabled Semantic Commissioning of a Cognitive Digital Twin for Reconfigurable Manufacturing<div class="title-zh">面向可重构制造的认知数字孪生智能体语义调试</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Model Context Protocol</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">digital twin</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">industrial knowledge</span></div>
+  <div class="item-summary">The paper proposes an agent-based workflow that uses LangGraph for multi-agent orchestration, RAG to extract specifications from unstructured documents and MCP to bind real-time industrial telemetry. In a robotic machining cell it reports 97.2% mAP in perception and cuts the deployment cycle from several weeks to an average of two hours.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09503v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="function calling schema prompting small language models tool interfaces">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.09476</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Fixed Keys to Readable Schemas: Small Language Models for Vehicle Agent Function Calls<div class="title-zh">从固定键到可读模式：面向车载智能体函数调用的小语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">function calling</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">schema prompting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">small language models</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">tool interfaces</span></div>
+  <div class="item-summary">The paper compares dedicated functional tokens with schema-in-prompt representations for vehicle function calling on a benchmark of 9,822 examples spanning 79 functions and four small models from 270M to 1.7B parameters. Schema-in-prompt generalizes to held-out functions and refuses out-of-scope requests more reliably, at the cost of higher inference latency.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.09476v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding agents enterprise adoption developer productivity">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">1Password increases engineering productivity 21% with Codex<div class="title-zh">1Password 借助 Codex 将工程生产力提升 21%</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise adoption</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">developer productivity</span></div>
+  <div class="item-summary">OpenAI reports that engineers at 1Password use Codex to build new features and internal tools rapidly, reaching production readiness while maintaining rigorous security policies, with the case study citing a 21% productivity increase.</div>
+  <a class="item-link" href="https://openai.com/index/1password" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-09-08", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 2, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 10, "industry_applications": 1}}, "daily_keywords": [{"text": "agent confidence calibration", "domain": "agent-architecture"}, {"text": "internal representation probing", "domain": "embeddings-vectors"}, {"text": "harness effect", "domain": "agent-architecture"}, {"text": "citation grounding", "domain": "rag-retrieval"}, {"text": "sycophancy", "domain": "cognition-reasoning"}, {"text": "multi-turn evaluation", "domain": "evaluation-benchmark"}, {"text": "multimodal prompt injection", "domain": "context-prompting"}, {"text": "harness evolution", "domain": "knowledge-lifecycle"}, {"text": "function calling schemas", "domain": "context-prompting"}, {"text": "agentic HLS design", "domain": "evaluation-benchmark"}, {"text": "coding agent productivity", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Do Agents Know When They Succeed? Calibrating Agent Confidence from Internal Representations", "title_zh": "智能体知道自己何时成功吗？从内部表示校准智能体置信度", "url": "http://arxiv.org/abs/2609.09448v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.09448", "summary": "The paper introduces Latent Trajectory Dynamics and an Action Representation Probe to predict task success from residual-stream representations in multi-turn agentic setups. Across Bash, SQL and Python benchmarks and three model families, the methods outperform surface-level and sequence-based calibration baselines without prompt changes or multiple rollouts.", "keywords": [{"text": "confidence calibration", "domain": "agent-architecture"}, {"text": "internal representations", "domain": "embeddings-vectors"}, {"text": "agent reliability", "domain": "evaluation-benchmark"}, {"text": "latent trajectory", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Harness or Model? Isolating the Harness Effect in Agentic Coding with a Contamination-Controlled Private Suite", "title_zh": "支架还是模型？在受污染控制的私有套件中分离智能体编码的支架效应", "url": "http://arxiv.org/abs/2609.11987v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2609.11987", "summary": "The study runs paired same-model contrasts on a private, contamination-controlled suite of 256 repository and contest tasks to test whether vendor-native agent harnesses hold an average advantage. Neither contrast resolves one, though the Opus 4.8 average combines a 9.0-point deficit on repository tasks with a 23.7-point lead on contest tasks.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "harness effect", "domain": "evaluation-benchmark"}, {"text": "benchmark contamination", "domain": "evaluation-benchmark"}, {"text": "agent tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "SPINE: Measuring LLM Sycophancy under Sustained Multi-Turn Pressure", "title_zh": "SPINE：衡量 LLM 在持续多轮压力下的谄媚行为", "url": "http://arxiv.org/abs/2609.09090v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.09090", "summary": "SPINE uses an LLM proxy as a persistent but mistaken user that adaptively challenges a target model for up to 25 turns on 100 false presuppositions and 100 unethical queries. Across seven models, collapse rates rise from 0%-57% within five turns to 20%-97% within 25 turns, and the correct position remains represented in reasoning traces in 50%-89% of analyzed collapse turns.", "keywords": [{"text": "sycophancy", "domain": "cognition-reasoning"}, {"text": "multi-turn evaluation", "domain": "evaluation-benchmark"}, {"text": "reasoning traces", "domain": "cognition-reasoning"}, {"text": "robustness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Do Agents Know When They Succeed? Calibrating Agent Confidence from Internal Representations", "title_zh": "智能体知道自己何时成功吗？从内部表示校准智能体置信度", "url": "http://arxiv.org/abs/2609.09448v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.09448", "summary": "The paper introduces Latent Trajectory Dynamics and an Action Representation Probe to predict task success from residual-stream representations in multi-turn agentic setups. Across Bash, SQL and Python benchmarks and three model families, the methods outperform surface-level and sequence-based calibration baselines without prompt changes or multiple rollouts.", "keywords": [{"text": "confidence calibration", "domain": "agent-architecture"}, {"text": "internal representations", "domain": "embeddings-vectors"}, {"text": "agent reliability", "domain": "evaluation-benchmark"}, {"text": "latent trajectory", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Harness or Model? Isolating the Harness Effect in Agentic Coding with a Contamination-Controlled Private Suite", "title_zh": "支架还是模型？在受污染控制的私有套件中分离智能体编码的支架效应", "url": "http://arxiv.org/abs/2609.11987v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2609.11987", "summary": "The study runs paired same-model contrasts on a private, contamination-controlled suite of 256 repository and contest tasks to test whether vendor-native agent harnesses hold an average advantage. Neither contrast resolves one, though the Opus 4.8 average combines a 9.0-point deficit on repository tasks with a 23.7-point lead on contest tasks.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "harness effect", "domain": "evaluation-benchmark"}, {"text": "benchmark contamination", "domain": "evaluation-benchmark"}, {"text": "agent tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "SPINE: Measuring LLM Sycophancy under Sustained Multi-Turn Pressure", "title_zh": "SPINE：衡量 LLM 在持续多轮压力下的谄媚行为", "url": "http://arxiv.org/abs/2609.09090v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.09090", "summary": "SPINE uses an LLM proxy as a persistent but mistaken user that adaptively challenges a target model for up to 25 turns on 100 false presuppositions and 100 unethical queries. Across seven models, collapse rates rise from 0%-57% within five turns to 20%-97% within 25 turns, and the correct position remains represented in reasoning traces in 50%-89% of analyzed collapse turns.", "keywords": [{"text": "sycophancy", "domain": "cognition-reasoning"}, {"text": "multi-turn evaluation", "domain": "evaluation-benchmark"}, {"text": "reasoning traces", "domain": "cognition-reasoning"}, {"text": "robustness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "ReCite: Agentic Reasoning for Faithful Citation", "title_zh": "ReCite：面向忠实引用的智能体推理", "url": "http://arxiv.org/abs/2609.09156v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.09156", "summary": "ReCite is a decoupled agentic framework that combines location perception, intent-aware query planning and reflective verification to check whether a cited paper actually supports a claim. Trained on synthesized reasoning trajectories, it outperforms state-of-the-art massive generative models on strict citation accuracy.", "keywords": [{"text": "citation grounding", "domain": "rag-retrieval"}, {"text": "agentic reasoning", "domain": "agent-architecture"}, {"text": "claim verification", "domain": "cognition-reasoning"}, {"text": "academic writing", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Co-Evolving Harnesses and Models: On-Policy Correction Helps Weaker Models Catch Up Where Imitation Fails", "title_zh": "协同演化支架与模型：在线策略纠错让弱模型在模仿失败处追赶", "url": "http://arxiv.org/abs/2609.09134v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.09134", "summary": "The paper examines how automated harness evolution and lightweight fine-tuning should be combined across seven enterprise agent tasks, finding that imitating a stronger expert's full trajectories regresses performance by 4 to 30 points. It proposes an on-policy expert-correction pipeline that rewrites only the failing turn in the weaker model's own rollout.", "keywords": [{"text": "agent harness", "domain": "agent-architecture"}, {"text": "on-policy correction", "domain": "knowledge-lifecycle"}, {"text": "imitation learning", "domain": "cognition-reasoning"}, {"text": "context management", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Benchmarking Agentic HLS Design Tasks With HLS-Eval", "title_zh": "用 HLS-Eval 对智能体化 HLS 设计任务进行基准测试", "url": "http://arxiv.org/abs/2609.09526v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.09526", "summary": "The authors extend the open HLS-Eval benchmark with a mini-swe-agent pipeline in which agents edit files, call a C++ compiler for self-verification and iterate on designs while logging cost, token use and iteration count. Initial results show open LLMs with the agent framework solve all easy HLS code-generation tasks, indicating the benchmark needs to be harder.", "keywords": [{"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "hardware design", "domain": "agent-architecture"}, {"text": "self-verification", "domain": "agent-architecture"}, {"text": "tool use", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "HLSFactory-Agent: Large-Scale Agentic HLS Dataset Construction from Academic and Open-Source Projects", "title_zh": "HLSFactory-Agent：从学术与开源项目大规模构建智能体化 HLS 数据集", "url": "http://arxiv.org/abs/2609.09519v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.09519", "summary": "HLSFactory-Agent is an LLM agent that extracts standalone designs from large codebases and builds and evaluates each design inside Docker using the open-source Pi agent framework. Users provide a GitHub link or code directory and receive a design collection compatible with the HLSFactory dataset framework.", "keywords": [{"text": "dataset construction", "domain": "knowledge-lifecycle"}, {"text": "LLM agents", "domain": "agent-architecture"}, {"text": "hardware design", "domain": "ai-knowledge"}, {"text": "code extraction", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "An Experimental Evaluation of Multimodal Prompt Injection Attacks on Agentic AI Frameworks", "title_zh": "多模态提示注入攻击对智能体 AI 框架的实验评估", "url": "http://arxiv.org/abs/2609.09404v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.09404", "summary": "MMPIBench delivers fixed prompt-injection attacks through six visual carriers and records how far each injected instruction travels from perception through planning to tool calls across 720 runs. Attacks complete in about 1% of runs but are attempted in 12.8%, with the model mattering far more than the framework; audio attacks complete in 49% of cells where the signal arrives.", "keywords": [{"text": "prompt injection", "domain": "agent-architecture"}, {"text": "multimodal security", "domain": "context-prompting"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "tool calling", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic AI-enabled Semantic Commissioning of a Cognitive Digital Twin for Reconfigurable Manufacturing", "title_zh": "面向可重构制造的认知数字孪生智能体语义调试", "url": "http://arxiv.org/abs/2609.09503v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.09503", "summary": "The paper proposes an agent-based workflow that uses LangGraph for multi-agent orchestration, RAG to extract specifications from unstructured documents and MCP to bind real-time industrial telemetry. In a robotic machining cell it reports 97.2% mAP in perception and cuts the deployment cycle from several weeks to an average of two hours.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "Model Context Protocol", "domain": "agent-architecture"}, {"text": "digital twin", "domain": "ai-knowledge"}, {"text": "industrial knowledge", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "From Fixed Keys to Readable Schemas: Small Language Models for Vehicle Agent Function Calls", "title_zh": "从固定键到可读模式：面向车载智能体函数调用的小语言模型", "url": "http://arxiv.org/abs/2609.09476v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.09476", "summary": "The paper compares dedicated functional tokens with schema-in-prompt representations for vehicle function calling on a benchmark of 9,822 examples spanning 79 functions and four small models from 270M to 1.7B parameters. Schema-in-prompt generalizes to held-out functions and refuses out-of-scope requests more reliably, at the cost of higher inference latency.", "keywords": [{"text": "function calling", "domain": "agent-architecture"}, {"text": "schema prompting", "domain": "context-prompting"}, {"text": "small language models", "domain": "ai-knowledge"}, {"text": "tool interfaces", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "1Password increases engineering productivity 21% with Codex", "title_zh": "1Password 借助 Codex 将工程生产力提升 21%", "url": "https://openai.com/index/1password", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI reports that engineers at 1Password use Codex to build new features and internal tools rapidly, reaching production readiness while maintaining rigorous security policies, with the case study citing a 21% productivity increase.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "enterprise adoption", "domain": "ai-knowledge"}, {"text": "developer productivity", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

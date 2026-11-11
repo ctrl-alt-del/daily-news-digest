@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-09-16</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic web search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query formulation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multi-vector retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-reflection</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific code environments</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-augmented BI</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">research screening</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">cross-modal embeddings</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic web search query formulation source attribution conversational agents response grounding">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.19244</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Characterizing Web Search by Conversational LLM Agents: From Search Decisions and Strategies to Results and Responses<div class="title-zh">对话式 LLM 智能体的网络搜索特征：从搜索决策、策略到结果与响应</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic web search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query formulation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">source attribution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">conversational agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">response grounding</span></div>
+  <div class="item-summary">The study examines web search across ChatGPT, Claude, Grok and DeepSeek using real user interactions and controlled API experiments, covering when agents search, how they formulate queries, which domains results come from and how responses are grounded. It finds search decisions vary by platform and model, more frequent search does not necessarily improve quality, and some claims rely on uncited results.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19244v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-vector search semantic join evidence retrieval multi-step reasoning query engine">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.19491</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Efficiently Linking Unstructured Data for Multi-step Reasoning<div class="title-zh">为非结构化数据高效建立关联以支持多步推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multi-vector search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic join</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">evidence retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-step reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query engine</span></div>
+  <div class="item-summary">DASE is a query engine that ranks candidate evidence tuples for multi-step reasoning over structured predicates, multiple vectors and relational links, using a sparse materialized embedding-similarity join index for rare near-neighbor pairs. On scientific-discovery workloads it retrieves evidence 6x to 46x faster than RDBMS, rerank and vector-database baselines at comparable recall, and on SemBench E-Commerce it raises BigQuery answer quality from 0.67 to 0.80 while cutting cost from $2.42 to $0.54.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19491v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="scientific code agent learning environments supervised fine-tuning reinforcement learning knowledge transfer">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.19134</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ScienceIDE: Turning World's Scientific Codebase into Agent Learnable Environments<div class="title-zh">ScienceIDE：将全球科学代码库转化为智能体可学习环境</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific code</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent learning environments</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">supervised fine-tuning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge transfer</span></div>
+  <div class="item-summary">ScienceIDE converts scientific code repositories into executable environments for agent task generation, execution and verification, guided by expert-defined scientific cases and acceptance criteria. Using verified interaction trajectories, the authors train PhAI-IDE models at 72B, 9B and 4B parameters that improve held-out scientific-code repair and show gains on selected general code, reasoning and knowledge benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19134v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic web search query formulation source attribution conversational agents response grounding">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2609.19244</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Characterizing Web Search by Conversational LLM Agents: From Search Decisions and Strategies to Results and Responses<div class="title-zh">对话式 LLM 智能体的网络搜索特征：从搜索决策、策略到结果与响应</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic web search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query formulation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">source attribution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">conversational agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">response grounding</span></div>
+  <div class="item-summary">The study examines web search across ChatGPT, Claude, Grok and DeepSeek using real user interactions and controlled API experiments, covering when agents search, how they formulate queries, which domains results come from and how responses are grounded. It finds search decisions vary by platform and model, more frequent search does not necessarily improve quality, and some claims rely on uncited results.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19244v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-vector search semantic join evidence retrieval multi-step reasoning query engine">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.19491</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Efficiently Linking Unstructured Data for Multi-step Reasoning<div class="title-zh">为非结构化数据高效建立关联以支持多步推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multi-vector search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic join</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">evidence retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-step reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query engine</span></div>
+  <div class="item-summary">DASE is a query engine that ranks candidate evidence tuples for multi-step reasoning over structured predicates, multiple vectors and relational links, using a sparse materialized embedding-similarity join index for rare near-neighbor pairs. On scientific-discovery workloads it retrieves evidence 6x to 46x faster than RDBMS, rerank and vector-database baselines at comparable recall, and on SemBench E-Commerce it raises BigQuery answer quality from 0.67 to 0.80 while cutting cost from $2.42 to $0.54.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19491v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="business intelligence tool-augmented reasoning task decomposition benchmark post-training">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.20886</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BI-Agent and BI-Bench: Towards Automating End-to-End Business Intelligence<div class="title-zh">BI-Agent 与 BI-Bench：迈向端到端商业智能自动化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">business intelligence</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-augmented reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task decomposition</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">post-training</span></div>
+  <div class="item-summary">BI-Bench harvests real business-intelligence questions and ground-truth answers from public dashboards, and finds frontier LLMs score below 50% on end-to-end BI. The tool-augmented BI-Agent decomposes search, join and transform subtasks and gains up to 40 percentage points over vanilla LLMs, while post-training on synthesized trajectories adds up to 30 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.20886v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="episodic memory self-reflection dual-process agent execution-time control">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.19128</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Cognitive Extensions for Dual-Process Language Agents: Memory and Self-Reflection in Interactive Environments<div class="title-zh">双过程语言智能体的认知扩展：交互环境中的记忆与自我反思</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-reflection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">dual-process agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">execution-time control</span></div>
+  <div class="item-summary">The authors add an Adaptive Memory Module for salience-gated episodic storage and trigger-driven retrieval, plus a Self-Reflection Module for bounded execution-time validation, to the SwiftSage dual-process agent. On ScienceWorld the full system reaches a mean final score of 64.62 and a 43.17% success rate, with self-reflection the strongest standalone contributor.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19128v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="scientific code agent learning environments supervised fine-tuning reinforcement learning knowledge transfer">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.19134</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ScienceIDE: Turning World's Scientific Codebase into Agent Learnable Environments<div class="title-zh">ScienceIDE：将全球科学代码库转化为智能体可学习环境</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific code</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent learning environments</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">supervised fine-tuning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge transfer</span></div>
+  <div class="item-summary">ScienceIDE converts scientific code repositories into executable environments for agent task generation, execution and verification, guided by expert-defined scientific cases and acceptance criteria. Using verified interaction trajectories, the authors train PhAI-IDE models at 72B, 9B and 4B parameters that improve held-out scientific-code repair and show gains on selected general code, reasoning and knowledge benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19134v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="systematic review screening automation class imbalance prompt experimentation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.30298</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Benchmark Framework for Screening Automation in Systematic Reviews<div class="title-zh">系统综述筛选自动化的基准框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">systematic review</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">screening automation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">class imbalance</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt experimentation</span></div>
+  <div class="item-summary">The paper releases a benchmark of 45,064 labeled entries drawn from 32 systematic reviews for evaluating LLM article screening under class imbalance, together with PromptSR for prompt experimentation, experiment management and result analysis. A use case demonstrates the benchmark and tool.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.30298v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="cross-modal retrieval embedding-space prediction frozen encoders sim-to-real transfer reranking">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.19483</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SCOUT: Sim-to-Real Text-Based Person Retrieval by Embedding-Space Prediction over Frozen Video Features<div class="title-zh">SCOUT：基于冻结视频特征嵌入空间预测的仿真到真实文本行人检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">cross-modal retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding-space prediction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">frozen encoders</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">sim-to-real transfer</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">reranking</span></div>
+  <div class="item-summary">SCOUT keeps its video and text encoders frozen and trains a predictor that maps V-JEPA patch tokens into an EmbeddingGemma embedding space under a bidirectional InfoNCE objective. With ExPLoRA adaptation and a reranker, the full system reaches 84.25 mAP@10 on AI City Challenge 2026 Track 4.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.19483v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="data agents visualization enterprise analytics">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Hex turns complex analysis into visual reports with GPT‑6 Astra<div class="title-zh">Hex 借助 GPT-6 Astra 将复杂分析转化为可视化报告</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">data agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">visualization</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise analytics</span></div>
+  <div class="item-summary">OpenAI says GPT-6 Astra helps Hex's data agents turn answers into interactive visualizations that employees can share.</div>
+  <a class="item-link" href="https://openai.com/index/hex-gpt-6-astra" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-09-16", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 2, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 7, "industry_applications": 1}}, "daily_keywords": [{"text": "agentic web search", "domain": "rag-retrieval"}, {"text": "query formulation", "domain": "rag-retrieval"}, {"text": "multi-vector retrieval", "domain": "embeddings-vectors"}, {"text": "evidence grounding", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "self-reflection", "domain": "cognition-reasoning"}, {"text": "scientific code environments", "domain": "ai-knowledge"}, {"text": "tool-augmented BI", "domain": "agent-architecture"}, {"text": "research screening", "domain": "knowledge-lifecycle"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}, {"text": "cross-modal embeddings", "domain": "embeddings-vectors"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Characterizing Web Search by Conversational LLM Agents: From Search Decisions and Strategies to Results and Responses", "title_zh": "对话式 LLM 智能体的网络搜索特征：从搜索决策、策略到结果与响应", "url": "http://arxiv.org/abs/2609.19244v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.19244", "summary": "The study examines web search across ChatGPT, Claude, Grok and DeepSeek using real user interactions and controlled API experiments, covering when agents search, how they formulate queries, which domains results come from and how responses are grounded. It finds search decisions vary by platform and model, more frequent search does not necessarily improve quality, and some claims rely on uncited results.", "keywords": [{"text": "agentic web search", "domain": "rag-retrieval"}, {"text": "query formulation", "domain": "rag-retrieval"}, {"text": "source attribution", "domain": "knowledge-lifecycle"}, {"text": "conversational agents", "domain": "agent-architecture"}, {"text": "response grounding", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Efficiently Linking Unstructured Data for Multi-step Reasoning", "title_zh": "为非结构化数据高效建立关联以支持多步推理", "url": "http://arxiv.org/abs/2609.19491v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.19491", "summary": "DASE is a query engine that ranks candidate evidence tuples for multi-step reasoning over structured predicates, multiple vectors and relational links, using a sparse materialized embedding-similarity join index for rare near-neighbor pairs. On scientific-discovery workloads it retrieves evidence 6x to 46x faster than RDBMS, rerank and vector-database baselines at comparable recall, and on SemBench E-Commerce it raises BigQuery answer quality from 0.67 to 0.80 while cutting cost from $2.42 to $0.54.", "keywords": [{"text": "multi-vector search", "domain": "embeddings-vectors"}, {"text": "semantic join", "domain": "rag-retrieval"}, {"text": "evidence retrieval", "domain": "ai-knowledge"}, {"text": "multi-step reasoning", "domain": "cognition-reasoning"}, {"text": "query engine", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "ScienceIDE: Turning World's Scientific Codebase into Agent Learnable Environments", "title_zh": "ScienceIDE：将全球科学代码库转化为智能体可学习环境", "url": "http://arxiv.org/abs/2609.19134v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.19134", "summary": "ScienceIDE converts scientific code repositories into executable environments for agent task generation, execution and verification, guided by expert-defined scientific cases and acceptance criteria. Using verified interaction trajectories, the authors train PhAI-IDE models at 72B, 9B and 4B parameters that improve held-out scientific-code repair and show gains on selected general code, reasoning and knowledge benchmarks.", "keywords": [{"text": "scientific code", "domain": "ai-knowledge"}, {"text": "agent learning environments", "domain": "agent-architecture"}, {"text": "supervised fine-tuning", "domain": "ai-knowledge"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "knowledge transfer", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Characterizing Web Search by Conversational LLM Agents: From Search Decisions and Strategies to Results and Responses", "title_zh": "对话式 LLM 智能体的网络搜索特征：从搜索决策、策略到结果与响应", "url": "http://arxiv.org/abs/2609.19244v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2609.19244", "summary": "The study examines web search across ChatGPT, Claude, Grok and DeepSeek using real user interactions and controlled API experiments, covering when agents search, how they formulate queries, which domains results come from and how responses are grounded. It finds search decisions vary by platform and model, more frequent search does not necessarily improve quality, and some claims rely on uncited results.", "keywords": [{"text": "agentic web search", "domain": "rag-retrieval"}, {"text": "query formulation", "domain": "rag-retrieval"}, {"text": "source attribution", "domain": "knowledge-lifecycle"}, {"text": "conversational agents", "domain": "agent-architecture"}, {"text": "response grounding", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Efficiently Linking Unstructured Data for Multi-step Reasoning", "title_zh": "为非结构化数据高效建立关联以支持多步推理", "url": "http://arxiv.org/abs/2609.19491v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.19491", "summary": "DASE is a query engine that ranks candidate evidence tuples for multi-step reasoning over structured predicates, multiple vectors and relational links, using a sparse materialized embedding-similarity join index for rare near-neighbor pairs. On scientific-discovery workloads it retrieves evidence 6x to 46x faster than RDBMS, rerank and vector-database baselines at comparable recall, and on SemBench E-Commerce it raises BigQuery answer quality from 0.67 to 0.80 while cutting cost from $2.42 to $0.54.", "keywords": [{"text": "multi-vector search", "domain": "embeddings-vectors"}, {"text": "semantic join", "domain": "rag-retrieval"}, {"text": "evidence retrieval", "domain": "ai-knowledge"}, {"text": "multi-step reasoning", "domain": "cognition-reasoning"}, {"text": "query engine", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "BI-Agent and BI-Bench: Towards Automating End-to-End Business Intelligence", "title_zh": "BI-Agent 与 BI-Bench：迈向端到端商业智能自动化", "url": "http://arxiv.org/abs/2609.20886v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.20886", "summary": "BI-Bench harvests real business-intelligence questions and ground-truth answers from public dashboards, and finds frontier LLMs score below 50% on end-to-end BI. The tool-augmented BI-Agent decomposes search, join and transform subtasks and gains up to 40 percentage points over vanilla LLMs, while post-training on synthesized trajectories adds up to 30 points.", "keywords": [{"text": "business intelligence", "domain": "ai-knowledge"}, {"text": "tool-augmented reasoning", "domain": "agent-architecture"}, {"text": "task decomposition", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "post-training", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Cognitive Extensions for Dual-Process Language Agents: Memory and Self-Reflection in Interactive Environments", "title_zh": "双过程语言智能体的认知扩展：交互环境中的记忆与自我反思", "url": "http://arxiv.org/abs/2609.19128v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.19128", "summary": "The authors add an Adaptive Memory Module for salience-gated episodic storage and trigger-driven retrieval, plus a Self-Reflection Module for bounded execution-time validation, to the SwiftSage dual-process agent. On ScienceWorld the full system reaches a mean final score of 64.62 and a 43.17% success rate, with self-reflection the strongest standalone contributor.", "keywords": [{"text": "episodic memory", "domain": "agent-memory"}, {"text": "self-reflection", "domain": "cognition-reasoning"}, {"text": "dual-process agent", "domain": "agent-architecture"}, {"text": "execution-time control", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "ScienceIDE: Turning World's Scientific Codebase into Agent Learnable Environments", "title_zh": "ScienceIDE：将全球科学代码库转化为智能体可学习环境", "url": "http://arxiv.org/abs/2609.19134v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.19134", "summary": "ScienceIDE converts scientific code repositories into executable environments for agent task generation, execution and verification, guided by expert-defined scientific cases and acceptance criteria. Using verified interaction trajectories, the authors train PhAI-IDE models at 72B, 9B and 4B parameters that improve held-out scientific-code repair and show gains on selected general code, reasoning and knowledge benchmarks.", "keywords": [{"text": "scientific code", "domain": "ai-knowledge"}, {"text": "agent learning environments", "domain": "agent-architecture"}, {"text": "supervised fine-tuning", "domain": "ai-knowledge"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "knowledge transfer", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "A Benchmark Framework for Screening Automation in Systematic Reviews", "title_zh": "系统综述筛选自动化的基准框架", "url": "http://arxiv.org/abs/2609.30298v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.30298", "summary": "The paper releases a benchmark of 45,064 labeled entries drawn from 32 systematic reviews for evaluating LLM article screening under class imbalance, together with PromptSR for prompt experimentation, experiment management and result analysis. A use case demonstrates the benchmark and tool.", "keywords": [{"text": "systematic review", "domain": "knowledge-lifecycle"}, {"text": "screening automation", "domain": "ai-knowledge"}, {"text": "class imbalance", "domain": "evaluation-benchmark"}, {"text": "prompt experimentation", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "SCOUT: Sim-to-Real Text-Based Person Retrieval by Embedding-Space Prediction over Frozen Video Features", "title_zh": "SCOUT：基于冻结视频特征嵌入空间预测的仿真到真实文本行人检索", "url": "http://arxiv.org/abs/2609.19483v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.19483", "summary": "SCOUT keeps its video and text encoders frozen and trains a predictor that maps V-JEPA patch tokens into an EmbeddingGemma embedding space under a bidirectional InfoNCE objective. With ExPLoRA adaptation and a reranker, the full system reaches 84.25 mAP@10 on AI City Challenge 2026 Track 4.", "keywords": [{"text": "cross-modal retrieval", "domain": "embeddings-vectors"}, {"text": "embedding-space prediction", "domain": "embeddings-vectors"}, {"text": "frozen encoders", "domain": "ai-knowledge"}, {"text": "sim-to-real transfer", "domain": "rag-retrieval"}, {"text": "reranking", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Hex turns complex analysis into visual reports with GPT‑6 Astra", "title_zh": "Hex 借助 GPT-6 Astra 将复杂分析转化为可视化报告", "url": "https://openai.com/index/hex-gpt-6-astra", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI says GPT-6 Astra helps Hex's data agents turn answers into interactive visualizations that employees can share.", "keywords": [{"text": "data agents", "domain": "agent-architecture"}, {"text": "visualization", "domain": "ai-knowledge"}, {"text": "enterprise analytics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
