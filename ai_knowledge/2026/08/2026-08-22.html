@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-08-22</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agent</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">experience distillation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">dynamic prompting</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge triplets</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">local model evaluation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">demonstration memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent harness</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic retrieval self-evolving agent reasoning memory biomedical QA knowledge triplets">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.22132</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SSE-Bio: A Structured Self-Evolving Agent with Agentic Retrieval Policy for Multi-Hop Biomedical Reasoning<div class="title-zh">SSE-Bio：面向多跳生物医学推理、具备智能体检索策略的结构化自演化智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agent</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">reasoning memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">biomedical QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge triplets</span></div>
+  <div class="item-summary">SSE-Bio is a structured self-evolving agent for biomedical multi-hop QA that maintains a structured state, retrieves knowledge triplets and prior templates through a trainable proxy policy, and improves its reasoning memory through fine-grained template editing instead of globally rewriting instructions. Across three biomedical multi-hop QA benchmarks it beats the strongest self-evolving baseline by 6.56 absolute points on BioHopR.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22132v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="experience distillation agentic reinforcement learning experience bank exploration long-horizon tasks">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21946</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EDGE: Experience-Distillation for Guided Exploration in Agentic Reinforcement Learning<div class="title-zh">EDGE：面向智能体强化学习引导式探索的经验蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">experience distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience bank</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">exploration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon tasks</span></div>
+  <div class="item-summary">EDGE treats retrieved experiences as temporary training-time scaffolds, partitioning each rollout group into experience-conditioned and experience-free trajectories so only positive marginal gains are admitted, then distilling the induced behavior into the base policy with a reverse-KL objective. A co-evolutionary experience bank synthesizes guidance from emerging failure modes and prunes obsolete entries, and the method improves over strong RL baselines by up to 12.5 points across embodied, web and search-based QA tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21946v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic retrieval self-evolving agent reasoning memory biomedical QA knowledge triplets">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.22132</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SSE-Bio: A Structured Self-Evolving Agent with Agentic Retrieval Policy for Multi-Hop Biomedical Reasoning<div class="title-zh">SSE-Bio：面向多跳生物医学推理、具备智能体检索策略的结构化自演化智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agent</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">reasoning memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">biomedical QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge triplets</span></div>
+  <div class="item-summary">SSE-Bio is a structured self-evolving agent for biomedical multi-hop QA that maintains a structured state, retrieves knowledge triplets and prior templates through a trainable proxy policy, and improves its reasoning memory through fine-grained template editing instead of globally rewriting instructions. Across three biomedical multi-hop QA benchmarks it beats the strongest self-evolving baseline by 6.56 absolute points on BioHopR.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22132v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="experience distillation agentic reinforcement learning experience bank exploration long-horizon tasks">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21946</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EDGE: Experience-Distillation for Guided Exploration in Agentic Reinforcement Learning<div class="title-zh">EDGE：面向智能体强化学习引导式探索的经验蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">experience distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience bank</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">exploration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon tasks</span></div>
+  <div class="item-summary">EDGE treats retrieved experiences as temporary training-time scaffolds, partitioning each rollout group into experience-conditioned and experience-free trajectories so only positive marginal gains are admitted, then distilling the induced behavior into the base policy with a reverse-KL objective. A co-evolutionary experience bank synthesizes guidance from emerging failure modes and prunes obsolete entries, and the method improves over strong RL baselines by up to 12.5 points across embodied, web and search-based QA tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21946v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory group recommendation hash-table memory explainable recommendation GRPO">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21939</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Enhancing Group Recommendation with Memory-Augmented Reasoning in LLM Agent<div class="title-zh">AGR：面向群体推荐的 LLM 智能体记忆增强推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">group recommendation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hash-table memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">explainable recommendation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GRPO</span></div>
+  <div class="item-summary">AGR is an LLM-based agent for group recommendation whose memory module uses a token-based hash table to insert, update, retrieve, forget and summarize evolving group and user profiles, while its reasoning module performs multi-step consensus refinement and explainable recommendation. Trained with supervised fine-tuning followed by GRPO, it outperforms state-of-the-art methods on LastFM and Douban, and the model is open-sourced on Hugging Face.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21939v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="dynamic prompting demonstration memory prompt optimization human-in-the-loop validation parameter extraction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.22014</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DynaContext: Self-Improving Dynamic Contextualization of Optimized Prompts for Heterogeneous Parameter Extraction<div class="title-zh">DynaContext：为异构参数抽取实现优化提示词的自改进动态上下文化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">dynamic prompting</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">demonstration memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt optimization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">human-in-the-loop validation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parameter extraction</span></div>
+  <div class="item-summary">DynaContext pairs an offline-optimized extraction core with inference-time contextual adaptation, routing each item through internal, external or fallback evidence paths and composing an item-specific prompt from schema, evidence, unresolved fields and validated demonstrations. On 850 heterogeneous gold parameter facts it lifts average field-level F1 from 51.8% for an unoptimized control to 71.0% with both components, 17.3 F1 points above the deployed static-prompting pipeline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22014v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="local inference evaluation methodology energy efficiency mathematical reasoning open-weight models">
+  <div class="item-meta">
+    <span class="item-org">Alibaba</span>
+    <span class="arxiv-tag">arxiv:2608.22048</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">More Accurate or More Efficient? Evaluating Locally Deployed Compact Open-Weight Language Models for Mathematical Reasoning<div class="title-zh">更准确还是更高效？评估本地部署的紧凑开源权重语言模型的数学推理能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">local inference</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation methodology</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">energy efficiency</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-weight models</span></div>
+  <div class="item-summary">The paper documents a controlled procedure for evaluating locally hosted LLMs on mathematical reasoning that combines fixed inference settings, hierarchical answer extraction, failure-mode classification and per-question resource measurement with paired significance tests. In a preliminary study of Gemma3:4b, Phi3:3.8b and Qwen3:4b, no model dominates: Qwen3:4b is most accurate on two datasets, but Gemma3:4b returns roughly three times more correct answers per watt-hour on every dataset.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22048v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented RL emotional support dialogue GRPO preference data reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21925</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ESCRAG-R1: Retrieval-Augmented Reinforcement Learning for Emotional Support Conversation<div class="title-zh">ESCRAG-R1：面向情感支持对话的检索增强强化学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented RL</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">emotional support dialogue</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GRPO</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">preference data</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning</span></div>
+  <div class="item-summary">ESCRAG-R1 integrates retrieval-based psychological guidance into GRPO so that external knowledge becomes a learning signal stimulating explicit internal reasoning before generation. The authors also build ESC-Preference, a dataset produced with a Client-Counselor-Judge framework, and report that the method outperforms baselines by avoiding superficial splicing of clinical strategies and generic reassurance.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21925v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="on-device RAG clinical decision support speech recognition feasibility evaluation privacy-preserving AI">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2608.22108</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Development and Feasibility Evaluation of an Edge AI as Medical Device System for Breast Cancer Multidisciplinary Team Meetings<div class="title-zh">面向乳腺癌多学科团队会议的边缘 AI 医疗器械系统开发与可行性评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">on-device RAG</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical decision support</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">speech recognition</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">feasibility evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">privacy-preserving AI</span></div>
+  <div class="item-summary">The authors built a fully on-device pipeline that uses open-source ASR and LLMs on a single NVIDIA Jetson AGX Orin to transcribe breast cancer multidisciplinary team discussions, structure clinical information and generate NICE-grounded treatment recommendations via RAG. Evaluation on recorded and synthetic discussions found lower ASR word error rates and more MDT-concordant interventions than a proprietary cloud comparator.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.22108v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="MCP ChatGPT integration multi-agent workflows TypeScript">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">totec448-spec/chat-on-steroids<div class="title-zh">totec448-spec/chat-on-steroids：为 ChatGPT 提供跨平台本地 MCP 能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">ChatGPT integration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">TypeScript</span></div>
+  <div class="item-summary">The project is a TypeScript toolkit that provides cross-platform local MCP capabilities for ChatGPT, including Chrome integration and Goal, Compact and Resume features. It also supports durable multi-agent workflows.</div>
+  <a class="item-link" href="https://github.com/totec448-spec/chat-on-steroids" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-agent harness terminal agents open source local execution">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Munder Difflin – Agent harness to run an office of your clones<div class="title-zh">Munder Difflin：让你的克隆体开一间办公室的 Agent harness</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent harness</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">terminal agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">local execution</span></div>
+  <div class="item-summary">Munder Difflin is a free and open-source multi-agent harness that runs Claude Code, Codex, Gemini CLI and nine more terminal agents as an office of clones on the user's own machine, using subscriptions they already pay for. It now includes the Stapler for local dictation and meeting notes.</div>
+  <a class="item-link" href="https://munderdiffl.in/" target="_blank" rel="noopener">&rarr; munderdiffl.in</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-08-22", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 3, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 7, "tools_frameworks": 1, "blogs_insights": 1}}, "daily_keywords": [{"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "self-evolving agent", "domain": "agent-architecture"}, {"text": "experience distillation", "domain": "knowledge-lifecycle"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "dynamic prompting", "domain": "context-prompting"}, {"text": "knowledge triplets", "domain": "knowledge-graph"}, {"text": "local model evaluation", "domain": "evaluation-benchmark"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "demonstration memory", "domain": "agent-memory"}, {"text": "multi-agent harness", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "SSE-Bio: A Structured Self-Evolving Agent with Agentic Retrieval Policy for Multi-Hop Biomedical Reasoning", "title_zh": "SSE-Bio：面向多跳生物医学推理、具备智能体检索策略的结构化自演化智能体", "url": "http://arxiv.org/abs/2608.22132v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.22132", "summary": "SSE-Bio is a structured self-evolving agent for biomedical multi-hop QA that maintains a structured state, retrieves knowledge triplets and prior templates through a trainable proxy policy, and improves its reasoning memory through fine-grained template editing instead of globally rewriting instructions. Across three biomedical multi-hop QA benchmarks it beats the strongest self-evolving baseline by 6.56 absolute points on BioHopR.", "keywords": [{"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "self-evolving agent", "domain": "agent-architecture"}, {"text": "reasoning memory", "domain": "agent-memory"}, {"text": "biomedical QA", "domain": "ai-knowledge"}, {"text": "knowledge triplets", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true}, {"title": "EDGE: Experience-Distillation for Guided Exploration in Agentic Reinforcement Learning", "title_zh": "EDGE：面向智能体强化学习引导式探索的经验蒸馏", "url": "http://arxiv.org/abs/2608.21946v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21946", "summary": "EDGE treats retrieved experiences as temporary training-time scaffolds, partitioning each rollout group into experience-conditioned and experience-free trajectories so only positive marginal gains are admitted, then distilling the induced behavior into the base policy with a reverse-KL objective. A co-evolutionary experience bank synthesizes guidance from emerging failure modes and prunes obsolete entries, and the method improves over strong RL baselines by up to 12.5 points across embodied, web and search-based QA tasks.", "keywords": [{"text": "experience distillation", "domain": "knowledge-lifecycle"}, {"text": "agentic reinforcement learning", "domain": "agent-architecture"}, {"text": "experience bank", "domain": "agent-memory"}, {"text": "exploration", "domain": "cognition-reasoning"}, {"text": "long-horizon tasks", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "SSE-Bio: A Structured Self-Evolving Agent with Agentic Retrieval Policy for Multi-Hop Biomedical Reasoning", "title_zh": "SSE-Bio：面向多跳生物医学推理、具备智能体检索策略的结构化自演化智能体", "url": "http://arxiv.org/abs/2608.22132v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.22132", "summary": "SSE-Bio is a structured self-evolving agent for biomedical multi-hop QA that maintains a structured state, retrieves knowledge triplets and prior templates through a trainable proxy policy, and improves its reasoning memory through fine-grained template editing instead of globally rewriting instructions. Across three biomedical multi-hop QA benchmarks it beats the strongest self-evolving baseline by 6.56 absolute points on BioHopR.", "keywords": [{"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "self-evolving agent", "domain": "agent-architecture"}, {"text": "reasoning memory", "domain": "agent-memory"}, {"text": "biomedical QA", "domain": "ai-knowledge"}, {"text": "knowledge triplets", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true}, {"title": "EDGE: Experience-Distillation for Guided Exploration in Agentic Reinforcement Learning", "title_zh": "EDGE：面向智能体强化学习引导式探索的经验蒸馏", "url": "http://arxiv.org/abs/2608.21946v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21946", "summary": "EDGE treats retrieved experiences as temporary training-time scaffolds, partitioning each rollout group into experience-conditioned and experience-free trajectories so only positive marginal gains are admitted, then distilling the induced behavior into the base policy with a reverse-KL objective. A co-evolutionary experience bank synthesizes guidance from emerging failure modes and prunes obsolete entries, and the method improves over strong RL baselines by up to 12.5 points across embodied, web and search-based QA tasks.", "keywords": [{"text": "experience distillation", "domain": "knowledge-lifecycle"}, {"text": "agentic reinforcement learning", "domain": "agent-architecture"}, {"text": "experience bank", "domain": "agent-memory"}, {"text": "exploration", "domain": "cognition-reasoning"}, {"text": "long-horizon tasks", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Enhancing Group Recommendation with Memory-Augmented Reasoning in LLM Agent", "title_zh": "AGR：面向群体推荐的 LLM 智能体记忆增强推理", "url": "http://arxiv.org/abs/2608.21939v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21939", "summary": "AGR is an LLM-based agent for group recommendation whose memory module uses a token-based hash table to insert, update, retrieve, forget and summarize evolving group and user profiles, while its reasoning module performs multi-step consensus refinement and explainable recommendation. Trained with supervised fine-tuning followed by GRPO, it outperforms state-of-the-art methods on LastFM and Douban, and the model is open-sourced on Hugging Face.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "group recommendation", "domain": "ai-knowledge"}, {"text": "hash-table memory", "domain": "agent-memory"}, {"text": "explainable recommendation", "domain": "cognition-reasoning"}, {"text": "GRPO", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "DynaContext: Self-Improving Dynamic Contextualization of Optimized Prompts for Heterogeneous Parameter Extraction", "title_zh": "DynaContext：为异构参数抽取实现优化提示词的自改进动态上下文化", "url": "http://arxiv.org/abs/2608.22014v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.22014", "summary": "DynaContext pairs an offline-optimized extraction core with inference-time contextual adaptation, routing each item through internal, external or fallback evidence paths and composing an item-specific prompt from schema, evidence, unresolved fields and validated demonstrations. On 850 heterogeneous gold parameter facts it lifts average field-level F1 from 51.8% for an unoptimized control to 71.0% with both components, 17.3 F1 points above the deployed static-prompting pipeline.", "keywords": [{"text": "dynamic prompting", "domain": "context-prompting"}, {"text": "demonstration memory", "domain": "agent-memory"}, {"text": "prompt optimization", "domain": "context-prompting"}, {"text": "human-in-the-loop validation", "domain": "knowledge-lifecycle"}, {"text": "parameter extraction", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "More Accurate or More Efficient? Evaluating Locally Deployed Compact Open-Weight Language Models for Mathematical Reasoning", "title_zh": "更准确还是更高效？评估本地部署的紧凑开源权重语言模型的数学推理能力", "url": "http://arxiv.org/abs/2608.22048v1", "source": "arXiv", "section": "research_papers", "organization": "Alibaba", "language": "en", "arxiv_id": "2608.22048", "summary": "The paper documents a controlled procedure for evaluating locally hosted LLMs on mathematical reasoning that combines fixed inference settings, hierarchical answer extraction, failure-mode classification and per-question resource measurement with paired significance tests. In a preliminary study of Gemma3:4b, Phi3:3.8b and Qwen3:4b, no model dominates: Qwen3:4b is most accurate on two datasets, but Gemma3:4b returns roughly three times more correct answers per watt-hour on every dataset.", "keywords": [{"text": "local inference", "domain": "ai-knowledge"}, {"text": "evaluation methodology", "domain": "evaluation-benchmark"}, {"text": "energy efficiency", "domain": "evaluation-benchmark"}, {"text": "mathematical reasoning", "domain": "cognition-reasoning"}, {"text": "open-weight models", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "ESCRAG-R1: Retrieval-Augmented Reinforcement Learning for Emotional Support Conversation", "title_zh": "ESCRAG-R1：面向情感支持对话的检索增强强化学习", "url": "http://arxiv.org/abs/2608.21925v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21925", "summary": "ESCRAG-R1 integrates retrieval-based psychological guidance into GRPO so that external knowledge becomes a learning signal stimulating explicit internal reasoning before generation. The authors also build ESC-Preference, a dataset produced with a Client-Counselor-Judge framework, and report that the method outperforms baselines by avoiding superficial splicing of clinical strategies and generic reassurance.", "keywords": [{"text": "retrieval-augmented RL", "domain": "rag-retrieval"}, {"text": "emotional support dialogue", "domain": "ai-knowledge"}, {"text": "GRPO", "domain": "agent-architecture"}, {"text": "preference data", "domain": "evaluation-benchmark"}, {"text": "reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Development and Feasibility Evaluation of an Edge AI as Medical Device System for Breast Cancer Multidisciplinary Team Meetings", "title_zh": "面向乳腺癌多学科团队会议的边缘 AI 医疗器械系统开发与可行性评估", "url": "http://arxiv.org/abs/2608.22108v2", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2608.22108", "summary": "The authors built a fully on-device pipeline that uses open-source ASR and LLMs on a single NVIDIA Jetson AGX Orin to transcribe breast cancer multidisciplinary team discussions, structure clinical information and generate NICE-grounded treatment recommendations via RAG. Evaluation on recorded and synthetic discussions found lower ASR word error rates and more MDT-concordant interventions than a proprietary cloud comparator.", "keywords": [{"text": "on-device RAG", "domain": "rag-retrieval"}, {"text": "clinical decision support", "domain": "ai-knowledge"}, {"text": "speech recognition", "domain": "ai-knowledge"}, {"text": "feasibility evaluation", "domain": "evaluation-benchmark"}, {"text": "privacy-preserving AI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "totec448-spec/chat-on-steroids", "title_zh": "totec448-spec/chat-on-steroids：为 ChatGPT 提供跨平台本地 MCP 能力", "url": "https://github.com/totec448-spec/chat-on-steroids", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "The project is a TypeScript toolkit that provides cross-platform local MCP capabilities for ChatGPT, including Chrome integration and Goal, Compact and Resume features. It also supports durable multi-agent workflows.", "keywords": [{"text": "MCP", "domain": "agent-architecture"}, {"text": "ChatGPT integration", "domain": "agent-architecture"}, {"text": "multi-agent workflows", "domain": "agent-architecture"}, {"text": "TypeScript", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Munder Difflin – Agent harness to run an office of your clones", "title_zh": "Munder Difflin：让你的克隆体开一间办公室的 Agent harness", "url": "https://munderdiffl.in/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Munder Difflin is a free and open-source multi-agent harness that runs Claude Code, Codex, Gemini CLI and nine more terminal agents as an office of clones on the user's own machine, using subscriptions they already pay for. It now includes the Stapler for local dictation and meeting notes.", "keywords": [{"text": "multi-agent harness", "domain": "agent-architecture"}, {"text": "terminal agents", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}, {"text": "local execution", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-08-10</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools, Frameworks & Open Source</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">5</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:40%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context extension</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent reasoning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding geometry</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">local agent workflows</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ARC-AGI</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">自演化智能体</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">长上下文</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">嵌入安全</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="retrieval-augmented generation self-evolving agents auto-prompting production evaluation enterprise agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.10224</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Self-evolving Agentic Customer Support System at LinkedIn<div class="title-zh">LinkedIn 的自演化智能体客服系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">auto-prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">production evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">enterprise agents</span></div>
+  <div class="item-summary">LinkedIn describes a production support system that combines retrieval-augmented generation with evolutionary auto-prompting and a modular evaluation framework, treating prompts, retrieval and evaluation as a closed-loop versioned workflow without retraining foundation models. In a two-week user-randomized A/B test it raised QA self-serve by 9.0 percentage points, cancellation self-serve by 4.8 points and routing accuracy by 30.6 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.10224v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="in-context learning recurrent memory latent reasoning ARC-AGI cost efficiency">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.09888</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BDH-CQ: In-Context Learning with Recurrent Latent Reasoning<div class="title-zh">BDH-CQ：结合上下文学习与循环潜在推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">in-context learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">recurrent memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ARC-AGI</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cost efficiency</span></div>
+  <div class="item-summary">BDH-CQ combines in-context learning with recurrent latent reasoning, letting inputs presented at inference time continuously update a recurrent memory and solving queries through iterative computation in a high-dimensional latent space without verbalizing intermediate steps. A 150M-parameter configuration reaches 29.5% pass@2 on ARC-AGI-1 at a computed cost of $0.0007 per task, which the authors say sets a new state of the art on the benchmark's cost-accuracy Pareto frontier.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.09888v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-context extension architectural ablation attention sinks open model suite">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.10296</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension<div class="title-zh">地基上的裂缝：看似微小的架构选择会影响长上下文扩展</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context extension</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">architectural ablation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">attention sinks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open model suite</span></div>
+  <div class="item-summary">The authors show that four minor architectural choices used by at least one of the Olmo, Llama and Qwen dense families compound to hurt long-context extensibility, with three or more combined dropping downstream performance by up to 47% in ways short-context loss does not reveal. After more than 170,000 GPU hours of controlled ablations they release OlmPool, 26 comparable 7B models with checkpoints before and after long-context extension.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.10296v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="open model release local agents 30B parameters agentic workflows">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Muse Glimmer: 30B-parameter model optimized for always-on local agent workflows<div class="title-zh">Muse Glimmer：面向常驻本地智能体工作流的 30B 参数模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open model release</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">local agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">30B parameters</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span></div>
+  <div class="item-summary">Meta Superintelligence Labs released Muse Glimmer, a 30-billion-parameter open agentic model optimized for always-on local agent workflows on consumer hardware.</div>
+  <a class="item-link" href="https://research.meta.ai/blog/introducing-muse-glimmer-open-agentic-model" target="_blank" rel="noopener">&rarr; research.meta.ai</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="retrieval-augmented generation self-evolving agents auto-prompting production evaluation enterprise agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.10224</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Self-evolving Agentic Customer Support System at LinkedIn<div class="title-zh">LinkedIn 的自演化智能体客服系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">auto-prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">production evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">enterprise agents</span></div>
+  <div class="item-summary">LinkedIn describes a production support system that combines retrieval-augmented generation with evolutionary auto-prompting and a modular evaluation framework, treating prompts, retrieval and evaluation as a closed-loop versioned workflow without retraining foundation models. In a two-week user-randomized A/B test it raised QA self-serve by 9.0 percentage points, cancellation self-serve by 4.8 points and routing accuracy by 30.6 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.10224v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent behavior cooperative equilibrium iterated prisoner's dilemma cross-lab comparison">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2608.10262</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Not a Monolith: Lab-Level Divergence in the Cooperative Equilibria of Chinese Frontier LLM Agents<div class="title-zh">并非铁板一块：中国前沿 LLM 智能体合作均衡中的实验室级差异</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent behavior</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">cooperative equilibrium</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">iterated prisoner's dilemma</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cross-lab comparison</span></div>
+  <div class="item-summary">The study compares four Chinese frontier models — DeepSeek V4 Pro, Qwen3-Max, Kimi K2.5 and GLM-5.1 — in an evolutionary Iterated Prisoner's Dilemma while holding the strategy-to-code converter fixed across labs. It reports that the labs differ significantly in aggressive-equilibrium proportion, from 1% for Qwen3-Max to 9% for DeepSeek V4 Pro, and that within-ecosystem variation exceeds the average gap between the Chinese and Western ecosystems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.10262v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="in-context learning recurrent memory latent reasoning ARC-AGI cost efficiency">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.09888</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BDH-CQ: In-Context Learning with Recurrent Latent Reasoning<div class="title-zh">BDH-CQ：结合上下文学习与循环潜在推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">in-context learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">recurrent memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ARC-AGI</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cost efficiency</span></div>
+  <div class="item-summary">BDH-CQ combines in-context learning with recurrent latent reasoning, letting inputs presented at inference time continuously update a recurrent memory and solving queries through iterative computation in a high-dimensional latent space without verbalizing intermediate steps. A 150M-parameter configuration reaches 29.5% pass@2 on ARC-AGI-1 at a computed cost of $0.0007 per task, which the authors say sets a new state of the art on the benchmark's cost-accuracy Pareto frontier.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.09888v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="contrastive embeddings embedding manifold adversarial attack similarity structure verification systems">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.10237</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Decision Boundaries: Relational Geometry Attacks on Contrastive Embedding Manifolds<div class="title-zh">超越决策边界：对比嵌入流形上的关系几何攻击</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">contrastive embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding manifold</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">adversarial attack</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">similarity structure</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verification systems</span></div>
+  <div class="item-summary">The paper introduces a geometry-aware adversarial attack that corrupts relational structure in contrastive embedding manifolds by pushing positive pairs apart and pulling negative pairs closer, using an offline-trained generator to produce perturbations in a single forward pass. On the Markmatch verification system it reduces accuracy from 95.4% to 38.6% and completely reverses the positive-negative similarity structure.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.10237v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-context extension architectural ablation attention sinks open model suite">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.10296</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension<div class="title-zh">地基上的裂缝：看似微小的架构选择会影响长上下文扩展</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context extension</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">architectural ablation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">attention sinks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open model suite</span></div>
+  <div class="item-summary">The authors show that four minor architectural choices used by at least one of the Olmo, Llama and Qwen dense families compound to hurt long-context extensibility, with three or more combined dropping downstream performance by up to 47% in ways short-context loss does not reveal. After more than 170,000 GPU hours of controlled ablations they release OlmPool, 26 comparable 7B models with checkpoints before and after long-context extension.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.10296v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools, Frameworks & Open Source
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent workspace filesystem layering checkpointing parallel agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Ephemeral-AI-Lab/layerfs<div class="title-zh">Ephemeral-AI-Lab/layerfs：为每个智能体提供可写文件系统工作区</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent workspace</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">filesystem layering</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">checkpointing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">parallel agents</span></div>
+  <div class="item-summary">LayerFS gives each AI agent a complete, writable filesystem workspace layered over shared committed history without copying the base, letting agents work in parallel, commit changes as deduplicated checkpoints, and branch, rewind or merge. It is written in Rust.</div>
+  <a class="item-link" href="https://github.com/Ephemeral-AI-Lab/layerfs" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="open model release local agents 30B parameters agentic workflows">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Muse Glimmer: 30B-parameter model optimized for always-on local agent workflows<div class="title-zh">Muse Glimmer：面向常驻本地智能体工作流的 30B 参数模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open model release</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">local agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">30B parameters</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span></div>
+  <div class="item-summary">Meta Superintelligence Labs released Muse Glimmer, a 30-billion-parameter open agentic model optimized for always-on local agent workflows on consumer hardware.</div>
+  <a class="item-link" href="https://research.meta.ai/blog/introducing-muse-glimmer-open-agentic-model" target="_blank" rel="noopener">&rarr; research.meta.ai</a>
+</div>
+<div class="item-card" data-keywords="tiny language model edge inference 2-bit quantization agentic LLM">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: Needle2: 14MB agentic LLM for phones, wearables, smart home and robots<div class="title-zh">Show HN：Needle2——面向手机、可穿戴设备、智能家居和机器人的 14MB 智能体 LLM</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">tiny language model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">edge inference</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">2-bit quantization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic LLM</span></div>
+  <div class="item-summary">Cactus released Needle 2, a 14MB agentic LLM with 45 million parameters at 2-bit compression that runs a full session in 28MB of RAM, decoding at 500 tokens per second on a Raspberry Pi 5 and 300–1,500 tokens per second on VR headsets and sub-$200 phones.</div>
+  <a class="item-link" href="https://cactuscompute.com/needle" target="_blank" rel="noopener">&rarr; cactuscompute.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="AGENTS.md agent skills prompting conventions AI culture">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Humanising LLM Outputs Is Dumb<div class="title-zh">把 LLM 输出“人性化”很愚蠢</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">AGENTS.md</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompting conventions</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI culture</span></div>
+  <div class="item-summary">The blog post examines signals of shifting AI culture on X, GitHub and Hacker News, including agent skills and AGENTS.md instructions that ask models to answer only in ASD-STE100 Simplified Technical English, and argues that humanising LLM outputs is unwise.</div>
+  <a class="item-link" href="https://kuber.studio/blog/Reflections/Humanising-LLM-Outputs-is-Actually-Dumb" target="_blank" rel="noopener">&rarr; kuber.studio</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-08-10", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 3, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 5, "tools_frameworks": 1, "models_embeddings": 2, "blogs_insights": 1}}, "daily_keywords": [{"text": "self-evolving agents", "domain": "knowledge-lifecycle"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "long-context extension", "domain": "context-prompting"}, {"text": "latent reasoning", "domain": "cognition-reasoning"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "embedding geometry", "domain": "embeddings-vectors"}, {"text": "local agent workflows", "domain": "agent-architecture"}, {"text": "ARC-AGI", "domain": "evaluation-benchmark"}, {"text": "自演化智能体", "domain": "knowledge-lifecycle"}, {"text": "长上下文", "domain": "context-prompting"}, {"text": "嵌入安全", "domain": "embeddings-vectors"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Self-evolving Agentic Customer Support System at LinkedIn", "title_zh": "LinkedIn 的自演化智能体客服系统", "url": "http://arxiv.org/abs/2608.10224v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.10224", "summary": "LinkedIn describes a production support system that combines retrieval-augmented generation with evolutionary auto-prompting and a modular evaluation framework, treating prompts, retrieval and evaluation as a closed-loop versioned workflow without retraining foundation models. In a two-week user-randomized A/B test it raised QA self-serve by 9.0 percentage points, cancellation self-serve by 4.8 points and routing accuracy by 30.6 points.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "self-evolving agents", "domain": "knowledge-lifecycle"}, {"text": "auto-prompting", "domain": "context-prompting"}, {"text": "production evaluation", "domain": "evaluation-benchmark"}, {"text": "enterprise agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "BDH-CQ: In-Context Learning with Recurrent Latent Reasoning", "title_zh": "BDH-CQ：结合上下文学习与循环潜在推理", "url": "http://arxiv.org/abs/2608.09888v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.09888", "summary": "BDH-CQ combines in-context learning with recurrent latent reasoning, letting inputs presented at inference time continuously update a recurrent memory and solving queries through iterative computation in a high-dimensional latent space without verbalizing intermediate steps. A 150M-parameter configuration reaches 29.5% pass@2 on ARC-AGI-1 at a computed cost of $0.0007 per task, which the authors say sets a new state of the art on the benchmark's cost-accuracy Pareto frontier.", "keywords": [{"text": "in-context learning", "domain": "context-prompting"}, {"text": "recurrent memory", "domain": "agent-memory"}, {"text": "latent reasoning", "domain": "cognition-reasoning"}, {"text": "ARC-AGI", "domain": "evaluation-benchmark"}, {"text": "cost efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension", "title_zh": "地基上的裂缝：看似微小的架构选择会影响长上下文扩展", "url": "http://arxiv.org/abs/2608.10296v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.10296", "summary": "The authors show that four minor architectural choices used by at least one of the Olmo, Llama and Qwen dense families compound to hurt long-context extensibility, with three or more combined dropping downstream performance by up to 47% in ways short-context loss does not reveal. After more than 170,000 GPU hours of controlled ablations they release OlmPool, 26 comparable 7B models with checkpoints before and after long-context extension.", "keywords": [{"text": "long-context extension", "domain": "context-prompting"}, {"text": "architectural ablation", "domain": "ai-knowledge"}, {"text": "attention sinks", "domain": "context-prompting"}, {"text": "open model suite", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Muse Glimmer: 30B-parameter model optimized for always-on local agent workflows", "title_zh": "Muse Glimmer：面向常驻本地智能体工作流的 30B 参数模型", "url": "https://research.meta.ai/blog/introducing-muse-glimmer-open-agentic-model", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "Meta Superintelligence Labs released Muse Glimmer, a 30-billion-parameter open agentic model optimized for always-on local agent workflows on consumer hardware.", "keywords": [{"text": "open model release", "domain": "ai-knowledge"}, {"text": "local agents", "domain": "agent-architecture"}, {"text": "30B parameters", "domain": "ai-knowledge"}, {"text": "agentic workflows", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Self-evolving Agentic Customer Support System at LinkedIn", "title_zh": "LinkedIn 的自演化智能体客服系统", "url": "http://arxiv.org/abs/2608.10224v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.10224", "summary": "LinkedIn describes a production support system that combines retrieval-augmented generation with evolutionary auto-prompting and a modular evaluation framework, treating prompts, retrieval and evaluation as a closed-loop versioned workflow without retraining foundation models. In a two-week user-randomized A/B test it raised QA self-serve by 9.0 percentage points, cancellation self-serve by 4.8 points and routing accuracy by 30.6 points.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "self-evolving agents", "domain": "knowledge-lifecycle"}, {"text": "auto-prompting", "domain": "context-prompting"}, {"text": "production evaluation", "domain": "evaluation-benchmark"}, {"text": "enterprise agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Not a Monolith: Lab-Level Divergence in the Cooperative Equilibria of Chinese Frontier LLM Agents", "title_zh": "并非铁板一块：中国前沿 LLM 智能体合作均衡中的实验室级差异", "url": "http://arxiv.org/abs/2608.10262v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2608.10262", "summary": "The study compares four Chinese frontier models — DeepSeek V4 Pro, Qwen3-Max, Kimi K2.5 and GLM-5.1 — in an evolutionary Iterated Prisoner's Dilemma while holding the strategy-to-code converter fixed across labs. It reports that the labs differ significantly in aggressive-equilibrium proportion, from 1% for Qwen3-Max to 9% for DeepSeek V4 Pro, and that within-ecosystem variation exceeds the average gap between the Chinese and Western ecosystems.", "keywords": [{"text": "agent behavior", "domain": "agent-architecture"}, {"text": "cooperative equilibrium", "domain": "cognition-reasoning"}, {"text": "iterated prisoner's dilemma", "domain": "cognition-reasoning"}, {"text": "cross-lab comparison", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "BDH-CQ: In-Context Learning with Recurrent Latent Reasoning", "title_zh": "BDH-CQ：结合上下文学习与循环潜在推理", "url": "http://arxiv.org/abs/2608.09888v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.09888", "summary": "BDH-CQ combines in-context learning with recurrent latent reasoning, letting inputs presented at inference time continuously update a recurrent memory and solving queries through iterative computation in a high-dimensional latent space without verbalizing intermediate steps. A 150M-parameter configuration reaches 29.5% pass@2 on ARC-AGI-1 at a computed cost of $0.0007 per task, which the authors say sets a new state of the art on the benchmark's cost-accuracy Pareto frontier.", "keywords": [{"text": "in-context learning", "domain": "context-prompting"}, {"text": "recurrent memory", "domain": "agent-memory"}, {"text": "latent reasoning", "domain": "cognition-reasoning"}, {"text": "ARC-AGI", "domain": "evaluation-benchmark"}, {"text": "cost efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Beyond Decision Boundaries: Relational Geometry Attacks on Contrastive Embedding Manifolds", "title_zh": "超越决策边界：对比嵌入流形上的关系几何攻击", "url": "http://arxiv.org/abs/2608.10237v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.10237", "summary": "The paper introduces a geometry-aware adversarial attack that corrupts relational structure in contrastive embedding manifolds by pushing positive pairs apart and pulling negative pairs closer, using an offline-trained generator to produce perturbations in a single forward pass. On the Markmatch verification system it reduces accuracy from 95.4% to 38.6% and completely reverses the positive-negative similarity structure.", "keywords": [{"text": "contrastive embeddings", "domain": "embeddings-vectors"}, {"text": "embedding manifold", "domain": "embeddings-vectors"}, {"text": "adversarial attack", "domain": "ai-knowledge"}, {"text": "similarity structure", "domain": "rag-retrieval"}, {"text": "verification systems", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Cracks in the Foundation: Seemingly Minor Architectural Choices Impact Long Context Extension", "title_zh": "地基上的裂缝：看似微小的架构选择会影响长上下文扩展", "url": "http://arxiv.org/abs/2608.10296v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.10296", "summary": "The authors show that four minor architectural choices used by at least one of the Olmo, Llama and Qwen dense families compound to hurt long-context extensibility, with three or more combined dropping downstream performance by up to 47% in ways short-context loss does not reveal. After more than 170,000 GPU hours of controlled ablations they release OlmPool, 26 comparable 7B models with checkpoints before and after long-context extension.", "keywords": [{"text": "long-context extension", "domain": "context-prompting"}, {"text": "architectural ablation", "domain": "ai-knowledge"}, {"text": "attention sinks", "domain": "context-prompting"}, {"text": "open model suite", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "tools_frameworks", "label": "Tools, Frameworks & Open Source", "items": [{"title": "Ephemeral-AI-Lab/layerfs", "title_zh": "Ephemeral-AI-Lab/layerfs：为每个智能体提供可写文件系统工作区", "url": "https://github.com/Ephemeral-AI-Lab/layerfs", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "LayerFS gives each AI agent a complete, writable filesystem workspace layered over shared committed history without copying the base, letting agents work in parallel, commit changes as deduplicated checkpoints, and branch, rewind or merge. It is written in Rust.", "keywords": [{"text": "agent workspace", "domain": "agent-architecture"}, {"text": "filesystem layering", "domain": "ai-knowledge"}, {"text": "checkpointing", "domain": "knowledge-lifecycle"}, {"text": "parallel agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Muse Glimmer: 30B-parameter model optimized for always-on local agent workflows", "title_zh": "Muse Glimmer：面向常驻本地智能体工作流的 30B 参数模型", "url": "https://research.meta.ai/blog/introducing-muse-glimmer-open-agentic-model", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "Meta Superintelligence Labs released Muse Glimmer, a 30-billion-parameter open agentic model optimized for always-on local agent workflows on consumer hardware.", "keywords": [{"text": "open model release", "domain": "ai-knowledge"}, {"text": "local agents", "domain": "agent-architecture"}, {"text": "30B parameters", "domain": "ai-knowledge"}, {"text": "agentic workflows", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Show HN: Needle2: 14MB agentic LLM for phones, wearables, smart home and robots", "title_zh": "Show HN：Needle2——面向手机、可穿戴设备、智能家居和机器人的 14MB 智能体 LLM", "url": "https://cactuscompute.com/needle", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "Cactus released Needle 2, a 14MB agentic LLM with 45 million parameters at 2-bit compression that runs a full session in 28MB of RAM, decoding at 500 tokens per second on a Raspberry Pi 5 and 300–1,500 tokens per second on VR headsets and sub-$200 phones.", "keywords": [{"text": "tiny language model", "domain": "ai-knowledge"}, {"text": "edge inference", "domain": "agent-architecture"}, {"text": "2-bit quantization", "domain": "ai-knowledge"}, {"text": "agentic LLM", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Humanising LLM Outputs Is Dumb", "title_zh": "把 LLM 输出“人性化”很愚蠢", "url": "https://kuber.studio/blog/Reflections/Humanising-LLM-Outputs-is-Actually-Dumb", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "The blog post examines signals of shifting AI culture on X, GitHub and Hacker News, including agent skills and AGENTS.md instructions that ask models to answer only in ASD-STE100 Simplified Technical English, and argues that humanising LLM outputs is unwise.", "keywords": [{"text": "AGENTS.md", "domain": "context-prompting"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "prompting conventions", "domain": "context-prompting"}, {"text": "AI culture", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-08-13</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry & Deployments</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>5 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">5</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:40%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:40%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">claim verification</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">video embedding retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">sparse MoE</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI-native office agent</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">智能体记忆</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">智能体评测</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="project memory knowledge graph MCP interface supersession neurosymbolic retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.13662</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Ontology-Grounded Project Memory for Coding Agents<div class="title-zh">面向编码智能体的本体锚定项目记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">project memory</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP interface</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">supersession</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">neurosymbolic retrieval</span></div>
+  <div class="item-summary">MOOSEDev gives coding agents structured, ontology-grounded project memory, capturing architectural decisions, lessons, constraints and rationales in a knowledge graph exposed through an MCP interface, with lifecycle status, provenance and supersession links. On 835 typed records it returned the expected answer set almost fully (0.98–1.00) for supersession, set-completeness and negation questions, versus 6%–27% for a production vector-memory tool's top-k retrieval.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.13662v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sparse mixture-of-experts model scaling WeChat assistant parameter activation">
+  <div class="item-meta">
+    <span class="item-org">Tencent</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">WeChat's Xiaowei Agent Runs on WeLM — a Sparse MoE Model Quietly Growing to 617 Billion Parameters<div class="title-zh">微信“小薇”智能体基于 WeLM：稀疏 MoE 模型悄然增至 6170 亿参数</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">sparse mixture-of-experts</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model scaling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">WeChat assistant</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parameter activation</span></div>
+  <div class="item-summary">WeChat has begun gray-testing Xiaowei, a native AI assistant inside the app powered by WeLM. According to Pandaily, WeLM has moved to a sparse mixture-of-experts architecture whose 617-billion-parameter version activates just 23 billion parameters per token.</div>
+  <a class="item-link" href="https://pandaily.com/wechat-xiaowei-agent-welm-moe-model-hidden-decoding-aug2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="curriculum-grounded RAG hierarchical knowledge base multi-agent pipeline source-attributed verification assessment generation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.13708</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TeachMateGPT: A Multi-Agent Knowledge-Grounded Framework for Pedagogical Assessment Generation from Science Curriculum Materials<div class="title-zh">TeachMateGPT：基于科学课程材料生成教学评估的多智能体知识锚定框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">curriculum-grounded RAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">hierarchical knowledge base</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent pipeline</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">source-attributed verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">assessment generation</span></div>
+  <div class="item-summary">TeachMateGPT is a multi-agent system for generating textbook-grounded science assessments, combining a hierarchical curriculum knowledge base (COPE), a fail-closed staged agent pipeline, and a source-attributed verification protocol (SAVER). It raises faithfulness from 0.68 to 0.96 and answer relevancy from 0.60 to 0.89 over a vanilla RAG baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.13708v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="driving-video retrieval multimodal embeddings trajectory-guided learning GRPO">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.13495</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TraVEL: Trajectory-Guided Video Embedding Learning for Driving-Video Retrieval<div class="title-zh">TraVEL：面向驾驶视频检索的轨迹引导视频嵌入学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">driving-video retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">trajectory-guided learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">TraVEL fine-tunes a general-purpose multimodal embedding model for driving-video retrieval, using ego-trajectory similarity as a reward in GRPO because caption supervision alone misses fine-grained motion understanding. Relative to supervised fine-tuning it raises longitudinal and lateral mAP by 9.8 and 4.7 points at 2B, and by 7.2 and 1.5 points at 8B.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.13495v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented design multi-agent workflow analog circuit design tri-agent feedback">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.13472</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AaLLM: An End-to-End Analog Circuit Design Framework from Topology Generation to Sizing Using Large Language Models<div class="title-zh">AaLLM：从拓扑生成到尺寸优化的端到端模拟电路设计框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented design</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent workflow</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">analog circuit design</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tri-agent feedback</span></div>
+  <div class="item-summary">AaLLM is an open-source multi-agent LLM workflow that turns user specifications into a netlist, covering both topology generation and circuit sizing. It builds a RAG knowledge base from papers and textbooks and uses Designer, Critic and Evaluator agents, reporting 3x–4.5x fewer SPICE calls at inference and 40x lower wall-clock time than existing multi-agent pipelines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.13472v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="claim-level verification adversarial debate hallucination risk cross-modal grounding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.13706</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CLAIR-Fin: An Adversarial Multi-Agent Framework for Claim-Level Verification and Adaptive Debate in Cross-Modal Financial QA<div class="title-zh">CLAIR-Fin：跨模态金融问答中主张级验证与自适应辩论的对抗多智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">claim-level verification</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">adversarial debate</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination risk</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cross-modal grounding</span></div>
+  <div class="item-summary">CLAIR-Fin is a nine-agent framework that decomposes financial questions into atomic claims held in a typed Claim Ledger, with claim-type-specific evidence authority, hand-off verification and adaptive adversarial debate. On the 500-question BB-FinQA-X set it raises faithfulness from 0.780 to 0.889 over single-pass RAG, abstaining on 5.4% of questions when evidence is insufficient.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.13706v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="project memory knowledge graph MCP interface supersession neurosymbolic retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.13662</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Ontology-Grounded Project Memory for Coding Agents<div class="title-zh">面向编码智能体的本体锚定项目记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">project memory</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP interface</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">supersession</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">neurosymbolic retrieval</span></div>
+  <div class="item-summary">MOOSEDev gives coding agents structured, ontology-grounded project memory, capturing architectural decisions, lessons, constraints and rationales in a knowledge graph exposed through an MCP interface, with lifecycle status, provenance and supersession links. On 835 typed records it returned the expected answer set almost fully (0.98–1.00) for supersession, set-completeness and negation questions, versus 6%–27% for a production vector-memory tool's top-k retrieval.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.13662v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="clinical multi-agent orchestration prompt decomposition traceable reasoning open-source framework">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.13476</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MARC v1: An Open-Source Multi-Agent Framework for Clinical AI Reasoning and Coordination<div class="title-zh">MARC v1：面向临床 AI 推理与协作的开源多智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">clinical multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt decomposition</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">traceable reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">open-source framework</span></div>
+  <div class="item-summary">MARC is an open-source framework that replaces monolithic LLM prompting with deterministic multi-agent orchestration for clinical reasoning, coordinating extraction, reasoning, answer-generation and evaluation agents with traceable intermediate outputs. It adds a Decomposer that generates task-specific agent prompts from plain language and is configured entirely through YAML, with API-based and local CPU deployments.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.13476v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="sparse mixture-of-experts model scaling WeChat assistant parameter activation">
+  <div class="item-meta">
+    <span class="item-org">Tencent</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">WeChat's Xiaowei Agent Runs on WeLM — a Sparse MoE Model Quietly Growing to 617 Billion Parameters<div class="title-zh">微信“小薇”智能体基于 WeLM：稀疏 MoE 模型悄然增至 6170 亿参数</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">sparse mixture-of-experts</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model scaling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">WeChat assistant</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parameter activation</span></div>
+  <div class="item-summary">WeChat has begun gray-testing Xiaowei, a native AI assistant inside the app powered by WeLM. According to Pandaily, WeLM has moved to a sparse mixture-of-experts architecture whose 617-billion-parameter version activates just 23 billion parameters per token.</div>
+  <a class="item-link" href="https://pandaily.com/wechat-xiaowei-agent-welm-moe-model-hidden-decoding-aug2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="model selection Responses API cost-efficient agents">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The builder’s guide to GPT‑5.6<div class="title-zh">GPT‑5.6 构建者指南</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model selection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Responses API</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">cost-efficient agents</span></div>
+  <div class="item-summary">OpenAI's builder guide describes how startups use GPT-5.6 to build faster, more cost-efficient AI agents, with guidance on model selection and new Responses API capabilities.</div>
+  <a class="item-link" href="https://openai.com/index/builders-guide-to-gpt-5-6" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="agent quality control agent evaluation enterprise adoption real-world deployment">
+  <div class="item-meta">
+    
+    
+    <span class="lang-note">中文内容</span>
+    <span class="item-source">Huxiu</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent 开始干正事，大厂终于给它装上了质检线<div class="title-zh">Agent 开始干正事，大厂终于给它装上了质检线</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent quality control</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise adoption</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">real-world deployment</span></div>
+  <div class="item-summary">The article reports that major technology companies are building quality-inspection and evaluation mechanisms for AI agents, so that agents can move from demonstrations into usable real business scenarios.</div>
+  <a class="item-link" href="https://www.huxiu.com/article/4883016.html?f=rss" target="_blank" rel="noopener">&rarr; www.huxiu.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry & Deployments
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent evaluation real-world scenarios agent platform Alibaba Cloud">
+  <div class="item-meta">
+    <span class="item-org">Alibaba Cloud</span>
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Alibaba Cloud Launches Qwen AI Arena for Real-World Agent Testing<div class="title-zh">阿里云发布 Qwen AI Arena：真实场景智能体评测平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">real-world scenarios</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent platform</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Alibaba Cloud</span></div>
+  <div class="item-summary">Alibaba Cloud launched Qwen AI Arena, a challenge and evaluation platform for AI agents that builds tasks from real business scenarios and supplies models, runtime environments and evaluation tools. Its first challenge focuses on customer service.</div>
+  <a class="item-link" href="https://technode.com/2026/08/13/alibaba-cloud-launches-qwen-ai-arena-for-real-world-agent-testing/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+<div class="item-card" data-keywords="AI-native office agentic productivity document generation WPS ecosystem">
+  <div class="item-meta">
+    <span class="item-org">Kingsoft</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">WPS Quietly Launches Lingxi Pro, an AI-Native Office Agent That Turns Skills into Editable Documents<div class="title-zh">WPS 悄然上线 Lingxi Pro：原生 AI 办公智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI-native office</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agentic productivity</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">WPS ecosystem</span></div>
+  <div class="item-summary">Kingsoft's WPS quietly launched Lingxi Pro, a standalone AI-native office agent that makes AI the first entry point rather than a document feature. It is integrated with a WPS cloud ecosystem of 678 million monthly active devices and turns skills into native, editable Word and PPT files.</div>
+  <a class="item-link" href="https://pandaily.com/wps-lingxi-pro-ai-native-office-agent-kingsoft-chinajoy-aug2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://pandaily.com" target="_blank" rel="noopener">Pandaily</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://www.huxiu.com" target="_blank" rel="noopener">Huxiu</a></li>
+<li><a href="https://technode.com" target="_blank" rel="noopener">TechNode</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-08-13", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 5, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 5, "tools_frameworks": 1, "models_embeddings": 1, "blogs_insights": 2, "industry_applications": 2}}, "daily_keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "MCP", "domain": "agent-architecture"}, {"text": "RAG", "domain": "rag-retrieval"}, {"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "claim verification", "domain": "rag-retrieval"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "video embedding retrieval", "domain": "embeddings-vectors"}, {"text": "sparse MoE", "domain": "ai-knowledge"}, {"text": "AI-native office agent", "domain": "agent-architecture"}, {"text": "智能体记忆", "domain": "agent-memory"}, {"text": "智能体评测", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Ontology-Grounded Project Memory for Coding Agents", "title_zh": "面向编码智能体的本体锚定项目记忆", "url": "http://arxiv.org/abs/2608.13662v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.13662", "summary": "MOOSEDev gives coding agents structured, ontology-grounded project memory, capturing architectural decisions, lessons, constraints and rationales in a knowledge graph exposed through an MCP interface, with lifecycle status, provenance and supersession links. On 835 typed records it returned the expected answer set almost fully (0.98–1.00) for supersession, set-completeness and negation questions, versus 6%–27% for a production vector-memory tool's top-k retrieval.", "keywords": [{"text": "project memory", "domain": "agent-memory"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "MCP interface", "domain": "agent-architecture"}, {"text": "supersession", "domain": "knowledge-lifecycle"}, {"text": "neurosymbolic retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "WeChat's Xiaowei Agent Runs on WeLM — a Sparse MoE Model Quietly Growing to 617 Billion Parameters", "title_zh": "微信“小薇”智能体基于 WeLM：稀疏 MoE 模型悄然增至 6170 亿参数", "url": "https://pandaily.com/wechat-xiaowei-agent-welm-moe-model-hidden-decoding-aug2026", "source": "Pandaily", "section": "models_embeddings", "organization": "Tencent", "language": "en", "arxiv_id": "", "summary": "WeChat has begun gray-testing Xiaowei, a native AI assistant inside the app powered by WeLM. According to Pandaily, WeLM has moved to a sparse mixture-of-experts architecture whose 617-billion-parameter version activates just 23 billion parameters per token.", "keywords": [{"text": "sparse mixture-of-experts", "domain": "ai-knowledge"}, {"text": "model scaling", "domain": "ai-knowledge"}, {"text": "WeChat assistant", "domain": "agent-architecture"}, {"text": "parameter activation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "TeachMateGPT: A Multi-Agent Knowledge-Grounded Framework for Pedagogical Assessment Generation from Science Curriculum Materials", "title_zh": "TeachMateGPT：基于科学课程材料生成教学评估的多智能体知识锚定框架", "url": "http://arxiv.org/abs/2608.13708v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.13708", "summary": "TeachMateGPT is a multi-agent system for generating textbook-grounded science assessments, combining a hierarchical curriculum knowledge base (COPE), a fail-closed staged agent pipeline, and a source-attributed verification protocol (SAVER). It raises faithfulness from 0.68 to 0.96 and answer relevancy from 0.60 to 0.89 over a vanilla RAG baseline.", "keywords": [{"text": "curriculum-grounded RAG", "domain": "rag-retrieval"}, {"text": "hierarchical knowledge base", "domain": "knowledge-graph"}, {"text": "multi-agent pipeline", "domain": "agent-architecture"}, {"text": "source-attributed verification", "domain": "evaluation-benchmark"}, {"text": "assessment generation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "TraVEL: Trajectory-Guided Video Embedding Learning for Driving-Video Retrieval", "title_zh": "TraVEL：面向驾驶视频检索的轨迹引导视频嵌入学习", "url": "http://arxiv.org/abs/2608.13495v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.13495", "summary": "TraVEL fine-tunes a general-purpose multimodal embedding model for driving-video retrieval, using ego-trajectory similarity as a reward in GRPO because caption supervision alone misses fine-grained motion understanding. Relative to supervised fine-tuning it raises longitudinal and lateral mAP by 9.8 and 4.7 points at 2B, and by 7.2 and 1.5 points at 8B.", "keywords": [{"text": "driving-video retrieval", "domain": "rag-retrieval"}, {"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "trajectory-guided learning", "domain": "cognition-reasoning"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "AaLLM: An End-to-End Analog Circuit Design Framework from Topology Generation to Sizing Using Large Language Models", "title_zh": "AaLLM：从拓扑生成到尺寸优化的端到端模拟电路设计框架", "url": "http://arxiv.org/abs/2608.13472v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.13472", "summary": "AaLLM is an open-source multi-agent LLM workflow that turns user specifications into a netlist, covering both topology generation and circuit sizing. It builds a RAG knowledge base from papers and textbooks and uses Designer, Critic and Evaluator agents, reporting 3x–4.5x fewer SPICE calls at inference and 40x lower wall-clock time than existing multi-agent pipelines.", "keywords": [{"text": "retrieval-augmented design", "domain": "rag-retrieval"}, {"text": "multi-agent workflow", "domain": "agent-architecture"}, {"text": "analog circuit design", "domain": "ai-knowledge"}, {"text": "tri-agent feedback", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "CLAIR-Fin: An Adversarial Multi-Agent Framework for Claim-Level Verification and Adaptive Debate in Cross-Modal Financial QA", "title_zh": "CLAIR-Fin：跨模态金融问答中主张级验证与自适应辩论的对抗多智能体框架", "url": "http://arxiv.org/abs/2608.13706v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.13706", "summary": "CLAIR-Fin is a nine-agent framework that decomposes financial questions into atomic claims held in a typed Claim Ledger, with claim-type-specific evidence authority, hand-off verification and adaptive adversarial debate. On the 500-question BB-FinQA-X set it raises faithfulness from 0.780 to 0.889 over single-pass RAG, abstaining on 5.4% of questions when evidence is insufficient.", "keywords": [{"text": "claim-level verification", "domain": "rag-retrieval"}, {"text": "adversarial debate", "domain": "agent-architecture"}, {"text": "hallucination risk", "domain": "evaluation-benchmark"}, {"text": "cross-modal grounding", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Ontology-Grounded Project Memory for Coding Agents", "title_zh": "面向编码智能体的本体锚定项目记忆", "url": "http://arxiv.org/abs/2608.13662v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.13662", "summary": "MOOSEDev gives coding agents structured, ontology-grounded project memory, capturing architectural decisions, lessons, constraints and rationales in a knowledge graph exposed through an MCP interface, with lifecycle status, provenance and supersession links. On 835 typed records it returned the expected answer set almost fully (0.98–1.00) for supersession, set-completeness and negation questions, versus 6%–27% for a production vector-memory tool's top-k retrieval.", "keywords": [{"text": "project memory", "domain": "agent-memory"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "MCP interface", "domain": "agent-architecture"}, {"text": "supersession", "domain": "knowledge-lifecycle"}, {"text": "neurosymbolic retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "MARC v1: An Open-Source Multi-Agent Framework for Clinical AI Reasoning and Coordination", "title_zh": "MARC v1：面向临床 AI 推理与协作的开源多智能体框架", "url": "http://arxiv.org/abs/2608.13476v1", "source": "arXiv", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "2608.13476", "summary": "MARC is an open-source framework that replaces monolithic LLM prompting with deterministic multi-agent orchestration for clinical reasoning, coordinating extraction, reasoning, answer-generation and evaluation agents with traceable intermediate outputs. It adds a Decomposer that generates task-specific agent prompts from plain language and is configured entirely through YAML, with API-based and local CPU deployments.", "keywords": [{"text": "clinical multi-agent orchestration", "domain": "agent-architecture"}, {"text": "prompt decomposition", "domain": "context-prompting"}, {"text": "traceable reasoning", "domain": "cognition-reasoning"}, {"text": "open-source framework", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "WeChat's Xiaowei Agent Runs on WeLM — a Sparse MoE Model Quietly Growing to 617 Billion Parameters", "title_zh": "微信“小薇”智能体基于 WeLM：稀疏 MoE 模型悄然增至 6170 亿参数", "url": "https://pandaily.com/wechat-xiaowei-agent-welm-moe-model-hidden-decoding-aug2026", "source": "Pandaily", "section": "models_embeddings", "organization": "Tencent", "language": "en", "arxiv_id": "", "summary": "WeChat has begun gray-testing Xiaowei, a native AI assistant inside the app powered by WeLM. According to Pandaily, WeLM has moved to a sparse mixture-of-experts architecture whose 617-billion-parameter version activates just 23 billion parameters per token.", "keywords": [{"text": "sparse mixture-of-experts", "domain": "ai-knowledge"}, {"text": "model scaling", "domain": "ai-knowledge"}, {"text": "WeChat assistant", "domain": "agent-architecture"}, {"text": "parameter activation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "The builder’s guide to GPT‑5.6", "title_zh": "GPT‑5.6 构建者指南", "url": "https://openai.com/index/builders-guide-to-gpt-5-6", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI's builder guide describes how startups use GPT-5.6 to build faster, more cost-efficient AI agents, with guidance on model selection and new Responses API capabilities.", "keywords": [{"text": "model selection", "domain": "ai-knowledge"}, {"text": "Responses API", "domain": "agent-architecture"}, {"text": "cost-efficient agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Agent 开始干正事，大厂终于给它装上了质检线", "title_zh": "Agent 开始干正事，大厂终于给它装上了质检线", "url": "https://www.huxiu.com/article/4883016.html?f=rss", "source": "Huxiu", "section": "blogs_insights", "organization": "", "language": "zh", "arxiv_id": "", "summary": "The article reports that major technology companies are building quality-inspection and evaluation mechanisms for AI agents, so that agents can move from demonstrations into usable real business scenarios.", "keywords": [{"text": "agent quality control", "domain": "evaluation-benchmark"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "enterprise adoption", "domain": "ai-knowledge"}, {"text": "real-world deployment", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry & Deployments", "items": [{"title": "Alibaba Cloud Launches Qwen AI Arena for Real-World Agent Testing", "title_zh": "阿里云发布 Qwen AI Arena：真实场景智能体评测平台", "url": "https://technode.com/2026/08/13/alibaba-cloud-launches-qwen-ai-arena-for-real-world-agent-testing/", "source": "TechNode", "section": "industry_applications", "organization": "Alibaba Cloud", "language": "en", "arxiv_id": "", "summary": "Alibaba Cloud launched Qwen AI Arena, a challenge and evaluation platform for AI agents that builds tasks from real business scenarios and supplies models, runtime environments and evaluation tools. Its first challenge focuses on customer service.", "keywords": [{"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "real-world scenarios", "domain": "evaluation-benchmark"}, {"text": "agent platform", "domain": "agent-architecture"}, {"text": "Alibaba Cloud", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "WPS Quietly Launches Lingxi Pro, an AI-Native Office Agent That Turns Skills into Editable Documents", "title_zh": "WPS 悄然上线 Lingxi Pro：原生 AI 办公智能体", "url": "https://pandaily.com/wps-lingxi-pro-ai-native-office-agent-kingsoft-chinajoy-aug2026", "source": "Pandaily", "section": "industry_applications", "organization": "Kingsoft", "language": "en", "arxiv_id": "", "summary": "Kingsoft's WPS quietly launched Lingxi Pro, a standalone AI-native office agent that makes AI the first entry point rather than a document feature. It is integrated with a WPS cloud ecosystem of 678 million monthly active devices and turns skills into native, editable Word and PPT files.", "keywords": [{"text": "AI-native office", "domain": "agent-architecture"}, {"text": "agentic productivity", "domain": "ai-knowledge"}, {"text": "document generation", "domain": "ai-knowledge"}, {"text": "WPS ecosystem", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Pandaily", "url": "https://pandaily.com"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "Huxiu", "url": "https://www.huxiu.com"}, {"name": "TechNode", "url": "https://technode.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

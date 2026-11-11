@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-08-21</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory poisoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">provenance ranking</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">machine unlearning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">tool-mediated recovery</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">entity-centric index</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multi-hop RAG evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-use training</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">knowledge benchmark</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sentence embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">source grounding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">智能体记忆</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">知识遗忘</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="memory poisoning provenance ranking content screening retrieval defense">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21230</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Utility Under Attack: Agent Memory Poisoning and the Limits of Content Screening and Provenance Ranking<div class="title-zh">效用遭受攻击：智能体记忆投毒与内容筛查、来源排序的局限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory poisoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">provenance ranking</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">content screening</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval defense</span></div>
+  <div class="item-summary">The paper measures how far a small amount of false information persists in agent memory: poisoning 1.2% of a LongMemEval corpus reduces accuracy from 0.850 to 0.300 with plainly worded assertions and no retriever optimization. A four-stage write-time screening pipeline with 0.832 recall on indirect prompt injection rejects 0 of 360 poisoned memories, and the shipped provenance-weighted retrieval weight is statistically indistinguishable from no defense.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21230v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="entity-centric index RAG long-document QA traceable evidence">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21252</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EnSI-RAG: Entity-Structure-Indexed Retrieval-Augmented Generation for Long-Document Question Answering<div class="title-zh">EnSI-RAG：面向长文档问答的实体—结构索引检索增强生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">entity-centric index</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-document QA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">traceable evidence</span></div>
+  <div class="item-summary">EnSI-RAG builds a query-independent, entity-centered index whose records of entity, type, semantic category and value act as retrieval handles while retaining links to the original source passages, separating evidence localization from answer synthesis. Across Loong and Oolong it reaches 78.24 average accuracy, 6.62 points above the published baseline scores used as references.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21252v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool use mid-training MCP data synthesis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.20314</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MidTool: Mid-training Data Synthesis for Agentic Tool Use<div class="title-zh">MidTool：面向智能体工具使用的训练中期数据合成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">mid-training</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data synthesis</span></div>
+  <div class="item-summary">MidTool is an open corpus construction pipeline for agentic tool-use mid-training that combines large-scale web, PDF and code data with synthesized supervision from real-world tool APIs, MCP skills and document-grounded workflows. It aims to teach models to recognize tool affordances, ground arguments from context, compose tool-call workflows and recover from incomplete information.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.20314v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="tool use mid-training MCP data synthesis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.20314</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MidTool: Mid-training Data Synthesis for Agentic Tool Use<div class="title-zh">MidTool：面向智能体工具使用的训练中期数据合成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">mid-training</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data synthesis</span></div>
+  <div class="item-summary">MidTool is an open corpus construction pipeline for agentic tool-use mid-training that combines large-scale web, PDF and code data with synthesized supervision from real-world tool APIs, MCP skills and document-grounded workflows. It aims to teach models to recognize tool affordances, ground arguments from context, compose tool-call workflows and recover from incomplete information.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.20314v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="memory poisoning provenance ranking content screening retrieval defense">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21230</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Utility Under Attack: Agent Memory Poisoning and the Limits of Content Screening and Provenance Ranking<div class="title-zh">效用遭受攻击：智能体记忆投毒与内容筛查、来源排序的局限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory poisoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">provenance ranking</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">content screening</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval defense</span></div>
+  <div class="item-summary">The paper measures how far a small amount of false information persists in agent memory: poisoning 1.2% of a LongMemEval corpus reduces accuracy from 0.850 to 0.300 with plainly worded assertions and no retriever optimization. A four-stage write-time screening pipeline with 0.832 recall on indirect prompt injection rejects 0 of 360 poisoned memories, and the shipped provenance-weighted retrieval weight is statistically indistinguishable from no defense.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21230v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="RAG evaluation dataset generation multi-hop QA domain knowledge base">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21558</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Automating Multi-Hop RAG Evaluation via TRIAD: From Context Extraction to Validated Dataset Generation<div class="title-zh">通过 TRIAD 自动化多跳 RAG 评测：从上下文抽取到经验证的数据集生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">RAG evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">dataset generation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">domain knowledge base</span></div>
+  <div class="item-summary">TRIAD is a three-stage automated approach that generates question-answer pairs for a domain-specific RAG knowledge base, validates each pair in a feedback loop, and extends the pairs with relevance-labeled context documents for downstream evaluation. Comparisons with MuSiQue and HotpotQA show similar performance trends across RAG setups, and human validation finds the questions suitable for evaluating domain-specific RAG systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21558v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="machine unlearning adversarial evaluation knowledge removal prompt attacks">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21606</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Can LLMs Truly Forget? Revealing Unlearning Gaps Through Adversarial Evaluation<div class="title-zh">LLM 真的能遗忘吗？通过对抗性评估揭示遗忘缺口</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">machine unlearning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial evaluation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge removal</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt attacks</span></div>
+  <div class="item-summary">The paper evaluates prompt-based and fine-tuning-based unlearning on TOFU with Llama-3.2-3B-Instruct, then stress-tests the strongest methods with eight adversarial attack suites using an LLM-as-judge Attack Success Rate metric. Several fine-tuning methods reach Forget Quality above 0.91 yet still leak targeted information with ASRs of 72.8% to 84.3%, close to the 87.5% of the unprotected base model, while clean multilingual reformulations yield only 2.95% measured leakage.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21606v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="entity-centric index RAG long-document QA traceable evidence">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21252</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EnSI-RAG: Entity-Structure-Indexed Retrieval-Augmented Generation for Long-Document Question Answering<div class="title-zh">EnSI-RAG：面向长文档问答的实体—结构索引检索增强生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">entity-centric index</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-document QA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">traceable evidence</span></div>
+  <div class="item-summary">EnSI-RAG builds a query-independent, entity-centered index whose records of entity, type, semantic category and value act as retrieval handles while retaining links to the original source passages, separating evidence localization from answer synthesis. Across Loong and Oolong it reaches 78.24 average accuracy, 6.62 points above the published baseline scores used as references.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21252v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool unlearning agent memory tool use trajectory RL">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.21544</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Forgotten in Weights, Recovered by Tools: Agentic Tool Unlearning for LLM Agents<div class="title-zh">权重中遗忘，工具中找回：面向 LLM 智能体的工具遗忘</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">tool unlearning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">trajectory RL</span></div>
+  <div class="item-summary">The paper identifies tool-mediated recovery, where an agent recovers a supposedly forgotten target through web search, retrieval or database lookup, as a failure mode for LLM unlearning, and proposes Agentic Tool Unlearning. Its first stage applies parametric unlearning and its second performs trajectory-level reinforcement learning in simulated tool-augmented environments; on RWKU and MUSE it achieves a better balance between target forgetting and retained utility.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.21544v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="legal benchmark underspecified queries legal reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.20220</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">InsufficiencyBench: Evaluating LLM legal advice on underspecified user queries<div class="title-zh">InsufficiencyBench：评估 LLM 对信息不足法律咨询的处理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">legal benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">underspecified queries</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">legal reasoning</span></div>
+  <div class="item-summary">InsufficiencyBench is described as the first legal benchmark targeting query-side insufficiency: whether a model recognizes that a query lacks legally material information, identifies what is missing and refrains from premature conclusions. It contains 202 items across six legal domains and 24 US jurisdictions annotated by practicing attorneys, and none of the ten evaluated frontier models fully solves the task.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.20220v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge benchmark source grounding domain knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.20106</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OenoBench: A Wine-Domain Benchmark for Knowledge-Grounded Evaluation of Large Language Models<div class="title-zh">OenoBench：面向大语言模型知识评测的葡萄酒领域基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">knowledge benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">source grounding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">domain knowledge</span></div>
+  <div class="item-summary">OenoBench is a wine-domain knowledge benchmark of 3,266 multiple-choice questions across six pillars — regions, grape varieties, viticulture, winemaking, producers and business — built from 38,104 source-anchored facts extracted from government registries and journals. Every claim traces to a URL and the questions are audited against a human gold sheet.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.20106v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="sentence embeddings semantic search open model">
+  <div class="item-meta">
+    <span class="item-org">BAAI</span>
+    
+    
+    <span class="item-source">HuggingFace</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BAAI/bge-small-en-v1.5<div class="title-zh">BAAI/bge-small-en-v1.5：BGE 小型英文嵌入模型登上 Hugging Face 趋势榜</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sentence embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic search</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">open model</span></div>
+  <div class="item-summary">BAAI's bge-small-en-v1.5 sentence-embedding model is trending on Hugging Face, with 72.9 million downloads and 536 likes.</div>
+  <a class="item-link" href="https://huggingface.co/BAAI/bge-small-en-v1.5" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="model distillation foundation models organization change">
+  <div class="item-meta">
+    <span class="item-org">ByteDance</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Zhang Yiming Returns to ByteDance Headquarters and Tells the Seed Team to Stop Distilling<div class="title-zh">张一鸣重返字节跳动总部，要求 Seed 团队停止「蒸馏」</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">model distillation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">foundation models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">organization change</span></div>
+  <div class="item-summary">ByteDance founder Zhang Yiming quietly returned to the Seed AI research team two weeks ago and issued a no-distillation mandate, according to the report. A mid-year All-Hands followed with a major B-side structure change putting Doubao, Feishu and Volcano Engine under one product roof.</div>
+  <a class="item-link" href="https://pandaily.com/bytedance-zhang-yiming-returns-no-distillation-agenda-2026-all-hands-aug2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://huggingface.co" target="_blank" rel="noopener">HuggingFace</a></li>
+<li><a href="https://pandaily.com" target="_blank" rel="noopener">Pandaily</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-08-21", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 3, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 8, "models_embeddings": 1, "blogs_insights": 1}}, "daily_keywords": [{"text": "memory poisoning", "domain": "agent-memory"}, {"text": "provenance ranking", "domain": "rag-retrieval"}, {"text": "machine unlearning", "domain": "knowledge-lifecycle"}, {"text": "tool-mediated recovery", "domain": "agent-memory"}, {"text": "entity-centric index", "domain": "knowledge-graph"}, {"text": "multi-hop RAG evaluation", "domain": "evaluation-benchmark"}, {"text": "tool-use training", "domain": "agent-architecture"}, {"text": "knowledge benchmark", "domain": "evaluation-benchmark"}, {"text": "sentence embeddings", "domain": "embeddings-vectors"}, {"text": "source grounding", "domain": "ai-knowledge"}, {"text": "智能体记忆", "domain": "agent-memory"}, {"text": "知识遗忘", "domain": "knowledge-lifecycle"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Utility Under Attack: Agent Memory Poisoning and the Limits of Content Screening and Provenance Ranking", "title_zh": "效用遭受攻击：智能体记忆投毒与内容筛查、来源排序的局限", "url": "http://arxiv.org/abs/2608.21230v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21230", "summary": "The paper measures how far a small amount of false information persists in agent memory: poisoning 1.2% of a LongMemEval corpus reduces accuracy from 0.850 to 0.300 with plainly worded assertions and no retriever optimization. A four-stage write-time screening pipeline with 0.832 recall on indirect prompt injection rejects 0 of 360 poisoned memories, and the shipped provenance-weighted retrieval weight is statistically indistinguishable from no defense.", "keywords": [{"text": "memory poisoning", "domain": "agent-memory"}, {"text": "provenance ranking", "domain": "rag-retrieval"}, {"text": "content screening", "domain": "knowledge-lifecycle"}, {"text": "retrieval defense", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "EnSI-RAG: Entity-Structure-Indexed Retrieval-Augmented Generation for Long-Document Question Answering", "title_zh": "EnSI-RAG：面向长文档问答的实体—结构索引检索增强生成", "url": "http://arxiv.org/abs/2608.21252v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21252", "summary": "EnSI-RAG builds a query-independent, entity-centered index whose records of entity, type, semantic category and value act as retrieval handles while retaining links to the original source passages, separating evidence localization from answer synthesis. Across Loong and Oolong it reaches 78.24 average accuracy, 6.62 points above the published baseline scores used as references.", "keywords": [{"text": "entity-centric index", "domain": "knowledge-graph"}, {"text": "RAG", "domain": "rag-retrieval"}, {"text": "long-document QA", "domain": "rag-retrieval"}, {"text": "traceable evidence", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "MidTool: Mid-training Data Synthesis for Agentic Tool Use", "title_zh": "MidTool：面向智能体工具使用的训练中期数据合成", "url": "http://arxiv.org/abs/2608.20314v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.20314", "summary": "MidTool is an open corpus construction pipeline for agentic tool-use mid-training that combines large-scale web, PDF and code data with synthesized supervision from real-world tool APIs, MCP skills and document-grounded workflows. It aims to teach models to recognize tool affordances, ground arguments from context, compose tool-call workflows and recover from incomplete information.", "keywords": [{"text": "tool use", "domain": "agent-architecture"}, {"text": "mid-training", "domain": "ai-knowledge"}, {"text": "MCP", "domain": "agent-architecture"}, {"text": "data synthesis", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "MidTool: Mid-training Data Synthesis for Agentic Tool Use", "title_zh": "MidTool：面向智能体工具使用的训练中期数据合成", "url": "http://arxiv.org/abs/2608.20314v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.20314", "summary": "MidTool is an open corpus construction pipeline for agentic tool-use mid-training that combines large-scale web, PDF and code data with synthesized supervision from real-world tool APIs, MCP skills and document-grounded workflows. It aims to teach models to recognize tool affordances, ground arguments from context, compose tool-call workflows and recover from incomplete information.", "keywords": [{"text": "tool use", "domain": "agent-architecture"}, {"text": "mid-training", "domain": "ai-knowledge"}, {"text": "MCP", "domain": "agent-architecture"}, {"text": "data synthesis", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Utility Under Attack: Agent Memory Poisoning and the Limits of Content Screening and Provenance Ranking", "title_zh": "效用遭受攻击：智能体记忆投毒与内容筛查、来源排序的局限", "url": "http://arxiv.org/abs/2608.21230v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21230", "summary": "The paper measures how far a small amount of false information persists in agent memory: poisoning 1.2% of a LongMemEval corpus reduces accuracy from 0.850 to 0.300 with plainly worded assertions and no retriever optimization. A four-stage write-time screening pipeline with 0.832 recall on indirect prompt injection rejects 0 of 360 poisoned memories, and the shipped provenance-weighted retrieval weight is statistically indistinguishable from no defense.", "keywords": [{"text": "memory poisoning", "domain": "agent-memory"}, {"text": "provenance ranking", "domain": "rag-retrieval"}, {"text": "content screening", "domain": "knowledge-lifecycle"}, {"text": "retrieval defense", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Automating Multi-Hop RAG Evaluation via TRIAD: From Context Extraction to Validated Dataset Generation", "title_zh": "通过 TRIAD 自动化多跳 RAG 评测：从上下文抽取到经验证的数据集生成", "url": "http://arxiv.org/abs/2608.21558v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21558", "summary": "TRIAD is a three-stage automated approach that generates question-answer pairs for a domain-specific RAG knowledge base, validates each pair in a feedback loop, and extends the pairs with relevance-labeled context documents for downstream evaluation. Comparisons with MuSiQue and HotpotQA show similar performance trends across RAG setups, and human validation finds the questions suitable for evaluating domain-specific RAG systems.", "keywords": [{"text": "RAG evaluation", "domain": "evaluation-benchmark"}, {"text": "dataset generation", "domain": "evaluation-benchmark"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "domain knowledge base", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Can LLMs Truly Forget? Revealing Unlearning Gaps Through Adversarial Evaluation", "title_zh": "LLM 真的能遗忘吗？通过对抗性评估揭示遗忘缺口", "url": "http://arxiv.org/abs/2608.21606v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21606", "summary": "The paper evaluates prompt-based and fine-tuning-based unlearning on TOFU with Llama-3.2-3B-Instruct, then stress-tests the strongest methods with eight adversarial attack suites using an LLM-as-judge Attack Success Rate metric. Several fine-tuning methods reach Forget Quality above 0.91 yet still leak targeted information with ASRs of 72.8% to 84.3%, close to the 87.5% of the unprotected base model, while clean multilingual reformulations yield only 2.95% measured leakage.", "keywords": [{"text": "machine unlearning", "domain": "knowledge-lifecycle"}, {"text": "adversarial evaluation", "domain": "evaluation-benchmark"}, {"text": "knowledge removal", "domain": "knowledge-lifecycle"}, {"text": "prompt attacks", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "EnSI-RAG: Entity-Structure-Indexed Retrieval-Augmented Generation for Long-Document Question Answering", "title_zh": "EnSI-RAG：面向长文档问答的实体—结构索引检索增强生成", "url": "http://arxiv.org/abs/2608.21252v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21252", "summary": "EnSI-RAG builds a query-independent, entity-centered index whose records of entity, type, semantic category and value act as retrieval handles while retaining links to the original source passages, separating evidence localization from answer synthesis. Across Loong and Oolong it reaches 78.24 average accuracy, 6.62 points above the published baseline scores used as references.", "keywords": [{"text": "entity-centric index", "domain": "knowledge-graph"}, {"text": "RAG", "domain": "rag-retrieval"}, {"text": "long-document QA", "domain": "rag-retrieval"}, {"text": "traceable evidence", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Forgotten in Weights, Recovered by Tools: Agentic Tool Unlearning for LLM Agents", "title_zh": "权重中遗忘，工具中找回：面向 LLM 智能体的工具遗忘", "url": "http://arxiv.org/abs/2608.21544v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.21544", "summary": "The paper identifies tool-mediated recovery, where an agent recovers a supposedly forgotten target through web search, retrieval or database lookup, as a failure mode for LLM unlearning, and proposes Agentic Tool Unlearning. Its first stage applies parametric unlearning and its second performs trajectory-level reinforcement learning in simulated tool-augmented environments; on RWKU and MUSE it achieves a better balance between target forgetting and retained utility.", "keywords": [{"text": "tool unlearning", "domain": "knowledge-lifecycle"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "trajectory RL", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "InsufficiencyBench: Evaluating LLM legal advice on underspecified user queries", "title_zh": "InsufficiencyBench：评估 LLM 对信息不足法律咨询的处理", "url": "http://arxiv.org/abs/2608.20220v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.20220", "summary": "InsufficiencyBench is described as the first legal benchmark targeting query-side insufficiency: whether a model recognizes that a query lacks legally material information, identifies what is missing and refrains from premature conclusions. It contains 202 items across six legal domains and 24 US jurisdictions annotated by practicing attorneys, and none of the ten evaluated frontier models fully solves the task.", "keywords": [{"text": "legal benchmark", "domain": "evaluation-benchmark"}, {"text": "underspecified queries", "domain": "cognition-reasoning"}, {"text": "legal reasoning", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "OenoBench: A Wine-Domain Benchmark for Knowledge-Grounded Evaluation of Large Language Models", "title_zh": "OenoBench：面向大语言模型知识评测的葡萄酒领域基准", "url": "http://arxiv.org/abs/2608.20106v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.20106", "summary": "OenoBench is a wine-domain knowledge benchmark of 3,266 multiple-choice questions across six pillars — regions, grape varieties, viticulture, winemaking, producers and business — built from 38,104 source-anchored facts extracted from government registries and journals. Every claim traces to a URL and the questions are audited against a human gold sheet.", "keywords": [{"text": "knowledge benchmark", "domain": "evaluation-benchmark"}, {"text": "source grounding", "domain": "ai-knowledge"}, {"text": "domain knowledge", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "BAAI/bge-small-en-v1.5", "title_zh": "BAAI/bge-small-en-v1.5：BGE 小型英文嵌入模型登上 Hugging Face 趋势榜", "url": "https://huggingface.co/BAAI/bge-small-en-v1.5", "source": "HuggingFace", "section": "models_embeddings", "organization": "BAAI", "language": "en", "arxiv_id": "", "summary": "BAAI's bge-small-en-v1.5 sentence-embedding model is trending on Hugging Face, with 72.9 million downloads and 536 likes.", "keywords": [{"text": "sentence embeddings", "domain": "embeddings-vectors"}, {"text": "semantic search", "domain": "rag-retrieval"}, {"text": "open model", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Zhang Yiming Returns to ByteDance Headquarters and Tells the Seed Team to Stop Distilling", "title_zh": "张一鸣重返字节跳动总部，要求 Seed 团队停止「蒸馏」", "url": "https://pandaily.com/bytedance-zhang-yiming-returns-no-distillation-agenda-2026-all-hands-aug2026", "source": "Pandaily", "section": "blogs_insights", "organization": "ByteDance", "language": "en", "arxiv_id": "", "summary": "ByteDance founder Zhang Yiming quietly returned to the Seed AI research team two weeks ago and issued a no-distillation mandate, according to the report. A mid-year All-Hands followed with a major B-side structure change putting Doubao, Feishu and Volcano Engine under one product roof.", "keywords": [{"text": "model distillation", "domain": "knowledge-lifecycle"}, {"text": "foundation models", "domain": "ai-knowledge"}, {"text": "organization change", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "HuggingFace", "url": "https://huggingface.co"}, {"name": "Pandaily", "url": "https://pandaily.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

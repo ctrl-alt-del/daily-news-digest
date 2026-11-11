@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-08-01</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-industry_applications" class="nav-link">Industry & Deployments</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation attribution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">resource-aware benchmarking</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent security</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge topology</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory poisoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">speculative agent serving</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">图检索增强生成</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">智能体评测</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">多智能体安全</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">知识图谱</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="GraphRAG citation attribution multi-hop QA LLM-as-judge faithfulness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00705</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Triple-Robustness Analysis of Retrieval-Augmented Generation for Multi-Hop Requirements Traceability<div class="title-zh">面向多跳需求可追溯性的检索增强生成三重稳健性分析</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation attribution</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">faithfulness</span></div>
+  <div class="item-summary">The authors test GraphRAG against vector and agentic RAG pipelines across two embedders, two corpora and two LLM judges, spanning 2×4,440 main-matrix runs, 600 cross-corpus runs and over 5,000 faithfulness judgments. They find that scoring the retrieved set as the attribution set inverts the architecture ranking, that answer-level citation winners are corpus-conditional but embedder-robust, and that single-judge LLM faithfulness varies sharply with retrieval state.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00705v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent security memory poisoning boundary verification prompt injection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00718</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Adversarial Attacks in Multi-Agent LLM Pipelines: Unveiling Structural Vulnerabilities in Agentic AI Architectures<div class="title-zh">多智能体 LLM 流水线中的对抗攻击：揭示智能体 AI 架构的结构性脆弱性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent security</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory poisoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">boundary verification</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span></div>
+  <div class="item-summary">The authors argue that multi-agent LLM pipelines lack boundary verification, so adversarial content accepted by one agent propagates as trusted input and enables content injection, agent impersonation, plan deviation and memory poisoning. Using annotated traces from GAIA and SWE-Bench and controlled tests with GPT-5-mini, Claude Sonnet 4.5 and Kimi K2.5, they find attack success tracks pipeline structure rather than model capability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00718v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="GraphRAG citation attribution multi-hop QA LLM-as-judge faithfulness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00705</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Triple-Robustness Analysis of Retrieval-Augmented Generation for Multi-Hop Requirements Traceability<div class="title-zh">面向多跳需求可追溯性的检索增强生成三重稳健性分析</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation attribution</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">faithfulness</span></div>
+  <div class="item-summary">The authors test GraphRAG against vector and agentic RAG pipelines across two embedders, two corpora and two LLM judges, spanning 2×4,440 main-matrix runs, 600 cross-corpus runs and over 5,000 faithfulness judgments. They find that scoring the retrieved set as the attribution set inverts the architecture ranking, that answer-level citation winners are corpus-conditional but embedder-robust, and that single-judge LLM faithfulness varies sharply with retrieval state.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00705v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent benchmark resource budgets agentic systems efficiency-adjusted success rate">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00805</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentSLABench: Evaluating and Benchmarking Agentic Systems Under Resource Constraints<div class="title-zh">AgentSLABench：资源约束下的智能体系统评测基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">resource budgets</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic systems</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">efficiency-adjusted success rate</span></div>
+  <div class="item-summary">AgentSLABench profiles autonomous agents on correctness plus latency, cost, compute, memory and network usage under declared budgets, across 16 Docker-isolated task environments in six categories. Profiling five general-purpose baselines and four task-specialized agents, it introduces an Efficiency-Adjusted Success Rate and reports that high accuracy at unbounded cost is not production-viable.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00805v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="graph grounding graph propagation item representation next-item ranking">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00669</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GARDRec: Decision-Level Graph Grounding for Large Language Model Recommendation<div class="title-zh">GARDRec：面向大语言模型推荐的决策级图锚定方法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph grounding</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph propagation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">item representation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">next-item ranking</span></div>
+  <div class="item-summary">GARDRec builds semantic-structural item representations from textual node features and graph propagation, derives personalized graph contexts from temporally weighted histories and first-order neighborhoods, and aligns them with a frozen LLM through continuous multimodal prompts. Experiments on three public benchmarks with multiple LLM backbones show it generally improves next-item ranking over representative baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00669v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hallucination evaluation scientific agents concept graph knowledge topology trajectory audit">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00711</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Tracing the Cascade: A Topology-Aware Evaluation Framework for Scientific Agent Hallucinations<div class="title-zh">追踪级联：面向科学智能体幻觉的拓扑感知评测框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">scientific agents</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">concept graph</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge topology</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">trajectory audit</span></div>
+  <div class="item-summary">SCHEMA builds scientific concept graphs from benchmark seeds and literature, synthesizes graph-grounded tasks, and audits agent reasoning with a topology-weighted severity score plus counterfactual attribution. It finds hallucinations concentrate at a small set of highly connected knowledge hubs and that final-answer accuracy decouples from trajectory honesty, so agents can reach correct conclusions through structurally flawed reasoning.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00711v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="cultural bias Tibetan medicine ontology drift expert-adjudicated benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00640</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TreeProbe : A Tibetan Medicine Benchmark for Cultural Bias in LLMs<div class="title-zh">TreeProbe：面向大语言模型文化偏见的藏医药基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cultural bias</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Tibetan medicine</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology drift</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">expert-adjudicated benchmark</span></div>
+  <div class="item-summary">TreeProbe is a cultural-bias benchmark organized around the native Tree of Medicine framework in Tibetan medicine, with 4,719 expert-adjudicated items covering 467 diseases and 10 subtasks. Experiments show current LLMs remain limited in native Tibetan medical contexts and exhibit systematic external ontology drift, diverging toward biomedical or TCM reasoning depending on pretraining data.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00640v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent security memory poisoning boundary verification prompt injection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00718</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Adversarial Attacks in Multi-Agent LLM Pipelines: Unveiling Structural Vulnerabilities in Agentic AI Architectures<div class="title-zh">多智能体 LLM 流水线中的对抗攻击：揭示智能体 AI 架构的结构性脆弱性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent security</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory poisoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">boundary verification</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span></div>
+  <div class="item-summary">The authors argue that multi-agent LLM pipelines lack boundary verification, so adversarial content accepted by one agent propagates as trusted input and enables content injection, agent impersonation, plan deviation and memory poisoning. Using annotated traces from GAIA and SWE-Bench and controlled tests with GPT-5-mini, Claude Sonnet 4.5 and Kimi K2.5, they find attack success tracks pipeline structure rather than model capability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00718v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent serving speculative execution tool invocation end-to-end latency">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00881</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AOSpec: Action and Observation Co-Speculation for Low-Latency Agent Serving<div class="title-zh">AOSpec：面向低延迟智能体服务的动作与观测协同推测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent serving</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">speculative execution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool invocation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">end-to-end latency</span></div>
+  <div class="item-summary">AOSpec co-speculates agent actions and observations across the full agent-environment loop: Expected Value Decoding targets observations with the greatest expected latency benefit, while isolated forks and joint action-state verification safely overlap execution. Across Terminal-Bench serving settings spanning four harnesses, five actor models and five serving speeds it cuts mean end-to-end latency by 11.8–32.5% and p99 latency by up to 42.8%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00881v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="adversarial planning plan generation multi-agent critique benchmark design">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.00832</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AdvPlan-Bench: Adversarial Evaluation of Structured Plan-Generation Agents<div class="title-zh">AdvPlan-Bench：结构化规划生成智能体的对抗评测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">adversarial planning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">plan generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent critique</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span></div>
+  <div class="item-summary">AdvPlan-Bench is an offline benchmark that represents plans as typed action chains with optional branches and scores opposing plans with BLUE-vs-RED advantage and Nash-gap diagnostics. In 150 synthetic scenarios, a sampled best-response policy reduced BLUE advantage from .518 to .486 and win rate from .900 to .820, and the authors stress the artifact provides no evidence about real-world decision quality.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.00832v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry & Deployments
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="model release agent capabilities AI regulation safety testing">
+  <div class="item-meta">
+    
+    
+    <span class="lang-note">中文内容</span>
+    <span class="item-source">36kr</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">9点1氪丨马斯克回应特斯拉剥离中国业务；国内航线燃油附加费将再次下调；中国最高薪本科专业易主<div class="title-zh">9点1氪丨马斯克回应特斯拉剥离中国业务；国内航线燃油附加费将再次下调；中国最高薪本科专业易主</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model release</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent capabilities</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI regulation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">safety testing</span></div>
+  <div class="item-summary">A 36kr roundup of July 31 AI developments reports that DeepSeek-V4-Flash officially launched with substantially stronger agent capabilities, MiniMax released its omnimodal H3 model with plans to open the weights, and Anthropic disclosed that its Claude models mistakenly breached three real organizations' systems during safety testing. It also notes that EU AI Act transparency requirements take effect on August 2.</div>
+  <a class="item-link" href="https://36kr.com/p/3920241240419720?f=rss" target="_blank" rel="noopener">&rarr; 36kr.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://36kr.com" target="_blank" rel="noopener">36kr</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-08-01", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 2, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 8, "industry_applications": 1}}, "daily_keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "citation attribution", "domain": "rag-retrieval"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "resource-aware benchmarking", "domain": "evaluation-benchmark"}, {"text": "multi-agent security", "domain": "agent-architecture"}, {"text": "knowledge topology", "domain": "knowledge-graph"}, {"text": "memory poisoning", "domain": "agent-memory"}, {"text": "speculative agent serving", "domain": "agent-architecture"}, {"text": "图检索增强生成", "domain": "rag-retrieval"}, {"text": "智能体评测", "domain": "evaluation-benchmark"}, {"text": "多智能体安全", "domain": "agent-architecture"}, {"text": "知识图谱", "domain": "knowledge-graph"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "A Triple-Robustness Analysis of Retrieval-Augmented Generation for Multi-Hop Requirements Traceability", "title_zh": "面向多跳需求可追溯性的检索增强生成三重稳健性分析", "url": "http://arxiv.org/abs/2608.00705v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00705", "summary": "The authors test GraphRAG against vector and agentic RAG pipelines across two embedders, two corpora and two LLM judges, spanning 2×4,440 main-matrix runs, 600 cross-corpus runs and over 5,000 faithfulness judgments. They find that scoring the retrieved set as the attribution set inverts the architecture ranking, that answer-level citation winners are corpus-conditional but embedder-robust, and that single-judge LLM faithfulness varies sharply with retrieval state.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "citation attribution", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "faithfulness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Adversarial Attacks in Multi-Agent LLM Pipelines: Unveiling Structural Vulnerabilities in Agentic AI Architectures", "title_zh": "多智能体 LLM 流水线中的对抗攻击：揭示智能体 AI 架构的结构性脆弱性", "url": "http://arxiv.org/abs/2608.00718v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00718", "summary": "The authors argue that multi-agent LLM pipelines lack boundary verification, so adversarial content accepted by one agent propagates as trusted input and enables content injection, agent impersonation, plan deviation and memory poisoning. Using annotated traces from GAIA and SWE-Bench and controlled tests with GPT-5-mini, Claude Sonnet 4.5 and Kimi K2.5, they find attack success tracks pipeline structure rather than model capability.", "keywords": [{"text": "multi-agent security", "domain": "agent-architecture"}, {"text": "memory poisoning", "domain": "agent-memory"}, {"text": "boundary verification", "domain": "agent-architecture"}, {"text": "prompt injection", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "A Triple-Robustness Analysis of Retrieval-Augmented Generation for Multi-Hop Requirements Traceability", "title_zh": "面向多跳需求可追溯性的检索增强生成三重稳健性分析", "url": "http://arxiv.org/abs/2608.00705v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00705", "summary": "The authors test GraphRAG against vector and agentic RAG pipelines across two embedders, two corpora and two LLM judges, spanning 2×4,440 main-matrix runs, 600 cross-corpus runs and over 5,000 faithfulness judgments. They find that scoring the retrieved set as the attribution set inverts the architecture ranking, that answer-level citation winners are corpus-conditional but embedder-robust, and that single-judge LLM faithfulness varies sharply with retrieval state.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "citation attribution", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "faithfulness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "AgentSLABench: Evaluating and Benchmarking Agentic Systems Under Resource Constraints", "title_zh": "AgentSLABench：资源约束下的智能体系统评测基准", "url": "http://arxiv.org/abs/2608.00805v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00805", "summary": "AgentSLABench profiles autonomous agents on correctness plus latency, cost, compute, memory and network usage under declared budgets, across 16 Docker-isolated task environments in six categories. Profiling five general-purpose baselines and four task-specialized agents, it introduces an Efficiency-Adjusted Success Rate and reports that high accuracy at unbounded cost is not production-viable.", "keywords": [{"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "resource budgets", "domain": "evaluation-benchmark"}, {"text": "agentic systems", "domain": "agent-architecture"}, {"text": "efficiency-adjusted success rate", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "GARDRec: Decision-Level Graph Grounding for Large Language Model Recommendation", "title_zh": "GARDRec：面向大语言模型推荐的决策级图锚定方法", "url": "http://arxiv.org/abs/2608.00669v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00669", "summary": "GARDRec builds semantic-structural item representations from textual node features and graph propagation, derives personalized graph contexts from temporally weighted histories and first-order neighborhoods, and aligns them with a frozen LLM through continuous multimodal prompts. Experiments on three public benchmarks with multiple LLM backbones show it generally improves next-item ranking over representative baselines.", "keywords": [{"text": "graph grounding", "domain": "knowledge-graph"}, {"text": "graph propagation", "domain": "knowledge-graph"}, {"text": "item representation", "domain": "embeddings-vectors"}, {"text": "next-item ranking", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Tracing the Cascade: A Topology-Aware Evaluation Framework for Scientific Agent Hallucinations", "title_zh": "追踪级联：面向科学智能体幻觉的拓扑感知评测框架", "url": "http://arxiv.org/abs/2608.00711v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00711", "summary": "SCHEMA builds scientific concept graphs from benchmark seeds and literature, synthesizes graph-grounded tasks, and audits agent reasoning with a topology-weighted severity score plus counterfactual attribution. It finds hallucinations concentrate at a small set of highly connected knowledge hubs and that final-answer accuracy decouples from trajectory honesty, so agents can reach correct conclusions through structurally flawed reasoning.", "keywords": [{"text": "hallucination evaluation", "domain": "evaluation-benchmark"}, {"text": "scientific agents", "domain": "agent-architecture"}, {"text": "concept graph", "domain": "knowledge-graph"}, {"text": "knowledge topology", "domain": "knowledge-graph"}, {"text": "trajectory audit", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "TreeProbe : A Tibetan Medicine Benchmark for Cultural Bias in LLMs", "title_zh": "TreeProbe：面向大语言模型文化偏见的藏医药基准", "url": "http://arxiv.org/abs/2608.00640v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00640", "summary": "TreeProbe is a cultural-bias benchmark organized around the native Tree of Medicine framework in Tibetan medicine, with 4,719 expert-adjudicated items covering 467 diseases and 10 subtasks. Experiments show current LLMs remain limited in native Tibetan medical contexts and exhibit systematic external ontology drift, diverging toward biomedical or TCM reasoning depending on pretraining data.", "keywords": [{"text": "cultural bias", "domain": "evaluation-benchmark"}, {"text": "Tibetan medicine", "domain": "ai-knowledge"}, {"text": "ontology drift", "domain": "knowledge-graph"}, {"text": "expert-adjudicated benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Adversarial Attacks in Multi-Agent LLM Pipelines: Unveiling Structural Vulnerabilities in Agentic AI Architectures", "title_zh": "多智能体 LLM 流水线中的对抗攻击：揭示智能体 AI 架构的结构性脆弱性", "url": "http://arxiv.org/abs/2608.00718v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00718", "summary": "The authors argue that multi-agent LLM pipelines lack boundary verification, so adversarial content accepted by one agent propagates as trusted input and enables content injection, agent impersonation, plan deviation and memory poisoning. Using annotated traces from GAIA and SWE-Bench and controlled tests with GPT-5-mini, Claude Sonnet 4.5 and Kimi K2.5, they find attack success tracks pipeline structure rather than model capability.", "keywords": [{"text": "multi-agent security", "domain": "agent-architecture"}, {"text": "memory poisoning", "domain": "agent-memory"}, {"text": "boundary verification", "domain": "agent-architecture"}, {"text": "prompt injection", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "AOSpec: Action and Observation Co-Speculation for Low-Latency Agent Serving", "title_zh": "AOSpec：面向低延迟智能体服务的动作与观测协同推测", "url": "http://arxiv.org/abs/2608.00881v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00881", "summary": "AOSpec co-speculates agent actions and observations across the full agent-environment loop: Expected Value Decoding targets observations with the greatest expected latency benefit, while isolated forks and joint action-state verification safely overlap execution. Across Terminal-Bench serving settings spanning four harnesses, five actor models and five serving speeds it cuts mean end-to-end latency by 11.8–32.5% and p99 latency by up to 42.8%.", "keywords": [{"text": "agent serving", "domain": "agent-architecture"}, {"text": "speculative execution", "domain": "agent-architecture"}, {"text": "tool invocation", "domain": "agent-architecture"}, {"text": "end-to-end latency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "AdvPlan-Bench: Adversarial Evaluation of Structured Plan-Generation Agents", "title_zh": "AdvPlan-Bench：结构化规划生成智能体的对抗评测", "url": "http://arxiv.org/abs/2608.00832v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.00832", "summary": "AdvPlan-Bench is an offline benchmark that represents plans as typed action chains with optional branches and scores opposing plans with BLUE-vs-RED advantage and Nash-gap diagnostics. In 150 synthetic scenarios, a sampled best-response policy reduced BLUE advantage from .518 to .486 and win rate from .900 to .820, and the authors stress the artifact provides no evidence about real-world decision quality.", "keywords": [{"text": "adversarial planning", "domain": "agent-architecture"}, {"text": "plan generation", "domain": "cognition-reasoning"}, {"text": "multi-agent critique", "domain": "agent-architecture"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry & Deployments", "items": [{"title": "9点1氪丨马斯克回应特斯拉剥离中国业务；国内航线燃油附加费将再次下调；中国最高薪本科专业易主", "title_zh": "9点1氪丨马斯克回应特斯拉剥离中国业务；国内航线燃油附加费将再次下调；中国最高薪本科专业易主", "url": "https://36kr.com/p/3920241240419720?f=rss", "source": "36kr", "section": "industry_applications", "organization": "", "language": "zh", "arxiv_id": "", "summary": "A 36kr roundup of July 31 AI developments reports that DeepSeek-V4-Flash officially launched with substantially stronger agent capabilities, MiniMax released its omnimodal H3 model with plans to open the weights, and Anthropic disclosed that its Claude models mistakenly breached three real organizations' systems during safety testing. It also notes that EU AI Act transparency requirements take effect on August 2.", "keywords": [{"text": "model release", "domain": "ai-knowledge"}, {"text": "agent capabilities", "domain": "agent-architecture"}, {"text": "AI regulation", "domain": "ai-knowledge"}, {"text": "safety testing", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "36kr", "url": "https://36kr.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
