@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-07-25</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>1 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-model reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical AI</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology engineering</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">graph-text memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">world models</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic scaling</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">neuro-symbolic reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory consolidation</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-model reasoning clinical decision support reasoning diversity rare disease benchmark">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2607.23290</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RareLens: Towards End-to-End Rare Disease Care via Aligning Divergent Large Language Model Reasoning<div class="title-zh">RareLens：通过对齐发散的大模型推理实现端到端罕见病诊疗</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-model reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical decision support</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning diversity</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">rare disease</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">RareLens reconciles divergent reasoning trajectories from multiple heterogeneous LLMs into decisions across risk screening, diagnosis, treatment planning and prognosis prediction, built on RarelensBench with 157,525 real-world cases spanning 33 Orphanet categories. It outperformed GPT-5, DeepSeek-R1, Claude-3.7-Sonnet and Gemini-2.5-Pro across all stages, reaching 0.917 AUC for screening and top-1 accuracies of 65.5% and 89.8% for diagnosis and treatment, and in an external evaluation of 1,287 cases with 23 physicians both autonomous and assisted RareLens outperformed unaided physicians.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23290v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="graph memory agent memory multi-hop QA training-free memory consolidation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23278</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Co-Evolving Graph and Text Memory for Training-Free Multi-Hop Question Answering<div class="title-zh">协同演化的图与文本记忆：面向免训练多跳问答</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">training-free</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory consolidation</span></div>
+  <div class="item-summary">Co-E is a training-free system built on synchronized bidirectional graph-text working memory: a synchronization cycle consolidates textual memory, extracts relational triples into graph memory and injects graph facts back into the generation context, so both memories shape subsequent retrieval and generation. On six multi-hop QA benchmarks it improves over comparable training-free open-backbone baselines and is competitive with larger or trained systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23278v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic scaling data synthesis agentic reinforcement learning benchmark self-evolution">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23124</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentOmnia: Scaling Agentic Models for Full-Scenario Applications<div class="title-zh">AgentOmnia：面向全场景应用的智能体模型扩展</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic scaling</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data synthesis</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolution</span></div>
+  <div class="item-summary">AgentOmnia is a full-scenario agentic scaling framework that coordinates a Domain x Capability x Atomic Difficulty taxonomy with environment-task synthesis, post-training, evaluation and PRD-guided improvement, constructing 5,018 stateful environments, 255,375 tools and 52,361 tasks. Starting from Qwen3-30B-A3B-Thinking-2507, it raises the OmniaBench challenging-subset pass rate from 9.16% to 37.11% and the four-benchmark macro-average from 22.86% to 41.69%, surpassing Qwen3-235B-A22B-Thinking-2507 on all four benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23124v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="world models agent security adversarial attacks terminal agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23147</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">False Prophets: On the Security of World Models in Agentic Systems<div class="title-zh">假先知：论智能体系统中世界模型的安全性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">world models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial attacks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">terminal agents</span></div>
+  <div class="item-summary">The paper identifies security vulnerabilities specific to learned world models used by LLM agents, showing that attackers can induce mispredictions in terminal-based agent pipelines with up to 95% success, potentially causing unintended command execution, denial of service, wallet drainage and private-information extraction. It introduces a security benchmark dataset for text-based world models and offers practical recommendations for hardening agentic systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23147v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-model reasoning clinical decision support reasoning diversity rare disease benchmark">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2607.23290</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RareLens: Towards End-to-End Rare Disease Care via Aligning Divergent Large Language Model Reasoning<div class="title-zh">RareLens：通过对齐发散的大模型推理实现端到端罕见病诊疗</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-model reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical decision support</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning diversity</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">rare disease</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">RareLens reconciles divergent reasoning trajectories from multiple heterogeneous LLMs into decisions across risk screening, diagnosis, treatment planning and prognosis prediction, built on RarelensBench with 157,525 real-world cases spanning 33 Orphanet categories. It outperformed GPT-5, DeepSeek-R1, Claude-3.7-Sonnet and Gemini-2.5-Pro across all stages, reaching 0.917 AUC for screening and top-1 accuracies of 65.5% and 89.8% for diagnosis and treatment, and in an external evaluation of 1,287 cases with 23 physicians both autonomous and assisted RareLens outperformed unaided physicians.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23290v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="ontology knowledge graph materials science data provenance OWL reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23219</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Ontology for Machine Learning Interatomic Potentials<div class="title-zh">面向机器学习原子间势的本体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">materials science</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data provenance</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">OWL reasoning</span></div>
+  <div class="item-summary">The paper presents the MLIPs ontology, an OWL 2 DL ontology organized into Method, Training Data and Benchmark modules that describes machine-learning interatomic potential methods, their hyperparameters, DFT-provenance training datasets and published benchmarks. It connects materials-science and machine-learning ontologies, declares 27 formal axioms enforcing data completeness and consistency, and is evaluated through competency questions over a 20-paper seeded knowledge graph and OWL reasoning.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23219v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="personalization toxicity alignment inference-time intervention decoding evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23175</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond a Global Norm: Personalizing Toxicity Sensitivity in Language Models Without Retraining<div class="title-zh">超越全球规范：无需重训练即可个性化语言模型的毒性敏感度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">personalization</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">toxicity alignment</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">inference-time intervention</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">decoding</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span></div>
+  <div class="item-summary">The paper compares training-free methods for aligning language generation to individual toxicity sensitivities at pre-decoding, in-decoding and post-decoding stages, evaluated against targets derived from the PRISM dataset. All methods reduced alignment error by 28-47%, but the results reveal a trade-off among alignment effectiveness, personalization and general language quality.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23175v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="graph memory agent memory multi-hop QA training-free memory consolidation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23278</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Co-Evolving Graph and Text Memory for Training-Free Multi-Hop Question Answering<div class="title-zh">协同演化的图与文本记忆：面向免训练多跳问答</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">training-free</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory consolidation</span></div>
+  <div class="item-summary">Co-E is a training-free system built on synchronized bidirectional graph-text working memory: a synchronization cycle consolidates textual memory, extracts relational triples into graph memory and injects graph facts back into the generation context, so both memories shape subsequent retrieval and generation. On six multi-hop QA benchmarks it improves over comparable training-free open-backbone baselines and is competitive with larger or trained systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23278v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="world models agent security adversarial attacks terminal agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23147</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">False Prophets: On the Security of World Models in Agentic Systems<div class="title-zh">假先知：论智能体系统中世界模型的安全性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">world models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial attacks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">terminal agents</span></div>
+  <div class="item-summary">The paper identifies security vulnerabilities specific to learned world models used by LLM agents, showing that attackers can induce mispredictions in terminal-based agent pipelines with up to 95% success, potentially causing unintended command execution, denial of service, wallet drainage and private-information extraction. It introduces a security benchmark dataset for text-based world models and offers practical recommendations for hardening agentic systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23147v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="GRPO policy optimization length bias reasoning training">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2607.23364</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">On the Impossibility of Unbiased and Length-Invariant Policy Optimization with Outcome Rewards<div class="title-zh">结果奖励下无偏且长度不变策略优化的不可能性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">policy optimization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">length bias</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">reasoning training</span></div>
+  <div class="item-summary">The paper proves an impossibility theorem showing that, under standard outcome-reward GRPO, no length-based weighting scheme can simultaneously be gradient-unbiased and length-invariant. It characterizes the trade-off with the family f_alpha(L) = L^(alpha-1), where alpha = 0 recovers GRPO and alpha = 1 recovers Dr. GRPO, and shows that Dr. GRPO's length bias can let longer trajectories dominate gradient updates by a factor proportional to the length ratio.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23364v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic scaling data synthesis agentic reinforcement learning benchmark self-evolution">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.23124</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentOmnia: Scaling Agentic Models for Full-Scenario Applications<div class="title-zh">AgentOmnia：面向全场景应用的智能体模型扩展</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic scaling</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data synthesis</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolution</span></div>
+  <div class="item-summary">AgentOmnia is a full-scenario agentic scaling framework that coordinates a Domain x Capability x Atomic Difficulty taxonomy with environment-task synthesis, post-training, evaluation and PRD-guided improvement, constructing 5,018 stateful environments, 255,375 tools and 52,361 tasks. Starting from Qwen3-30B-A3B-Thinking-2507, it raises the OmniaBench challenging-subset pass rate from 9.16% to 37.11% and the four-benchmark macro-average from 22.86% to 41.69%, surpassing Qwen3-235B-A22B-Thinking-2507 on all four benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23124v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="neuro-symbolic reasoning rule evaluation legal reasoning SMT benchmark">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    <span class="arxiv-tag">arxiv:2607.23386</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Confidently Wrong: Exception Chain Collapse in Frontier LLM Rule Evaluation<div class="title-zh">自信地犯错：前沿大模型规则评估中的异常链崩塌</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">neuro-symbolic reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">rule evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">legal reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">SMT</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">The paper documents exception chain collapse, a failure in eligibility evaluation under nested conditional rules, and notes that some failure cells silently closed under the same model alias between March and April 2026. It presents the Aethis Eligibility Module, a neuro-symbolic architecture in which LLMs author rules and an SMT-based layer executes them deterministically, reporting higher accuracy than frontier models on LegalBench tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.23386v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-07-25", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 1, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 8}}, "daily_keywords": [{"text": "multi-model reasoning", "domain": "cognition-reasoning"}, {"text": "clinical AI", "domain": "ai-knowledge"}, {"text": "ontology engineering", "domain": "knowledge-graph"}, {"text": "graph-text memory", "domain": "agent-memory"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "world models", "domain": "agent-architecture"}, {"text": "GRPO", "domain": "cognition-reasoning"}, {"text": "agentic scaling", "domain": "agent-architecture"}, {"text": "neuro-symbolic reasoning", "domain": "cognition-reasoning"}, {"text": "memory consolidation", "domain": "knowledge-lifecycle"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "RareLens: Towards End-to-End Rare Disease Care via Aligning Divergent Large Language Model Reasoning", "title_zh": "RareLens：通过对齐发散的大模型推理实现端到端罕见病诊疗", "url": "http://arxiv.org/abs/2607.23290v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2607.23290", "summary": "RareLens reconciles divergent reasoning trajectories from multiple heterogeneous LLMs into decisions across risk screening, diagnosis, treatment planning and prognosis prediction, built on RarelensBench with 157,525 real-world cases spanning 33 Orphanet categories. It outperformed GPT-5, DeepSeek-R1, Claude-3.7-Sonnet and Gemini-2.5-Pro across all stages, reaching 0.917 AUC for screening and top-1 accuracies of 65.5% and 89.8% for diagnosis and treatment, and in an external evaluation of 1,287 cases with 23 physicians both autonomous and assisted RareLens outperformed unaided physicians.", "keywords": [{"text": "multi-model reasoning", "domain": "cognition-reasoning"}, {"text": "clinical decision support", "domain": "ai-knowledge"}, {"text": "reasoning diversity", "domain": "cognition-reasoning"}, {"text": "rare disease", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Co-Evolving Graph and Text Memory for Training-Free Multi-Hop Question Answering", "title_zh": "协同演化的图与文本记忆：面向免训练多跳问答", "url": "http://arxiv.org/abs/2607.23278v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23278", "summary": "Co-E is a training-free system built on synchronized bidirectional graph-text working memory: a synchronization cycle consolidates textual memory, extracts relational triples into graph memory and injects graph facts back into the generation context, so both memories shape subsequent retrieval and generation. On six multi-hop QA benchmarks it improves over comparable training-free open-backbone baselines and is competitive with larger or trained systems.", "keywords": [{"text": "graph memory", "domain": "knowledge-graph"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "training-free", "domain": "ai-knowledge"}, {"text": "memory consolidation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "AgentOmnia: Scaling Agentic Models for Full-Scenario Applications", "title_zh": "AgentOmnia：面向全场景应用的智能体模型扩展", "url": "http://arxiv.org/abs/2607.23124v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23124", "summary": "AgentOmnia is a full-scenario agentic scaling framework that coordinates a Domain x Capability x Atomic Difficulty taxonomy with environment-task synthesis, post-training, evaluation and PRD-guided improvement, constructing 5,018 stateful environments, 255,375 tools and 52,361 tasks. Starting from Qwen3-30B-A3B-Thinking-2507, it raises the OmniaBench challenging-subset pass rate from 9.16% to 37.11% and the four-benchmark macro-average from 22.86% to 41.69%, surpassing Qwen3-235B-A22B-Thinking-2507 on all four benchmarks.", "keywords": [{"text": "agentic scaling", "domain": "agent-architecture"}, {"text": "data synthesis", "domain": "ai-knowledge"}, {"text": "agentic reinforcement learning", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "self-evolution", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "False Prophets: On the Security of World Models in Agentic Systems", "title_zh": "假先知：论智能体系统中世界模型的安全性", "url": "http://arxiv.org/abs/2607.23147v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23147", "summary": "The paper identifies security vulnerabilities specific to learned world models used by LLM agents, showing that attackers can induce mispredictions in terminal-based agent pipelines with up to 95% success, potentially causing unintended command execution, denial of service, wallet drainage and private-information extraction. It introduces a security benchmark dataset for text-based world models and offers practical recommendations for hardening agentic systems.", "keywords": [{"text": "world models", "domain": "agent-architecture"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "adversarial attacks", "domain": "evaluation-benchmark"}, {"text": "terminal agents", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "RareLens: Towards End-to-End Rare Disease Care via Aligning Divergent Large Language Model Reasoning", "title_zh": "RareLens：通过对齐发散的大模型推理实现端到端罕见病诊疗", "url": "http://arxiv.org/abs/2607.23290v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2607.23290", "summary": "RareLens reconciles divergent reasoning trajectories from multiple heterogeneous LLMs into decisions across risk screening, diagnosis, treatment planning and prognosis prediction, built on RarelensBench with 157,525 real-world cases spanning 33 Orphanet categories. It outperformed GPT-5, DeepSeek-R1, Claude-3.7-Sonnet and Gemini-2.5-Pro across all stages, reaching 0.917 AUC for screening and top-1 accuracies of 65.5% and 89.8% for diagnosis and treatment, and in an external evaluation of 1,287 cases with 23 physicians both autonomous and assisted RareLens outperformed unaided physicians.", "keywords": [{"text": "multi-model reasoning", "domain": "cognition-reasoning"}, {"text": "clinical decision support", "domain": "ai-knowledge"}, {"text": "reasoning diversity", "domain": "cognition-reasoning"}, {"text": "rare disease", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "An Ontology for Machine Learning Interatomic Potentials", "title_zh": "面向机器学习原子间势的本体", "url": "http://arxiv.org/abs/2607.23219v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23219", "summary": "The paper presents the MLIPs ontology, an OWL 2 DL ontology organized into Method, Training Data and Benchmark modules that describes machine-learning interatomic potential methods, their hyperparameters, DFT-provenance training datasets and published benchmarks. It connects materials-science and machine-learning ontologies, declares 27 formal axioms enforcing data completeness and consistency, and is evaluated through competency questions over a 20-paper seeded knowledge graph and OWL reasoning.", "keywords": [{"text": "ontology", "domain": "knowledge-graph"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "materials science", "domain": "ai-knowledge"}, {"text": "data provenance", "domain": "knowledge-lifecycle"}, {"text": "OWL reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Beyond a Global Norm: Personalizing Toxicity Sensitivity in Language Models Without Retraining", "title_zh": "超越全球规范：无需重训练即可个性化语言模型的毒性敏感度", "url": "http://arxiv.org/abs/2607.23175v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23175", "summary": "The paper compares training-free methods for aligning language generation to individual toxicity sensitivities at pre-decoding, in-decoding and post-decoding stages, evaluated against targets derived from the PRISM dataset. All methods reduced alignment error by 28-47%, but the results reveal a trade-off among alignment effectiveness, personalization and general language quality.", "keywords": [{"text": "personalization", "domain": "context-prompting"}, {"text": "toxicity alignment", "domain": "ai-knowledge"}, {"text": "inference-time intervention", "domain": "context-prompting"}, {"text": "decoding", "domain": "cognition-reasoning"}, {"text": "evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Co-Evolving Graph and Text Memory for Training-Free Multi-Hop Question Answering", "title_zh": "协同演化的图与文本记忆：面向免训练多跳问答", "url": "http://arxiv.org/abs/2607.23278v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23278", "summary": "Co-E is a training-free system built on synchronized bidirectional graph-text working memory: a synchronization cycle consolidates textual memory, extracts relational triples into graph memory and injects graph facts back into the generation context, so both memories shape subsequent retrieval and generation. On six multi-hop QA benchmarks it improves over comparable training-free open-backbone baselines and is competitive with larger or trained systems.", "keywords": [{"text": "graph memory", "domain": "knowledge-graph"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "training-free", "domain": "ai-knowledge"}, {"text": "memory consolidation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "False Prophets: On the Security of World Models in Agentic Systems", "title_zh": "假先知：论智能体系统中世界模型的安全性", "url": "http://arxiv.org/abs/2607.23147v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23147", "summary": "The paper identifies security vulnerabilities specific to learned world models used by LLM agents, showing that attackers can induce mispredictions in terminal-based agent pipelines with up to 95% success, potentially causing unintended command execution, denial of service, wallet drainage and private-information extraction. It introduces a security benchmark dataset for text-based world models and offers practical recommendations for hardening agentic systems.", "keywords": [{"text": "world models", "domain": "agent-architecture"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "adversarial attacks", "domain": "evaluation-benchmark"}, {"text": "terminal agents", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "On the Impossibility of Unbiased and Length-Invariant Policy Optimization with Outcome Rewards", "title_zh": "结果奖励下无偏且长度不变策略优化的不可能性", "url": "http://arxiv.org/abs/2607.23364v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2607.23364", "summary": "The paper proves an impossibility theorem showing that, under standard outcome-reward GRPO, no length-based weighting scheme can simultaneously be gradient-unbiased and length-invariant. It characterizes the trade-off with the family f_alpha(L) = L^(alpha-1), where alpha = 0 recovers GRPO and alpha = 1 recovers Dr. GRPO, and shows that Dr. GRPO's length bias can let longer trajectories dominate gradient updates by a factor proportional to the length ratio.", "keywords": [{"text": "GRPO", "domain": "cognition-reasoning"}, {"text": "policy optimization", "domain": "cognition-reasoning"}, {"text": "length bias", "domain": "evaluation-benchmark"}, {"text": "reasoning training", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "AgentOmnia: Scaling Agentic Models for Full-Scenario Applications", "title_zh": "AgentOmnia：面向全场景应用的智能体模型扩展", "url": "http://arxiv.org/abs/2607.23124v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.23124", "summary": "AgentOmnia is a full-scenario agentic scaling framework that coordinates a Domain x Capability x Atomic Difficulty taxonomy with environment-task synthesis, post-training, evaluation and PRD-guided improvement, constructing 5,018 stateful environments, 255,375 tools and 52,361 tasks. Starting from Qwen3-30B-A3B-Thinking-2507, it raises the OmniaBench challenging-subset pass rate from 9.16% to 37.11% and the four-benchmark macro-average from 22.86% to 41.69%, surpassing Qwen3-235B-A22B-Thinking-2507 on all four benchmarks.", "keywords": [{"text": "agentic scaling", "domain": "agent-architecture"}, {"text": "data synthesis", "domain": "ai-knowledge"}, {"text": "agentic reinforcement learning", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "self-evolution", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Confidently Wrong: Exception Chain Collapse in Frontier LLM Rule Evaluation", "title_zh": "自信地犯错：前沿大模型规则评估中的异常链崩塌", "url": "http://arxiv.org/abs/2607.23386v1", "source": "arXiv", "section": "research_papers", "organization": "Anthropic", "language": "en", "arxiv_id": "2607.23386", "summary": "The paper documents exception chain collapse, a failure in eligibility evaluation under nested conditional rules, and notes that some failure cells silently closed under the same model alias between March and April 2026. It presents the Aethis Eligibility Module, a neuro-symbolic architecture in which LLMs author rules and an SMT-based layer executes them deterministically, reporting higher accuracy than frontier models on LegalBench tasks.", "keywords": [{"text": "neuro-symbolic reasoning", "domain": "cognition-reasoning"}, {"text": "rule evaluation", "domain": "ai-knowledge"}, {"text": "legal reasoning", "domain": "ai-knowledge"}, {"text": "SMT", "domain": "cognition-reasoning"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

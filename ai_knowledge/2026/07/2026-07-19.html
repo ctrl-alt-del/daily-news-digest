@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-07-19</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">explicit world model</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agent capability retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">uncertain knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent debate</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-horizon simulation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">synthetic temporal graph</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">negotiation memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">enterprise agent platform</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="explicit world model ontology multimodal database counterfactual reasoning hybrid query">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17269</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Explicit World Model Based on Data-First Ontology: DaoQL Multimodal Storage Validation and Counterfactual Reasoning Evaluation<div class="title-zh">基于数据优先本体的显式世界模型：DaoQL 多模态存储验证与反事实推理评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">explicit world model</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">multimodal database</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">counterfactual reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid query</span></div>
+  <div class="item-summary">The paper proposes a data-first ontology in which LLMs act as reasoning and language engines while deterministic knowledge is moved into an explicit multimodal database, DaoQL, integrating graph, column, vector and full-text engines within one process. On an embedded setup it reports graph BFS at 1.20 ms, HNSW at 83.1 microseconds and a Fluent hybrid query at 105.8 microseconds, and in a five-domain counterfactual experiment DaoQL with GPT-4o reaches 94% composable counterfactual decomposability, 49 percentage points above GPT-4o alone.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17269v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research agents misleading evidence evidence verification benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17291</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DRNOISE: Benchmarking Deep Research Agents in Misleading Evidence Environments<div class="title-zh">DRNOISE：评估深度研究智能体在误导性证据环境中的表现</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">misleading evidence</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">evidence verification</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">DRNOISE is a 100-task benchmark for answer recovery under misleading evidence, where each task has a gold answer supported by two corroborating indirect record chains and a paired noisy condition adds one plausible document stating a conflicting answer. Among models with strong clean-task performance, this single intervention causes 66-88 percentage-point accuracy drops, and trace analyses reveal a pattern of verification inertia in which agents retrieve truthful records yet defer to the answer-like document.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17291v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="uncertain knowledge graph multi-agent debate knowledge graph QA reasoning reliability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17266</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Debate-on-Graph: Reliable and Adaptive Reasoning of Large Language Model on Uncertain Knowledge Graph<div class="title-zh">Debate-on-Graph：不确定知识图谱上可靠且自适应的 LLM 推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">uncertain knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent debate</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">knowledge graph QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning reliability</span></div>
+  <div class="item-summary">Debate-on-Graph combines a heuristic search algorithm that extracts reliable, question-relevant subgraphs from uncertain knowledge graphs with a multi-agent debate mechanism that produces answers through adaptive adversarial debate. Experiments on four benchmark QA datasets are reported to achieve state-of-the-art performance over existing LLM reasoning methods and knowledge-graph-based baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17266v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="explicit world model ontology multimodal database counterfactual reasoning hybrid query">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17269</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Explicit World Model Based on Data-First Ontology: DaoQL Multimodal Storage Validation and Counterfactual Reasoning Evaluation<div class="title-zh">基于数据优先本体的显式世界模型：DaoQL 多模态存储验证与反事实推理评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">explicit world model</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">multimodal database</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">counterfactual reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid query</span></div>
+  <div class="item-summary">The paper proposes a data-first ontology in which LLMs act as reasoning and language engines while deterministic knowledge is moved into an explicit multimodal database, DaoQL, integrating graph, column, vector and full-text engines within one process. On an embedded setup it reports graph BFS at 1.20 ms, HNSW at 83.1 microseconds and a Fluent hybrid query at 105.8 microseconds, and in a five-domain counterfactual experiment DaoQL with GPT-4o reaches 94% composable counterfactual decomposability, 49 percentage points above GPT-4o alone.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17269v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent capability retrieval embeddings agent marketplace transfer evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17347</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Adapting Embedding Models for Agent Capability Retrieval<div class="title-zh">面向智能体能力检索的嵌入模型适配</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agent capability retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embeddings</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent marketplace</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">transfer evaluation</span></div>
+  <div class="item-summary">The study fine-tunes three open retrieval backbones, BGE-base, KaLM-v1.5 and EasyRec, on AgentSelect, which represents marketplace-visible agents, tool bundles and reusable skill packages as capability profiles derived from public metadata. Adaptation improves matching on two catalogs unseen during training, MuleRun native agents and a ClawHub benchmark of 50 skills with 1,000 queries, and code and data are to be released upon publication.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17347v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research agents misleading evidence evidence verification benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17291</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DRNOISE: Benchmarking Deep Research Agents in Misleading Evidence Environments<div class="title-zh">DRNOISE：评估深度研究智能体在误导性证据环境中的表现</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">misleading evidence</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">evidence verification</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">DRNOISE is a 100-task benchmark for answer recovery under misleading evidence, where each task has a gold answer supported by two corroborating indirect record chains and a paired noisy condition adds one plausible document stating a conflicting answer. Among models with strong clean-task performance, this single intervention causes 66-88 percentage-point accuracy drops, and trace analyses reveal a pattern of verification inertia in which agents retrieve truthful records yet defer to the answer-like document.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17291v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="uncertain knowledge graph multi-agent debate knowledge graph QA reasoning reliability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17266</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Debate-on-Graph: Reliable and Adaptive Reasoning of Large Language Model on Uncertain Knowledge Graph<div class="title-zh">Debate-on-Graph：不确定知识图谱上可靠且自适应的 LLM 推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">uncertain knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent debate</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">knowledge graph QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning reliability</span></div>
+  <div class="item-summary">Debate-on-Graph combines a heuristic search algorithm that extracts reliable, question-relevant subgraphs from uncertain knowledge graphs with a multi-agent debate mechanism that produces answers through adaptive adversarial debate. Experiments on four benchmark QA datasets are reported to achieve state-of-the-art performance over existing LLM reasoning methods and knowledge-graph-based baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17266v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="role-play agents world model persistent state LLM-as-judge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17250</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EvolvingWorld: An Open-Schema Framework for Co-Evolving Role-Play Agents and World Model in Interactive Literary World<div class="title-zh">EvolvingWorld：交互式文学世界中角色智能体与世界模型协同演化的开放模式框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">role-play agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">world model</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">persistent state</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span></div>
+  <div class="item-summary">EvolvingWorld is an open-schema framework and benchmark that models interactive literary simulation as a long-horizon process, with a Character Agent for multi-character role-play and persistent profile evolution and an LLM-based World Model for global and location/entity-level state maintenance. Built from 57 books into 138,596 supervised training samples and 222 test snapshots, it reports improved long-horizon coherence under a 10-dimension, 20-metric LLM-as-judge protocol.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17250v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent society simulation surrogate modeling scaling memory taxonomy">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2608.11215</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Poor Man's Agentic Modeling: Simulating Large LLM-Agent Societies on a Laptop<div class="title-zh">Poor Man's Agentic Modeling：在笔记本电脑上模拟大规模 LLM 智能体社会</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent society simulation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">surrogate modeling</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">scaling</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory taxonomy</span></div>
+  <div class="item-summary">The paper replaces each LLM agent in a large society simulation with a low-parameter surrogate fitted from a few hundred to a few thousand cheap queries, then runs the society at any agent count on a laptop. An interaction-order by memory taxonomy predicts how surrogate error scales with the number of agents, and the predictions are validated on a reimplementation of the EconAgent macroeconomy and seven further named LLM simulations, with two refuted predictions also matched quantitatively.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.11215v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="temporal graph synthetic benchmark LLM agents RAG rule base">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.17288</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SAGA: Synthetic Agentic Graph Architecture for Temporal Benchmark Generation<div class="title-zh">SAGA：面向时序基准生成的合成智能体图架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">temporal graph</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">synthetic benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">LLM agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG rule base</span></div>
+  <div class="item-summary">SAGA generates large-scale, semantically rich temporal graphs through a four-phase skeleton-first, semantics-second pipeline in which LLM agents inject domain semantics using RAG-based rule bases and a state alignment engine resolves conflicts via temporal replay, yielding anomaly labels as a byproduct. On a single H100 GPU with vLLM batching it generates 500,000 temporal edges with controlled anomalies in under 90 minutes, scaling to 100,000 nodes while maintaining clustering coefficients above 0.99.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.17288v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent negotiation contract net protocol negotiation memory edge computing context disclosure">
+  <div class="item-meta">
+    <span class="item-org">Alibaba</span>
+    <span class="arxiv-tag">arxiv:2608.12371</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Multi-Agent Scheduling with LLM-Assisted Contract Net Negotiation for Stream Processing in Mobile Edge Computing<div class="title-zh">移动边缘计算流处理中基于 LLM 辅助合同网协商的多智能体调度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent negotiation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">contract net protocol</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">negotiation memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">edge computing</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context disclosure</span></div>
+  <div class="item-summary">MAS-DecStream extends the Contract Net Protocol with semantic call-for-proposal formulation, progressive context disclosure, multi-round proposal revision, negotiation memory and deterministic validation for stream-processing scheduling across mobile edge-cloud infrastructure. In experiments derived from the Alibaba ASI Trace it reduces latency violations to 3%, eliminates resource overcommitment, reaches a 0.91 conflict-resolution rate with 20 agents and improves utility by up to 22% over a multi-round rule-based baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.12371v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="software ontology coding agents composition framework reusable components">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">NullLabTests/software-periodic-table<div class="title-zh">软件元素周期表：115 个可复用软件元素及 LLM 编码智能体组合框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">software ontology</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">composition framework</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">reusable components</span></div>
+  <div class="item-summary">software-periodic-table is a TypeScript library that defines a finite ontology of 115 recurring software elements and provides a composition framework for LLM-based coding agents to assemble software components systematically.</div>
+  <a class="item-link" href="https://github.com/NullLabTests/software-periodic-table" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="enterprise agents multi-agent coordination agent platform deployment">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Huawei Cloud Unveils Enterprise AI at WAIC: Zhou Yuefeng Breaks Down the Steps for Scaling AI Agents Into Production Systems<div class="title-zh">华为云在 WAIC 发布企业级 AI：周跃峰详解智能体规模化落地路径</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">enterprise agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent coordination</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent platform</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">deployment</span></div>
+  <div class="item-summary">Huawei Cloud CEO Zhou Yuefeng introduced the AgentArts platform and openJiuwen framework at WAIC 2026, aimed at enterprise-grade AI agent deployment with multi-agent coordination, stability and security guarantees.</div>
+  <a class="item-link" href="https://pandaily.com/huawei-cloud-enterprise-ai-waic-2026-jul2026" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://pandaily.com" target="_blank" rel="noopener">Pandaily</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-07-19", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 3, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 1, "industry_applications": 1}}, "daily_keywords": [{"text": "explicit world model", "domain": "knowledge-graph"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "agent capability retrieval", "domain": "rag-retrieval"}, {"text": "deep research agents", "domain": "agent-architecture"}, {"text": "uncertain knowledge graph", "domain": "knowledge-graph"}, {"text": "multi-agent debate", "domain": "agent-architecture"}, {"text": "long-horizon simulation", "domain": "agent-memory"}, {"text": "synthetic temporal graph", "domain": "evaluation-benchmark"}, {"text": "negotiation memory", "domain": "agent-memory"}, {"text": "enterprise agent platform", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "An Explicit World Model Based on Data-First Ontology: DaoQL Multimodal Storage Validation and Counterfactual Reasoning Evaluation", "title_zh": "基于数据优先本体的显式世界模型：DaoQL 多模态存储验证与反事实推理评估", "url": "http://arxiv.org/abs/2607.17269v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17269", "summary": "The paper proposes a data-first ontology in which LLMs act as reasoning and language engines while deterministic knowledge is moved into an explicit multimodal database, DaoQL, integrating graph, column, vector and full-text engines within one process. On an embedded setup it reports graph BFS at 1.20 ms, HNSW at 83.1 microseconds and a Fluent hybrid query at 105.8 microseconds, and in a five-domain counterfactual experiment DaoQL with GPT-4o reaches 94% composable counterfactual decomposability, 49 percentage points above GPT-4o alone.", "keywords": [{"text": "explicit world model", "domain": "knowledge-graph"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "multimodal database", "domain": "knowledge-lifecycle"}, {"text": "counterfactual reasoning", "domain": "cognition-reasoning"}, {"text": "hybrid query", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "DRNOISE: Benchmarking Deep Research Agents in Misleading Evidence Environments", "title_zh": "DRNOISE：评估深度研究智能体在误导性证据环境中的表现", "url": "http://arxiv.org/abs/2607.17291v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17291", "summary": "DRNOISE is a 100-task benchmark for answer recovery under misleading evidence, where each task has a gold answer supported by two corroborating indirect record chains and a paired noisy condition adds one plausible document stating a conflicting answer. Among models with strong clean-task performance, this single intervention causes 66-88 percentage-point accuracy drops, and trace analyses reveal a pattern of verification inertia in which agents retrieve truthful records yet defer to the answer-like document.", "keywords": [{"text": "deep research agents", "domain": "agent-architecture"}, {"text": "misleading evidence", "domain": "rag-retrieval"}, {"text": "evidence verification", "domain": "cognition-reasoning"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Debate-on-Graph: Reliable and Adaptive Reasoning of Large Language Model on Uncertain Knowledge Graph", "title_zh": "Debate-on-Graph：不确定知识图谱上可靠且自适应的 LLM 推理", "url": "http://arxiv.org/abs/2607.17266v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17266", "summary": "Debate-on-Graph combines a heuristic search algorithm that extracts reliable, question-relevant subgraphs from uncertain knowledge graphs with a multi-agent debate mechanism that produces answers through adaptive adversarial debate. Experiments on four benchmark QA datasets are reported to achieve state-of-the-art performance over existing LLM reasoning methods and knowledge-graph-based baselines.", "keywords": [{"text": "uncertain knowledge graph", "domain": "knowledge-graph"}, {"text": "multi-agent debate", "domain": "agent-architecture"}, {"text": "knowledge graph QA", "domain": "rag-retrieval"}, {"text": "reasoning reliability", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "An Explicit World Model Based on Data-First Ontology: DaoQL Multimodal Storage Validation and Counterfactual Reasoning Evaluation", "title_zh": "基于数据优先本体的显式世界模型：DaoQL 多模态存储验证与反事实推理评估", "url": "http://arxiv.org/abs/2607.17269v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17269", "summary": "The paper proposes a data-first ontology in which LLMs act as reasoning and language engines while deterministic knowledge is moved into an explicit multimodal database, DaoQL, integrating graph, column, vector and full-text engines within one process. On an embedded setup it reports graph BFS at 1.20 ms, HNSW at 83.1 microseconds and a Fluent hybrid query at 105.8 microseconds, and in a five-domain counterfactual experiment DaoQL with GPT-4o reaches 94% composable counterfactual decomposability, 49 percentage points above GPT-4o alone.", "keywords": [{"text": "explicit world model", "domain": "knowledge-graph"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "multimodal database", "domain": "knowledge-lifecycle"}, {"text": "counterfactual reasoning", "domain": "cognition-reasoning"}, {"text": "hybrid query", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Adapting Embedding Models for Agent Capability Retrieval", "title_zh": "面向智能体能力检索的嵌入模型适配", "url": "http://arxiv.org/abs/2607.17347v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17347", "summary": "The study fine-tunes three open retrieval backbones, BGE-base, KaLM-v1.5 and EasyRec, on AgentSelect, which represents marketplace-visible agents, tool bundles and reusable skill packages as capability profiles derived from public metadata. Adaptation improves matching on two catalogs unseen during training, MuleRun native agents and a ClawHub benchmark of 50 skills with 1,000 queries, and code and data are to be released upon publication.", "keywords": [{"text": "agent capability retrieval", "domain": "rag-retrieval"}, {"text": "embeddings", "domain": "embeddings-vectors"}, {"text": "agent marketplace", "domain": "agent-architecture"}, {"text": "transfer evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "DRNOISE: Benchmarking Deep Research Agents in Misleading Evidence Environments", "title_zh": "DRNOISE：评估深度研究智能体在误导性证据环境中的表现", "url": "http://arxiv.org/abs/2607.17291v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17291", "summary": "DRNOISE is a 100-task benchmark for answer recovery under misleading evidence, where each task has a gold answer supported by two corroborating indirect record chains and a paired noisy condition adds one plausible document stating a conflicting answer. Among models with strong clean-task performance, this single intervention causes 66-88 percentage-point accuracy drops, and trace analyses reveal a pattern of verification inertia in which agents retrieve truthful records yet defer to the answer-like document.", "keywords": [{"text": "deep research agents", "domain": "agent-architecture"}, {"text": "misleading evidence", "domain": "rag-retrieval"}, {"text": "evidence verification", "domain": "cognition-reasoning"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Debate-on-Graph: Reliable and Adaptive Reasoning of Large Language Model on Uncertain Knowledge Graph", "title_zh": "Debate-on-Graph：不确定知识图谱上可靠且自适应的 LLM 推理", "url": "http://arxiv.org/abs/2607.17266v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17266", "summary": "Debate-on-Graph combines a heuristic search algorithm that extracts reliable, question-relevant subgraphs from uncertain knowledge graphs with a multi-agent debate mechanism that produces answers through adaptive adversarial debate. Experiments on four benchmark QA datasets are reported to achieve state-of-the-art performance over existing LLM reasoning methods and knowledge-graph-based baselines.", "keywords": [{"text": "uncertain knowledge graph", "domain": "knowledge-graph"}, {"text": "multi-agent debate", "domain": "agent-architecture"}, {"text": "knowledge graph QA", "domain": "rag-retrieval"}, {"text": "reasoning reliability", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "EvolvingWorld: An Open-Schema Framework for Co-Evolving Role-Play Agents and World Model in Interactive Literary World", "title_zh": "EvolvingWorld：交互式文学世界中角色智能体与世界模型协同演化的开放模式框架", "url": "http://arxiv.org/abs/2607.17250v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17250", "summary": "EvolvingWorld is an open-schema framework and benchmark that models interactive literary simulation as a long-horizon process, with a Character Agent for multi-character role-play and persistent profile evolution and an LLM-based World Model for global and location/entity-level state maintenance. Built from 57 books into 138,596 supervised training samples and 222 test snapshots, it reports improved long-horizon coherence under a 10-dimension, 20-metric LLM-as-judge protocol.", "keywords": [{"text": "role-play agents", "domain": "agent-architecture"}, {"text": "world model", "domain": "cognition-reasoning"}, {"text": "persistent state", "domain": "agent-memory"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Poor Man's Agentic Modeling: Simulating Large LLM-Agent Societies on a Laptop", "title_zh": "Poor Man's Agentic Modeling：在笔记本电脑上模拟大规模 LLM 智能体社会", "url": "http://arxiv.org/abs/2608.11215v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2608.11215", "summary": "The paper replaces each LLM agent in a large society simulation with a low-parameter surrogate fitted from a few hundred to a few thousand cheap queries, then runs the society at any agent count on a laptop. An interaction-order by memory taxonomy predicts how surrogate error scales with the number of agents, and the predictions are validated on a reimplementation of the EconAgent macroeconomy and seven further named LLM simulations, with two refuted predictions also matched quantitatively.", "keywords": [{"text": "agent society simulation", "domain": "agent-architecture"}, {"text": "surrogate modeling", "domain": "ai-knowledge"}, {"text": "scaling", "domain": "evaluation-benchmark"}, {"text": "memory taxonomy", "domain": "agent-memory"}], "link_verified": true, "is_highlight": false}, {"title": "SAGA: Synthetic Agentic Graph Architecture for Temporal Benchmark Generation", "title_zh": "SAGA：面向时序基准生成的合成智能体图架构", "url": "http://arxiv.org/abs/2607.17288v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.17288", "summary": "SAGA generates large-scale, semantically rich temporal graphs through a four-phase skeleton-first, semantics-second pipeline in which LLM agents inject domain semantics using RAG-based rule bases and a state alignment engine resolves conflicts via temporal replay, yielding anomaly labels as a byproduct. On a single H100 GPU with vLLM batching it generates 500,000 temporal edges with controlled anomalies in under 90 minutes, scaling to 100,000 nodes while maintaining clustering coefficients above 0.99.", "keywords": [{"text": "temporal graph", "domain": "knowledge-graph"}, {"text": "synthetic benchmark", "domain": "evaluation-benchmark"}, {"text": "LLM agents", "domain": "agent-architecture"}, {"text": "RAG rule base", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Multi-Agent Scheduling with LLM-Assisted Contract Net Negotiation for Stream Processing in Mobile Edge Computing", "title_zh": "移动边缘计算流处理中基于 LLM 辅助合同网协商的多智能体调度", "url": "http://arxiv.org/abs/2608.12371v1", "source": "arXiv", "section": "research_papers", "organization": "Alibaba", "language": "en", "arxiv_id": "2608.12371", "summary": "MAS-DecStream extends the Contract Net Protocol with semantic call-for-proposal formulation, progressive context disclosure, multi-round proposal revision, negotiation memory and deterministic validation for stream-processing scheduling across mobile edge-cloud infrastructure. In experiments derived from the Alibaba ASI Trace it reduces latency violations to 3%, eliminates resource overcommitment, reaches a 0.91 conflict-resolution rate with 20 agents and improves utility by up to 22% over a multi-round rule-based baseline.", "keywords": [{"text": "multi-agent negotiation", "domain": "agent-architecture"}, {"text": "contract net protocol", "domain": "agent-architecture"}, {"text": "negotiation memory", "domain": "agent-memory"}, {"text": "edge computing", "domain": "ai-knowledge"}, {"text": "context disclosure", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "NullLabTests/software-periodic-table", "title_zh": "软件元素周期表：115 个可复用软件元素及 LLM 编码智能体组合框架", "url": "https://github.com/NullLabTests/software-periodic-table", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "software-periodic-table is a TypeScript library that defines a finite ontology of 115 recurring software elements and provides a composition framework for LLM-based coding agents to assemble software components systematically.", "keywords": [{"text": "software ontology", "domain": "knowledge-graph"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "composition framework", "domain": "agent-architecture"}, {"text": "reusable components", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Huawei Cloud Unveils Enterprise AI at WAIC: Zhou Yuefeng Breaks Down the Steps for Scaling AI Agents Into Production Systems", "title_zh": "华为云在 WAIC 发布企业级 AI：周跃峰详解智能体规模化落地路径", "url": "https://pandaily.com/huawei-cloud-enterprise-ai-waic-2026-jul2026", "source": "Pandaily", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "", "summary": "Huawei Cloud CEO Zhou Yuefeng introduced the AgentArts platform and openJiuwen framework at WAIC 2026, aimed at enterprise-grade AI agent deployment with multi-agent coordination, stability and security guarantees.", "keywords": [{"text": "enterprise agents", "domain": "agent-architecture"}, {"text": "multi-agent coordination", "domain": "agent-architecture"}, {"text": "agent platform", "domain": "agent-architecture"}, {"text": "deployment", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Pandaily", "url": "https://pandaily.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

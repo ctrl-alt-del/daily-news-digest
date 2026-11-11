@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-07-13</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>1 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent coordination</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task allocation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context budget</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge grounding</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">code property graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agentic vulnerability analysis</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">MoE model</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">theory-grounded prompting</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="MoE agentic model tool use model release">
+  <div class="item-meta">
+    <span class="item-org">Foundation Model Team</span>
+    <span class="arxiv-tag">arxiv:2607.09375</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Mach-Mind-4-Flash Technical Report<div class="title-zh">Mach-Mind-4-Flash 技术报告：35B MoE 智能体模型发布</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">MoE</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model release</span></div>
+  <div class="item-summary">Mach-Mind-4-Flash is a 35B-parameter Mixture-of-Experts agentic model with 3B activated parameters. Its technical report describes an agentic LLM designed for tool use and complex reasoning tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.09375v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic reasoning code property graph vulnerability localization grounded evidence security benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.12058</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AutoTrace: From Patches to Triggers via Agentic Interprocedural Exploration<div class="title-zh">AutoTrace：通过智能体跨过程探索从补丁定位触发点</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reasoning</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">code property graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">vulnerability localization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">grounded evidence</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">security benchmark</span></div>
+  <div class="item-summary">AutoTrace is an agentic pipeline that localizes vulnerability triggers by exploring a code property graph layer by layer, with LLM agents deciding where to look next and deterministic admissibility gates requiring explicit evidence before a trigger is reported. It reaches 75.0% VulnHit and 80.8% FuncHit on the full InterPVD benchmark, and the authors also release SinkTrace-Bench with 1,542 verifier-confirmed, balanced vulnerable/safe samples.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.12058v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic reasoning code property graph vulnerability localization grounded evidence security benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.12058</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AutoTrace: From Patches to Triggers via Agentic Interprocedural Exploration<div class="title-zh">AutoTrace：通过智能体跨过程探索从补丁定位触发点</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reasoning</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">code property graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">vulnerability localization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">grounded evidence</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">security benchmark</span></div>
+  <div class="item-summary">AutoTrace is an agentic pipeline that localizes vulnerability triggers by exploring a code property graph layer by layer, with LLM agents deciding where to look next and deterministic admissibility gates requiring explicit evidence before a trigger is reported. It reaches 75.0% VulnHit and 80.8% FuncHit on the full InterPVD benchmark, and the authors also release SinkTrace-Bench with 1,542 verifier-confirmed, balanced vulnerable/safe samples.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.12058v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent task allocation auction mechanism reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.09600</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agora: Enhancing LLM Agent Reasoning Via Auction-Based Task Allocation<div class="title-zh">Agora：通过拍卖式任务分配增强LLM智能体推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task allocation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">auction mechanism</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning</span></div>
+  <div class="item-summary">Agora proposes auction-based task allocation to coordinate multiple LLM agents for reasoning, dynamically assigning subtasks to specialized agents. The paper reports that the mechanism improves overall reasoning capability beyond single-agent approaches.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.09600v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning catastrophic forgetting federated learning generative replay gradient aggregation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.12112</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Continual Learning with Elastic Regularization and Synthetic Replay for Federated MLLM Fine-Tuning<div class="title-zh">面向联邦多模态大模型微调的弹性正则化与合成回放持续学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">federated learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">generative replay</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">gradient aggregation</span></div>
+  <div class="item-summary">The paper proposes FedCMM, a federated continual multimodal learning framework that combines modality-aware elastic weight consolidation, local generative replay at the embedding level without raw-data sharing, and task-similarity-aware gradient aggregation. Experiments on two benchmarks report consistent gains over recent baselines in accuracy and backward transfer.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.12112v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent grounding malware analysis threat attribution">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.09179</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Malaika: Understanding Malware through Tri-Grounded Agentic Reasoning<div class="title-zh">Malaika：通过三重锚定智能体推理理解恶意软件</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">grounding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">malware analysis</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">threat attribution</span></div>
+  <div class="item-summary">Malaika is a multi-agent framework for malware analysis that combines domain grounding for behavior hypotheses, semantics grounding for evidence localization, and knowledge grounding for threat attribution. It is reported to improve analysis quality over prior LLM-based malware-analysis frameworks for Android malware.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.09179v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning catastrophic forgetting medical VQA LoRA empirical evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.12048</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Empirical Analysis of Continual Learning for Heterogeneous Medical Visual Question Answering<div class="title-zh">异构医学视觉问答持续学习的实证分析</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">medical VQA</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">LoRA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">empirical evaluation</span></div>
+  <div class="item-summary">The paper systematically evaluates continual learning for medical visual question answering across classification, multi-label classification, detection, cell counting, and report generation. It finds that existing methods struggle to maintain a stability-plasticity balance when tasks with different objectives and supervision formats are interleaved, and analyzes task-order sensitivity and LoRA weight drift.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.12048v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="document processing agent optimization domain skills configuration search">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.26075</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">IDP AutoOpt: Agent-Driven Optimization of Document Processing Pipeline Configurations<div class="title-zh">IDP AutoOpt：智能体驱动的文档处理流水线配置优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document processing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent optimization</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">domain skills</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">configuration search</span></div>
+  <div class="item-summary">IDP AutoOpt is an autonomous LLM agent that tunes prompts, models, OCR settings, and schemas for intelligent document processing by scoring configurations, diagnosing field-level errors, and generating targeted edits in a closed loop. It reports matching or exceeding human-expert accuracy at equal or lower cost, with one extraction benchmark at 90.2% versus 81.6% and 4.6x lower per-page cost, while cutting configuration time from weeks to under two hours.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.26075v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multilingual reasoning moral reasoning theory-grounded prompting self-distillation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.11736</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MET: Theory-Grounded and Culture-Aware Multilingual Moral Reasoning<div class="title-zh">MET：理论锚定且文化感知的多语言道德推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multilingual reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">moral reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">theory-grounded prompting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-distillation</span></div>
+  <div class="item-summary">The paper introduces MCLASH, a multilingual moral decision-making benchmark, and MET, a two-step prompting method that first selects situation- and culture-specific theory-based grounds and then reasons over them in the user's native language. MET-D self-distillation improves macro-F1 by an average of 3.71 points on MCLASH and 4.23 on MMoralExceptQA across three models, with a peak MCLASH gain of 12.94 points for Malay on Qwen3-8B.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.11736v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context budget multi-agent coordination long context controlled benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.12216</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RCWT: Measuring Task-Budget Displacement from Coordination Content in LLM Calls<div class="title-zh">RCWT：测量 LLM 调用中协调内容挤占任务预算的程度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context budget</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent coordination</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">controlled benchmark</span></div>
+  <div class="item-summary">The paper introduces the Roundtable Context Window Test (RCWT), a controlled protocol for measuring how coordination content such as shared state, prior discussion, tool outputs, summaries, and role instructions displaces task instructions and evidence under a fixed context budget. In a 4,096-token context-dependent recall task, three commercial models degrade sharply once residual reference evidence falls to a few hundred tokens, while an intact-task ablation keeps answers correct up to a 95% coordination ratio.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.12216v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="MoE agentic model tool use model release">
+  <div class="item-meta">
+    <span class="item-org">Foundation Model Team</span>
+    <span class="arxiv-tag">arxiv:2607.09375</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Mach-Mind-4-Flash Technical Report<div class="title-zh">Mach-Mind-4-Flash 技术报告：35B MoE 智能体模型发布</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">MoE</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model release</span></div>
+  <div class="item-summary">Mach-Mind-4-Flash is a 35B-parameter Mixture-of-Experts agentic model with 3B activated parameters. Its technical report describes an agentic LLM designed for tool use and complex reasoning tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.09375v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-07-13", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 1, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 8, "models_embeddings": 1}}, "daily_keywords": [{"text": "multi-agent coordination", "domain": "agent-architecture"}, {"text": "task allocation", "domain": "agent-architecture"}, {"text": "context budget", "domain": "context-prompting"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "knowledge grounding", "domain": "knowledge-graph"}, {"text": "code property graph", "domain": "knowledge-graph"}, {"text": "agentic vulnerability analysis", "domain": "ai-knowledge"}, {"text": "MoE model", "domain": "ai-knowledge"}, {"text": "theory-grounded prompting", "domain": "context-prompting"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Mach-Mind-4-Flash Technical Report", "title_zh": "Mach-Mind-4-Flash 技术报告：35B MoE 智能体模型发布", "url": "http://arxiv.org/abs/2607.09375v1", "source": "arXiv", "section": "models_embeddings", "organization": "Foundation Model Team", "language": "en", "arxiv_id": "2607.09375", "summary": "Mach-Mind-4-Flash is a 35B-parameter Mixture-of-Experts agentic model with 3B activated parameters. Its technical report describes an agentic LLM designed for tool use and complex reasoning tasks.", "keywords": [{"text": "MoE", "domain": "ai-knowledge"}, {"text": "agentic model", "domain": "agent-architecture"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "model release", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "AutoTrace: From Patches to Triggers via Agentic Interprocedural Exploration", "title_zh": "AutoTrace：通过智能体跨过程探索从补丁定位触发点", "url": "http://arxiv.org/abs/2607.12058v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.12058", "summary": "AutoTrace is an agentic pipeline that localizes vulnerability triggers by exploring a code property graph layer by layer, with LLM agents deciding where to look next and deterministic admissibility gates requiring explicit evidence before a trigger is reported. It reaches 75.0% VulnHit and 80.8% FuncHit on the full InterPVD benchmark, and the authors also release SinkTrace-Bench with 1,542 verifier-confirmed, balanced vulnerable/safe samples.", "keywords": [{"text": "agentic reasoning", "domain": "agent-architecture"}, {"text": "code property graph", "domain": "knowledge-graph"}, {"text": "vulnerability localization", "domain": "ai-knowledge"}, {"text": "grounded evidence", "domain": "cognition-reasoning"}, {"text": "security benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "AutoTrace: From Patches to Triggers via Agentic Interprocedural Exploration", "title_zh": "AutoTrace：通过智能体跨过程探索从补丁定位触发点", "url": "http://arxiv.org/abs/2607.12058v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.12058", "summary": "AutoTrace is an agentic pipeline that localizes vulnerability triggers by exploring a code property graph layer by layer, with LLM agents deciding where to look next and deterministic admissibility gates requiring explicit evidence before a trigger is reported. It reaches 75.0% VulnHit and 80.8% FuncHit on the full InterPVD benchmark, and the authors also release SinkTrace-Bench with 1,542 verifier-confirmed, balanced vulnerable/safe samples.", "keywords": [{"text": "agentic reasoning", "domain": "agent-architecture"}, {"text": "code property graph", "domain": "knowledge-graph"}, {"text": "vulnerability localization", "domain": "ai-knowledge"}, {"text": "grounded evidence", "domain": "cognition-reasoning"}, {"text": "security benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Agora: Enhancing LLM Agent Reasoning Via Auction-Based Task Allocation", "title_zh": "Agora：通过拍卖式任务分配增强LLM智能体推理", "url": "http://arxiv.org/abs/2607.09600v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.09600", "summary": "Agora proposes auction-based task allocation to coordinate multiple LLM agents for reasoning, dynamically assigning subtasks to specialized agents. The paper reports that the mechanism improves overall reasoning capability beyond single-agent approaches.", "keywords": [{"text": "multi-agent", "domain": "agent-architecture"}, {"text": "task allocation", "domain": "agent-architecture"}, {"text": "auction mechanism", "domain": "cognition-reasoning"}, {"text": "reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Continual Learning with Elastic Regularization and Synthetic Replay for Federated MLLM Fine-Tuning", "title_zh": "面向联邦多模态大模型微调的弹性正则化与合成回放持续学习", "url": "http://arxiv.org/abs/2607.12112v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.12112", "summary": "The paper proposes FedCMM, a federated continual multimodal learning framework that combines modality-aware elastic weight consolidation, local generative replay at the embedding level without raw-data sharing, and task-similarity-aware gradient aggregation. Experiments on two benchmarks report consistent gains over recent baselines in accuracy and backward transfer.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "federated learning", "domain": "ai-knowledge"}, {"text": "generative replay", "domain": "embeddings-vectors"}, {"text": "gradient aggregation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Malaika: Understanding Malware through Tri-Grounded Agentic Reasoning", "title_zh": "Malaika：通过三重锚定智能体推理理解恶意软件", "url": "http://arxiv.org/abs/2607.09179v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.09179", "summary": "Malaika is a multi-agent framework for malware analysis that combines domain grounding for behavior hypotheses, semantics grounding for evidence localization, and knowledge grounding for threat attribution. It is reported to improve analysis quality over prior LLM-based malware-analysis frameworks for Android malware.", "keywords": [{"text": "multi-agent", "domain": "agent-architecture"}, {"text": "grounding", "domain": "cognition-reasoning"}, {"text": "malware analysis", "domain": "ai-knowledge"}, {"text": "threat attribution", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": false}, {"title": "An Empirical Analysis of Continual Learning for Heterogeneous Medical Visual Question Answering", "title_zh": "异构医学视觉问答持续学习的实证分析", "url": "http://arxiv.org/abs/2607.12048v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.12048", "summary": "The paper systematically evaluates continual learning for medical visual question answering across classification, multi-label classification, detection, cell counting, and report generation. It finds that existing methods struggle to maintain a stability-plasticity balance when tasks with different objectives and supervision formats are interleaved, and analyzes task-order sensitivity and LoRA weight drift.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "medical VQA", "domain": "ai-knowledge"}, {"text": "LoRA", "domain": "embeddings-vectors"}, {"text": "empirical evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "IDP AutoOpt: Agent-Driven Optimization of Document Processing Pipeline Configurations", "title_zh": "IDP AutoOpt：智能体驱动的文档处理流水线配置优化", "url": "http://arxiv.org/abs/2607.26075v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.26075", "summary": "IDP AutoOpt is an autonomous LLM agent that tunes prompts, models, OCR settings, and schemas for intelligent document processing by scoring configurations, diagnosing field-level errors, and generating targeted edits in a closed loop. It reports matching or exceeding human-expert accuracy at equal or lower cost, with one extraction benchmark at 90.2% versus 81.6% and 4.6x lower per-page cost, while cutting configuration time from weeks to under two hours.", "keywords": [{"text": "document processing", "domain": "rag-retrieval"}, {"text": "agent optimization", "domain": "agent-architecture"}, {"text": "domain skills", "domain": "context-prompting"}, {"text": "configuration search", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "MET: Theory-Grounded and Culture-Aware Multilingual Moral Reasoning", "title_zh": "MET：理论锚定且文化感知的多语言道德推理", "url": "http://arxiv.org/abs/2607.11736v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.11736", "summary": "The paper introduces MCLASH, a multilingual moral decision-making benchmark, and MET, a two-step prompting method that first selects situation- and culture-specific theory-based grounds and then reasons over them in the user's native language. MET-D self-distillation improves macro-F1 by an average of 3.71 points on MCLASH and 4.23 on MMoralExceptQA across three models, with a peak MCLASH gain of 12.94 points for Malay on Qwen3-8B.", "keywords": [{"text": "multilingual reasoning", "domain": "cognition-reasoning"}, {"text": "moral reasoning", "domain": "cognition-reasoning"}, {"text": "theory-grounded prompting", "domain": "context-prompting"}, {"text": "self-distillation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "RCWT: Measuring Task-Budget Displacement from Coordination Content in LLM Calls", "title_zh": "RCWT：测量 LLM 调用中协调内容挤占任务预算的程度", "url": "http://arxiv.org/abs/2607.12216v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.12216", "summary": "The paper introduces the Roundtable Context Window Test (RCWT), a controlled protocol for measuring how coordination content such as shared state, prior discussion, tool outputs, summaries, and role instructions displaces task instructions and evidence under a fixed context budget. In a 4,096-token context-dependent recall task, three commercial models degrade sharply once residual reference evidence falls to a few hundred tokens, while an intact-task ablation keeps answers correct up to a 95% coordination ratio.", "keywords": [{"text": "context budget", "domain": "context-prompting"}, {"text": "multi-agent coordination", "domain": "agent-architecture"}, {"text": "long context", "domain": "context-prompting"}, {"text": "controlled benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Mach-Mind-4-Flash Technical Report", "title_zh": "Mach-Mind-4-Flash 技术报告：35B MoE 智能体模型发布", "url": "http://arxiv.org/abs/2607.09375v1", "source": "arXiv", "section": "models_embeddings", "organization": "Foundation Model Team", "language": "en", "arxiv_id": "2607.09375", "summary": "Mach-Mind-4-Flash is a 35B-parameter Mixture-of-Experts agentic model with 3B activated parameters. Its technical report describes an agentic LLM designed for tool use and complex reasoning tasks.", "keywords": [{"text": "MoE", "domain": "ai-knowledge"}, {"text": "agentic model", "domain": "agent-architecture"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "model release", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

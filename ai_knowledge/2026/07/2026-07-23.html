@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-07-23</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>1 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agentic context management</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compaction</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG routing</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt compression</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">semantic join discovery</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent coordination</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent tool security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">token efficiency</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic context management context compaction agent memory token cost long-term memory benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.21503</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Context Management: Solving Agent Memory and Cost by Treating Them as Lifecycle and Architecture Problems<div class="title-zh">智能体上下文管理：将智能体记忆与成本视为生命周期与架构问题</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agentic context management</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compaction</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">token cost</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">long-term memory benchmark</span></div>
+  <div class="item-summary">The paper argues that production agent failures stem more from mismanaging reasoning context than from weak reasoning, and proposes Agentic Context Management (ACM) with five primitives: architecting, ingesting, scoping, anticipating, and compacting and consolidation. A reference implementation, Maximem Synap, reports 92% on LongMemEval and 93.2% on LoCoMo under the configuration detailed in the paper, while the authors show that naive context accumulation grows token cost quadratically and that validated compaction keeps it linear.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.21503v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation prompt compression KV cache adaptive routing">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2609.17564</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Static RAG: An Adaptive, Tri-Metric Routing Framework for Efficient Long-Context Inference on Commodity GPUs<div class="title-zh">超越静态 RAG：面向商用 GPU 高效长上下文推理的自适应三指标路由框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">KV cache</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">adaptive routing</span></div>
+  <div class="item-summary">The paper identifies a compression paradox when RAG is served on 16 GB T4 GPUs, where neural prompt compression can add KV-cache contention and latency while skipping compression risks out-of-memory failures on long contexts. Its training-free Tri-Metric Router selects among raw, LLMLingua-2 and BM25 pipelines using length, key-token density and type-token ratio, reporting 0% OOM failures, 88.5% oracle alignment and 49.3% combined F1 on out-of-distribution holdouts, 5.2 points above always-on lexical compression.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.17564v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic context management context compaction agent memory token cost long-term memory benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.21503</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Context Management: Solving Agent Memory and Cost by Treating Them as Lifecycle and Architecture Problems<div class="title-zh">智能体上下文管理：将智能体记忆与成本视为生命周期与架构问题</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agentic context management</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compaction</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">token cost</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">long-term memory benchmark</span></div>
+  <div class="item-summary">The paper argues that production agent failures stem more from mismanaging reasoning context than from weak reasoning, and proposes Agentic Context Management (ACM) with five primitives: architecting, ingesting, scoping, anticipating, and compacting and consolidation. A reference implementation, Maximem Synap, reports 92% on LongMemEval and 93.2% on LoCoMo under the configuration detailed in the paper, while the authors show that naive context accumulation grows token cost quadratically and that validated compaction keeps it linear.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.21503v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation prompt compression KV cache adaptive routing">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2609.17564</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Static RAG: An Adaptive, Tri-Metric Routing Framework for Efficient Long-Context Inference on Commodity GPUs<div class="title-zh">超越静态 RAG：面向商用 GPU 高效长上下文推理的自适应三指标路由框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">KV cache</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">adaptive routing</span></div>
+  <div class="item-summary">The paper identifies a compression paradox when RAG is served on 16 GB T4 GPUs, where neural prompt compression can add KV-cache contention and latency while skipping compression risks out-of-memory failures on long contexts. Its training-free Tri-Metric Router selects among raw, LLMLingua-2 and BM25 pipelines using length, key-token density and type-token ratio, reporting 0% OOM failures, 88.5% oracle alignment and 49.3% combined F1 on out-of-distribution holdouts, 5.2 points above always-on lexical compression.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.17564v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="Verilog generation LLM benchmark hardware design iterative refinement">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.22759</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Benchmarking LLMs for Verilog Design Flows<div class="title-zh">面向 Verilog 设计流程的大语言模型基准评测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Verilog generation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">hardware design</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">iterative refinement</span></div>
+  <div class="item-summary">The paper presents a reproducible benchmarking platform that evaluates open-source LLMs on 50 Verilog RTL generation tasks using constrained prompting, AST-based repair, formal equivalence verification, Verilator compilation and Icarus Verilog simulation. Across 1,610 runs on Llama-3-8B, StarCoder2-7B and TinyLlama-1.1B, the pipeline raised average syntax validity from 0% to 70.43% and simulation pass rate to 51.8%, with TinyLlama reaching 80.0% syntax validity.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.22759v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent coordination hierarchical reinforcement learning latent embeddings autonomous driving">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.21488</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Compact Latent Coordination for Autonomous Vehicles at Unsignalized Intersections<div class="title-zh">无信号交叉口自动驾驶车辆的紧凑潜空间协调</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent coordination</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">hierarchical reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">latent embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">autonomous driving</span></div>
+  <div class="item-summary">MAPS is a hierarchical deep reinforcement learning architecture in which a centralized Master agent generates a compact continuous proto-plan embedding that decentralized Worker agents combine with local observations. Tested across 72 intersection configurations in HighwayEnv, it achieved collision-free navigation while reducing average travel time, and a system trained with three agents reached a 94% success rate when deployed zero-shot to five-agent scenarios.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.21488v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="semantic join discovery embeddings data discovery sketching">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.21781</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MosaicJoin: Compact Semantic Sketches for Value-Level Join Discovery<div class="title-zh">MosaicJoin：面向值级连接发现的紧凑语义草图</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic join discovery</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data discovery</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">sketching</span></div>
+  <div class="item-summary">MosaicJoin is a value-level semantic join discovery method that uses compact sketches to approximate whether two columns are joinable without comparing every value, plus query subsampling with provable accuracy guarantees. It requires no training, handles query columns of up to 57K values and data-lake columns of up to 1M values, and runs up to 66 times faster than other value-level methods across the benchmarks tested.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.21781v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-term memory memory benchmark temporal reasoning multilingual evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.21447</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RUMBA: Russian User Memory Benchmark<div class="title-zh">RUMBA：俄语用户长期记忆基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">temporal reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multilingual evaluation</span></div>
+  <div class="item-summary">RUMBA is a long-term conversational memory benchmark built from timestamped user-assistant dialogues, with a fine-grained taxonomy covering semantic type, session scope, temporal reasoning and explicitness of temporal expressions. It is designed for Russian with an aligned English subset, and is used to diagnose memory systems and long-context models across benchmark slices and identify their strengths and failure modes.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.21447v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent safety compositional safety prompt mediation LLM evaluation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2607.21518</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Same Dangerous Objective, Opposite Advice: Direct Exposure versus Multi-Agent Mediation<div class="title-zh">同样危险的目标，相反的忠告：直接暴露与多智能体中介</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent safety</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">compositional safety</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt mediation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM evaluation</span></div>
+  <div class="item-summary">Using 25 pre-specified mirrored trade-off profiles with OpenAI's gpt-5.6-sol model alias, the study finds that direct exposure to a dangerous objective produced advice net opposed to its target, while relaying the same objective through Id and Censor agents led the user-facing Superego to produce advice net aligned with it. The author describes this as a compositional safety gap in multi-stage agent workflows and does not identify the internal mechanism behind the behavioral shift.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.21518v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent security tool use MCP declarative policy runtime authorization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.21835</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ToolGuardian: Declarative Security for AI Agent-Tool Interactions<div class="title-zh">ToolGuardian：面向 AI 智能体-工具交互的声明式安全</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">MCP</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">declarative policy</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">runtime authorization</span></div>
+  <div class="item-summary">ToolGuardian is a policy-driven framework that vets third-party agent tools before admission and authorizes them at runtime using progressive characterization from descriptions, system-call traces, mock execution and source analysis. An Answer Set Programming policy layer reached 0.86 deny-class F1 and 88% accuracy on 16 MCP-style tools, including 8 malicious variants, and fully specified runtime realizations classified all 20 scenarios correctly.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.21835v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-07-23", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 1, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 8}}, "daily_keywords": [{"text": "agentic context management", "domain": "agent-memory"}, {"text": "context compaction", "domain": "context-prompting"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "RAG routing", "domain": "rag-retrieval"}, {"text": "prompt compression", "domain": "context-prompting"}, {"text": "semantic join discovery", "domain": "embeddings-vectors"}, {"text": "multi-agent coordination", "domain": "agent-architecture"}, {"text": "agent tool security", "domain": "agent-architecture"}, {"text": "memory benchmark", "domain": "evaluation-benchmark"}, {"text": "token efficiency", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Agentic Context Management: Solving Agent Memory and Cost by Treating Them as Lifecycle and Architecture Problems", "title_zh": "智能体上下文管理：将智能体记忆与成本视为生命周期与架构问题", "url": "http://arxiv.org/abs/2607.21503v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.21503", "summary": "The paper argues that production agent failures stem more from mismanaging reasoning context than from weak reasoning, and proposes Agentic Context Management (ACM) with five primitives: architecting, ingesting, scoping, anticipating, and compacting and consolidation. A reference implementation, Maximem Synap, reports 92% on LongMemEval and 93.2% on LoCoMo under the configuration detailed in the paper, while the authors show that naive context accumulation grows token cost quadratically and that validated compaction keeps it linear.", "keywords": [{"text": "agentic context management", "domain": "agent-memory"}, {"text": "context compaction", "domain": "context-prompting"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "token cost", "domain": "ai-knowledge"}, {"text": "long-term memory benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Beyond Static RAG: An Adaptive, Tri-Metric Routing Framework for Efficient Long-Context Inference on Commodity GPUs", "title_zh": "超越静态 RAG：面向商用 GPU 高效长上下文推理的自适应三指标路由框架", "url": "http://arxiv.org/abs/2609.17564v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2609.17564", "summary": "The paper identifies a compression paradox when RAG is served on 16 GB T4 GPUs, where neural prompt compression can add KV-cache contention and latency while skipping compression risks out-of-memory failures on long contexts. Its training-free Tri-Metric Router selects among raw, LLMLingua-2 and BM25 pipelines using length, key-token density and type-token ratio, reporting 0% OOM failures, 88.5% oracle alignment and 49.3% combined F1 on out-of-distribution holdouts, 5.2 points above always-on lexical compression.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "prompt compression", "domain": "context-prompting"}, {"text": "KV cache", "domain": "ai-knowledge"}, {"text": "adaptive routing", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Agentic Context Management: Solving Agent Memory and Cost by Treating Them as Lifecycle and Architecture Problems", "title_zh": "智能体上下文管理：将智能体记忆与成本视为生命周期与架构问题", "url": "http://arxiv.org/abs/2607.21503v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.21503", "summary": "The paper argues that production agent failures stem more from mismanaging reasoning context than from weak reasoning, and proposes Agentic Context Management (ACM) with five primitives: architecting, ingesting, scoping, anticipating, and compacting and consolidation. A reference implementation, Maximem Synap, reports 92% on LongMemEval and 93.2% on LoCoMo under the configuration detailed in the paper, while the authors show that naive context accumulation grows token cost quadratically and that validated compaction keeps it linear.", "keywords": [{"text": "agentic context management", "domain": "agent-memory"}, {"text": "context compaction", "domain": "context-prompting"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "token cost", "domain": "ai-knowledge"}, {"text": "long-term memory benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Beyond Static RAG: An Adaptive, Tri-Metric Routing Framework for Efficient Long-Context Inference on Commodity GPUs", "title_zh": "超越静态 RAG：面向商用 GPU 高效长上下文推理的自适应三指标路由框架", "url": "http://arxiv.org/abs/2609.17564v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2609.17564", "summary": "The paper identifies a compression paradox when RAG is served on 16 GB T4 GPUs, where neural prompt compression can add KV-cache contention and latency while skipping compression risks out-of-memory failures on long contexts. Its training-free Tri-Metric Router selects among raw, LLMLingua-2 and BM25 pipelines using length, key-token density and type-token ratio, reporting 0% OOM failures, 88.5% oracle alignment and 49.3% combined F1 on out-of-distribution holdouts, 5.2 points above always-on lexical compression.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "prompt compression", "domain": "context-prompting"}, {"text": "KV cache", "domain": "ai-knowledge"}, {"text": "adaptive routing", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Benchmarking LLMs for Verilog Design Flows", "title_zh": "面向 Verilog 设计流程的大语言模型基准评测", "url": "http://arxiv.org/abs/2607.22759v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.22759", "summary": "The paper presents a reproducible benchmarking platform that evaluates open-source LLMs on 50 Verilog RTL generation tasks using constrained prompting, AST-based repair, formal equivalence verification, Verilator compilation and Icarus Verilog simulation. Across 1,610 runs on Llama-3-8B, StarCoder2-7B and TinyLlama-1.1B, the pipeline raised average syntax validity from 0% to 70.43% and simulation pass rate to 51.8%, with TinyLlama reaching 80.0% syntax validity.", "keywords": [{"text": "Verilog generation", "domain": "ai-knowledge"}, {"text": "LLM benchmark", "domain": "evaluation-benchmark"}, {"text": "hardware design", "domain": "ai-knowledge"}, {"text": "iterative refinement", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Compact Latent Coordination for Autonomous Vehicles at Unsignalized Intersections", "title_zh": "无信号交叉口自动驾驶车辆的紧凑潜空间协调", "url": "http://arxiv.org/abs/2607.21488v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.21488", "summary": "MAPS is a hierarchical deep reinforcement learning architecture in which a centralized Master agent generates a compact continuous proto-plan embedding that decentralized Worker agents combine with local observations. Tested across 72 intersection configurations in HighwayEnv, it achieved collision-free navigation while reducing average travel time, and a system trained with three agents reached a 94% success rate when deployed zero-shot to five-agent scenarios.", "keywords": [{"text": "multi-agent coordination", "domain": "agent-architecture"}, {"text": "hierarchical reinforcement learning", "domain": "agent-architecture"}, {"text": "latent embeddings", "domain": "embeddings-vectors"}, {"text": "autonomous driving", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "MosaicJoin: Compact Semantic Sketches for Value-Level Join Discovery", "title_zh": "MosaicJoin：面向值级连接发现的紧凑语义草图", "url": "http://arxiv.org/abs/2607.21781v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.21781", "summary": "MosaicJoin is a value-level semantic join discovery method that uses compact sketches to approximate whether two columns are joinable without comparing every value, plus query subsampling with provable accuracy guarantees. It requires no training, handles query columns of up to 57K values and data-lake columns of up to 1M values, and runs up to 66 times faster than other value-level methods across the benchmarks tested.", "keywords": [{"text": "semantic join discovery", "domain": "rag-retrieval"}, {"text": "embeddings", "domain": "embeddings-vectors"}, {"text": "data discovery", "domain": "ai-knowledge"}, {"text": "sketching", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "RUMBA: Russian User Memory Benchmark", "title_zh": "RUMBA：俄语用户长期记忆基准", "url": "http://arxiv.org/abs/2607.21447v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.21447", "summary": "RUMBA is a long-term conversational memory benchmark built from timestamped user-assistant dialogues, with a fine-grained taxonomy covering semantic type, session scope, temporal reasoning and explicitness of temporal expressions. It is designed for Russian with an aligned English subset, and is used to diagnose memory systems and long-context models across benchmark slices and identify their strengths and failure modes.", "keywords": [{"text": "long-term memory", "domain": "agent-memory"}, {"text": "memory benchmark", "domain": "evaluation-benchmark"}, {"text": "temporal reasoning", "domain": "cognition-reasoning"}, {"text": "multilingual evaluation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Same Dangerous Objective, Opposite Advice: Direct Exposure versus Multi-Agent Mediation", "title_zh": "同样危险的目标，相反的忠告：直接暴露与多智能体中介", "url": "http://arxiv.org/abs/2607.21518v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2607.21518", "summary": "Using 25 pre-specified mirrored trade-off profiles with OpenAI's gpt-5.6-sol model alias, the study finds that direct exposure to a dangerous objective produced advice net opposed to its target, while relaying the same objective through Id and Censor agents led the user-facing Superego to produce advice net aligned with it. The author describes this as a compositional safety gap in multi-stage agent workflows and does not identify the internal mechanism behind the behavioral shift.", "keywords": [{"text": "multi-agent safety", "domain": "agent-architecture"}, {"text": "compositional safety", "domain": "agent-architecture"}, {"text": "prompt mediation", "domain": "context-prompting"}, {"text": "LLM evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ToolGuardian: Declarative Security for AI Agent-Tool Interactions", "title_zh": "ToolGuardian：面向 AI 智能体-工具交互的声明式安全", "url": "http://arxiv.org/abs/2607.21835v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.21835", "summary": "ToolGuardian is a policy-driven framework that vets third-party agent tools before admission and authorizes them at runtime using progressive characterization from descriptions, system-call traces, mock execution and source analysis. An Answer Set Programming policy layer reached 0.86 deny-class F1 and 88% accuracy on 16 MCP-style tools, including 8 malicious variants, and fully specified runtime realizations classified all 20 scenarios correctly.", "keywords": [{"text": "agent security", "domain": "agent-architecture"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "MCP", "domain": "ai-knowledge"}, {"text": "declarative policy", "domain": "cognition-reasoning"}, {"text": "runtime authorization", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

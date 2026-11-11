@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-07-08</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:33%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep search</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-distillation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document parsing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">coding benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">Agentic RAG</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embeddings</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="deep search self-distillation web agents multi-hop QA verifiable environment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.07820</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepSearch-World: Self-Distillation for Deep Search Agents in a Verifiable Environment<div class="title-zh">DeepSearch-World：在可验证环境中通过自我蒸馏训练深度搜索智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep search</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">web agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifiable environment</span></div>
+  <div class="item-summary">DeepSearch-World is a deterministic, verifiable environment with 420K multi-hop QA tasks built from entity-level random walks, paired with DeepSearch-Evolve, a self-distillation loop of trajectory generation, filtering and fine-tuning. The resulting DeepSearch-World-9B reaches 31.2% on BrowseComp, 61.5% on GAIA and 93.4% on HotpotQA without distilling from stronger models, and the environment, data, model and code are to be released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07820v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="coding agents benchmark long-horizon tasks verifier data contamination">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.07946</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepSWE: Measuring Frontier Coding Agents on Original, Long-Horizon Engineering Tasks<div class="title-zh">DeepSWE：在原创长时程工程任务上评测前沿编码智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon tasks</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifier</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">data contamination</span></div>
+  <div class="item-summary">DeepSWE is a benchmark of 113 original, long-horizon software engineering tasks written from scratch across 91 open-source repositories and five languages, with hand-written verifiers instead of tests inherited from merged fixes. An independent LLM judge disagreed with DeepSWE's verifier 1.4% of the time versus 32.4% for SWE-Bench Pro's inherited tests, and the benchmark, verifiers and trajectories are released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07946v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="document parsing multimodal model OCR benchmark reinforcement learning data synthesis">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2607.07836</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Infinity-Parser2 Technical Report<div class="title-zh">Infinity-Parser2 技术报告：开源 500 万样本文档解析语料与多任务强化学习模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document parsing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal model</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">OCR benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data synthesis</span></div>
+  <div class="item-summary">Infinity-Parser2 couples a controllable data-synthesis pipeline with multi-task reinforcement learning across eight objectives for end-to-end document parsing, and releases Infinity-Doc2-5M, a five-million-sample bilingual corpus with layout, reading-order and structured-content annotations. Infinity-Parser2-Pro reports 87.6% on olmOCR-Bench and 74.3% on ParseBench, while the Flash variant claims a 3.68x throughput gain over Infinity-Parser-7B.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07836v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hierarchical memory multi-agent context management long-horizon scientific modeling">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2607.07666</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A hierarchical memory architecture overcomes context limits in long-horizon multi-agent computational modeling<div class="title-zh">分层记忆架构突破长时程多智能体计算建模的上下文限制</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific modeling</span></div>
+  <div class="item-summary">Ensemble QSP is a multi-agent framework whose three-layer hierarchical memory bounds injected context at a median of 301 tokens by capping state categories and evicting completed work, enabling continuous autonomous operation. It orchestrates five specialist agents under domain-expert PIs and replicated its conclusions with open-weight models including DeepSeek-V4-Flash/Pro and Llama 3.1 70B.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07666v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt injection agent security GitHub Agentic Workflows vulnerability">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GitLost: We Tricked GitHub's AI Agent into Leaking Private Repos<div class="title-zh">GitLost：我们如何诱骗 GitHub 的 AI 智能体泄露私有仓库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GitHub Agentic Workflows</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">vulnerability</span></div>
+  <div class="item-summary">Noma Labs reports a prompt injection flaw in GitHub Agentic Workflows that allowed an unauthenticated attacker to leak private repository data through a crafted GitHub Issue.</div>
+  <a class="item-link" href="https://noma.security/blog/gitlost-how-we-tricked-githubs-ai-agent-into-leaking-private-repos/" target="_blank" rel="noopener">&rarr; noma.security</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="hierarchical memory multi-agent context management long-horizon scientific modeling">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2607.07666</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A hierarchical memory architecture overcomes context limits in long-horizon multi-agent computational modeling<div class="title-zh">分层记忆架构突破长时程多智能体计算建模的上下文限制</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific modeling</span></div>
+  <div class="item-summary">Ensemble QSP is a multi-agent framework whose three-layer hierarchical memory bounds injected context at a median of 301 tokens by capping state categories and evicting completed work, enabling continuous autonomous operation. It orchestrates five specialist agents under domain-expert PIs and replicated its conclusions with open-weight models including DeepSeek-V4-Flash/Pro and Llama 3.1 70B.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07666v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep search self-distillation web agents multi-hop QA verifiable environment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.07820</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepSearch-World: Self-Distillation for Deep Search Agents in a Verifiable Environment<div class="title-zh">DeepSearch-World：在可验证环境中通过自我蒸馏训练深度搜索智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep search</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">web agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifiable environment</span></div>
+  <div class="item-summary">DeepSearch-World is a deterministic, verifiable environment with 420K multi-hop QA tasks built from entity-level random walks, paired with DeepSearch-Evolve, a self-distillation loop of trajectory generation, filtering and fine-tuning. The resulting DeepSearch-World-9B reaches 31.2% on BrowseComp, 61.5% on GAIA and 93.4% on HotpotQA without distilling from stronger models, and the environment, data, model and code are to be released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07820v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning knowledge update context compression catastrophic forgetting sequential benchmarks">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.07847</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">When Does Continual Learning Require Learning<div class="title-zh">持续学习何时真正需要学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge update</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">sequential benchmarks</span></div>
+  <div class="item-summary">The authors argue that continual learning should be framed as increasing model competence as the world changes, along two axes: new domains over space and drifting data over time. Recasting standard LLM benchmarks as sequential problems, they compare prompt-based methods, supervised and reinforcement learning, and context compression, finding that prompt methods adapt quickly but degrade later while online RL handles knowledge updates best but is sensitive to noisy rewards.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07847v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="Agentic RAG multi-step reasoning human-in-the-loop retrieval decision support">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.07858</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic AI and Retrieval-Augmented Models in Straight-Through Underwriting<div class="title-zh">智能体 AI 与检索增强模型在直通式核保中的应用</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">Agentic RAG</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-step reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">human-in-the-loop</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">decision support</span></div>
+  <div class="item-summary">The paper compares a single-LLM baseline, a naive RAG pipeline and a multi-agent Agentic RAG pipeline for straight-through underwriting of small commercial Business Owner Policies in a synthetic environment. The agentic system performs best overall, with the largest gains in multi-step and missing-information scenarios where structured retrieval and reflection help avoid unsupported decisions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07858v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="coding agents benchmark long-horizon tasks verifier data contamination">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.07946</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepSWE: Measuring Frontier Coding Agents on Original, Long-Horizon Engineering Tasks<div class="title-zh">DeepSWE：在原创长时程工程任务上评测前沿编码智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon tasks</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifier</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">data contamination</span></div>
+  <div class="item-summary">DeepSWE is a benchmark of 113 original, long-horizon software engineering tasks written from scratch across 91 open-source repositories and five languages, with hand-written verifiers instead of tests inherited from merged fixes. An independent LLM judge disagreed with DeepSWE's verifier 1.4% of the time versus 32.4% for SWE-Bench Pro's inherited tests, and the benchmark, verifiers and trajectories are released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07946v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embeddings intent detection out-of-scope detection MiniLM">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.07974</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Multi-cluster Boundary Learning Method for Out-of-Scope Intent Detection via MiniLM Embedding<div class="title-zh">基于 MiniLM 嵌入的多簇边界学习域外意图检测方法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">intent detection</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">out-of-scope detection</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">MiniLM</span></div>
+  <div class="item-summary">The paper proposes a one-class classification method that learns the boundaries of multiple embedding clusters from all-MiniLM-L6-v2 and rejects out-of-domain utterances as out-of-scope intents. It reports state-of-the-art out-of-scope intent detection on CLINC150, StackOverflow and Banking77 relative to the compared baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07974v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="document parsing multimodal model OCR benchmark reinforcement learning data synthesis">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2607.07836</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Infinity-Parser2 Technical Report<div class="title-zh">Infinity-Parser2 技术报告：开源 500 万样本文档解析语料与多任务强化学习模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document parsing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal model</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">OCR benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data synthesis</span></div>
+  <div class="item-summary">Infinity-Parser2 couples a controllable data-synthesis pipeline with multi-task reinforcement learning across eight objectives for end-to-end document parsing, and releases Infinity-Doc2-5M, a five-million-sample bilingual corpus with layout, reading-order and structured-content annotations. Infinity-Parser2-Pro reports 87.6% on olmOCR-Bench and 74.3% on ParseBench, while the Flash variant claims a 3.68x throughput gain over Infinity-Parser-7B.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.07836v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="SWE-Bench Pro coding benchmark benchmark reliability model evaluation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Separating signal from noise in coding evaluations<div class="title-zh">从噪声中分离信号：OpenAI 剖析编码评测的可靠性问题</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SWE-Bench Pro</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">coding benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark reliability</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model evaluation</span></div>
+  <div class="item-summary">A new OpenAI analysis identifies reliability and accuracy problems in SWE-Bench Pro, a widely used coding benchmark, raising concerns about the benchmark's use in evaluating AI models.</div>
+  <a class="item-link" href="https://openai.com/index/separating-signal-from-noise-coding-evaluations" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="prompt injection agent security GitHub Agentic Workflows vulnerability">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GitLost: We Tricked GitHub's AI Agent into Leaking Private Repos<div class="title-zh">GitLost：我们如何诱骗 GitHub 的 AI 智能体泄露私有仓库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GitHub Agentic Workflows</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">vulnerability</span></div>
+  <div class="item-summary">Noma Labs reports a prompt injection flaw in GitHub Agentic Workflows that allowed an unauthenticated attacker to leak private repository data through a crafted GitHub Issue.</div>
+  <a class="item-link" href="https://noma.security/blog/gitlost-how-we-tricked-githubs-ai-agent-into-leaking-private-repos/" target="_blank" rel="noopener">&rarr; noma.security</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:01 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-07-08", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 3, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 6, "models_embeddings": 1, "blogs_insights": 2}}, "daily_keywords": [{"text": "hierarchical memory", "domain": "agent-memory"}, {"text": "deep search", "domain": "rag-retrieval"}, {"text": "self-distillation", "domain": "knowledge-lifecycle"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "document parsing", "domain": "rag-retrieval"}, {"text": "coding benchmark", "domain": "evaluation-benchmark"}, {"text": "Agentic RAG", "domain": "rag-retrieval"}, {"text": "prompt injection", "domain": "context-prompting"}, {"text": "embeddings", "domain": "embeddings-vectors"}, {"text": "long-horizon agents", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "DeepSearch-World: Self-Distillation for Deep Search Agents in a Verifiable Environment", "title_zh": "DeepSearch-World：在可验证环境中通过自我蒸馏训练深度搜索智能体", "url": "http://arxiv.org/abs/2607.07820v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.07820", "summary": "DeepSearch-World is a deterministic, verifiable environment with 420K multi-hop QA tasks built from entity-level random walks, paired with DeepSearch-Evolve, a self-distillation loop of trajectory generation, filtering and fine-tuning. The resulting DeepSearch-World-9B reaches 31.2% on BrowseComp, 61.5% on GAIA and 93.4% on HotpotQA without distilling from stronger models, and the environment, data, model and code are to be released.", "keywords": [{"text": "deep search", "domain": "rag-retrieval"}, {"text": "self-distillation", "domain": "knowledge-lifecycle"}, {"text": "web agents", "domain": "agent-architecture"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "verifiable environment", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "DeepSWE: Measuring Frontier Coding Agents on Original, Long-Horizon Engineering Tasks", "title_zh": "DeepSWE：在原创长时程工程任务上评测前沿编码智能体", "url": "http://arxiv.org/abs/2607.07946v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.07946", "summary": "DeepSWE is a benchmark of 113 original, long-horizon software engineering tasks written from scratch across 91 open-source repositories and five languages, with hand-written verifiers instead of tests inherited from merged fixes. An independent LLM judge disagreed with DeepSWE's verifier 1.4% of the time versus 32.4% for SWE-Bench Pro's inherited tests, and the benchmark, verifiers and trajectories are released.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "long-horizon tasks", "domain": "agent-architecture"}, {"text": "verifier", "domain": "evaluation-benchmark"}, {"text": "data contamination", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Infinity-Parser2 Technical Report", "title_zh": "Infinity-Parser2 技术报告：开源 500 万样本文档解析语料与多任务强化学习模型", "url": "http://arxiv.org/abs/2607.07836v3", "source": "arXiv", "section": "models_embeddings", "organization": "DeepSeek", "language": "en", "arxiv_id": "2607.07836", "summary": "Infinity-Parser2 couples a controllable data-synthesis pipeline with multi-task reinforcement learning across eight objectives for end-to-end document parsing, and releases Infinity-Doc2-5M, a five-million-sample bilingual corpus with layout, reading-order and structured-content annotations. Infinity-Parser2-Pro reports 87.6% on olmOCR-Bench and 74.3% on ParseBench, while the Flash variant claims a 3.68x throughput gain over Infinity-Parser-7B.", "keywords": [{"text": "document parsing", "domain": "rag-retrieval"}, {"text": "multimodal model", "domain": "ai-knowledge"}, {"text": "OCR benchmark", "domain": "evaluation-benchmark"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "data synthesis", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "A hierarchical memory architecture overcomes context limits in long-horizon multi-agent computational modeling", "title_zh": "分层记忆架构突破长时程多智能体计算建模的上下文限制", "url": "http://arxiv.org/abs/2607.07666v4", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2607.07666", "summary": "Ensemble QSP is a multi-agent framework whose three-layer hierarchical memory bounds injected context at a median of 301 tokens by capping state categories and evicting completed work, enabling continuous autonomous operation. It orchestrates five specialist agents under domain-expert PIs and replicated its conclusions with open-weight models including DeepSeek-V4-Flash/Pro and Llama 3.1 70B.", "keywords": [{"text": "hierarchical memory", "domain": "agent-memory"}, {"text": "multi-agent", "domain": "agent-architecture"}, {"text": "context management", "domain": "context-prompting"}, {"text": "long-horizon", "domain": "agent-architecture"}, {"text": "scientific modeling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "GitLost: We Tricked GitHub's AI Agent into Leaking Private Repos", "title_zh": "GitLost：我们如何诱骗 GitHub 的 AI 智能体泄露私有仓库", "url": "https://noma.security/blog/gitlost-how-we-tricked-githubs-ai-agent-into-leaking-private-repos/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Noma Labs reports a prompt injection flaw in GitHub Agentic Workflows that allowed an unauthenticated attacker to leak private repository data through a crafted GitHub Issue.", "keywords": [{"text": "prompt injection", "domain": "context-prompting"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "GitHub Agentic Workflows", "domain": "agent-architecture"}, {"text": "vulnerability", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "A hierarchical memory architecture overcomes context limits in long-horizon multi-agent computational modeling", "title_zh": "分层记忆架构突破长时程多智能体计算建模的上下文限制", "url": "http://arxiv.org/abs/2607.07666v4", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2607.07666", "summary": "Ensemble QSP is a multi-agent framework whose three-layer hierarchical memory bounds injected context at a median of 301 tokens by capping state categories and evicting completed work, enabling continuous autonomous operation. It orchestrates five specialist agents under domain-expert PIs and replicated its conclusions with open-weight models including DeepSeek-V4-Flash/Pro and Llama 3.1 70B.", "keywords": [{"text": "hierarchical memory", "domain": "agent-memory"}, {"text": "multi-agent", "domain": "agent-architecture"}, {"text": "context management", "domain": "context-prompting"}, {"text": "long-horizon", "domain": "agent-architecture"}, {"text": "scientific modeling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "DeepSearch-World: Self-Distillation for Deep Search Agents in a Verifiable Environment", "title_zh": "DeepSearch-World：在可验证环境中通过自我蒸馏训练深度搜索智能体", "url": "http://arxiv.org/abs/2607.07820v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.07820", "summary": "DeepSearch-World is a deterministic, verifiable environment with 420K multi-hop QA tasks built from entity-level random walks, paired with DeepSearch-Evolve, a self-distillation loop of trajectory generation, filtering and fine-tuning. The resulting DeepSearch-World-9B reaches 31.2% on BrowseComp, 61.5% on GAIA and 93.4% on HotpotQA without distilling from stronger models, and the environment, data, model and code are to be released.", "keywords": [{"text": "deep search", "domain": "rag-retrieval"}, {"text": "self-distillation", "domain": "knowledge-lifecycle"}, {"text": "web agents", "domain": "agent-architecture"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "verifiable environment", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "When Does Continual Learning Require Learning", "title_zh": "持续学习何时真正需要学习", "url": "http://arxiv.org/abs/2607.07847v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.07847", "summary": "The authors argue that continual learning should be framed as increasing model competence as the world changes, along two axes: new domains over space and drifting data over time. Recasting standard LLM benchmarks as sequential problems, they compare prompt-based methods, supervised and reinforcement learning, and context compression, finding that prompt methods adapt quickly but degrade later while online RL handles knowledge updates best but is sensitive to noisy rewards.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "knowledge update", "domain": "knowledge-lifecycle"}, {"text": "context compression", "domain": "context-prompting"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "sequential benchmarks", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic AI and Retrieval-Augmented Models in Straight-Through Underwriting", "title_zh": "智能体 AI 与检索增强模型在直通式核保中的应用", "url": "http://arxiv.org/abs/2607.07858v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.07858", "summary": "The paper compares a single-LLM baseline, a naive RAG pipeline and a multi-agent Agentic RAG pipeline for straight-through underwriting of small commercial Business Owner Policies in a synthetic environment. The agentic system performs best overall, with the largest gains in multi-step and missing-information scenarios where structured retrieval and reflection help avoid unsupported decisions.", "keywords": [{"text": "Agentic RAG", "domain": "rag-retrieval"}, {"text": "multi-step reasoning", "domain": "cognition-reasoning"}, {"text": "human-in-the-loop", "domain": "agent-architecture"}, {"text": "retrieval", "domain": "rag-retrieval"}, {"text": "decision support", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "DeepSWE: Measuring Frontier Coding Agents on Original, Long-Horizon Engineering Tasks", "title_zh": "DeepSWE：在原创长时程工程任务上评测前沿编码智能体", "url": "http://arxiv.org/abs/2607.07946v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.07946", "summary": "DeepSWE is a benchmark of 113 original, long-horizon software engineering tasks written from scratch across 91 open-source repositories and five languages, with hand-written verifiers instead of tests inherited from merged fixes. An independent LLM judge disagreed with DeepSWE's verifier 1.4% of the time versus 32.4% for SWE-Bench Pro's inherited tests, and the benchmark, verifiers and trajectories are released.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "long-horizon tasks", "domain": "agent-architecture"}, {"text": "verifier", "domain": "evaluation-benchmark"}, {"text": "data contamination", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "A Multi-cluster Boundary Learning Method for Out-of-Scope Intent Detection via MiniLM Embedding", "title_zh": "基于 MiniLM 嵌入的多簇边界学习域外意图检测方法", "url": "http://arxiv.org/abs/2607.07974v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.07974", "summary": "The paper proposes a one-class classification method that learns the boundaries of multiple embedding clusters from all-MiniLM-L6-v2 and rejects out-of-domain utterances as out-of-scope intents. It reports state-of-the-art out-of-scope intent detection on CLINC150, StackOverflow and Banking77 relative to the compared baselines.", "keywords": [{"text": "embeddings", "domain": "embeddings-vectors"}, {"text": "intent detection", "domain": "rag-retrieval"}, {"text": "out-of-scope detection", "domain": "evaluation-benchmark"}, {"text": "MiniLM", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Infinity-Parser2 Technical Report", "title_zh": "Infinity-Parser2 技术报告：开源 500 万样本文档解析语料与多任务强化学习模型", "url": "http://arxiv.org/abs/2607.07836v3", "source": "arXiv", "section": "models_embeddings", "organization": "DeepSeek", "language": "en", "arxiv_id": "2607.07836", "summary": "Infinity-Parser2 couples a controllable data-synthesis pipeline with multi-task reinforcement learning across eight objectives for end-to-end document parsing, and releases Infinity-Doc2-5M, a five-million-sample bilingual corpus with layout, reading-order and structured-content annotations. Infinity-Parser2-Pro reports 87.6% on olmOCR-Bench and 74.3% on ParseBench, while the Flash variant claims a 3.68x throughput gain over Infinity-Parser-7B.", "keywords": [{"text": "document parsing", "domain": "rag-retrieval"}, {"text": "multimodal model", "domain": "ai-knowledge"}, {"text": "OCR benchmark", "domain": "evaluation-benchmark"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "data synthesis", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Separating signal from noise in coding evaluations", "title_zh": "从噪声中分离信号：OpenAI 剖析编码评测的可靠性问题", "url": "https://openai.com/index/separating-signal-from-noise-coding-evaluations", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "A new OpenAI analysis identifies reliability and accuracy problems in SWE-Bench Pro, a widely used coding benchmark, raising concerns about the benchmark's use in evaluating AI models.", "keywords": [{"text": "SWE-Bench Pro", "domain": "evaluation-benchmark"}, {"text": "coding benchmark", "domain": "evaluation-benchmark"}, {"text": "benchmark reliability", "domain": "evaluation-benchmark"}, {"text": "model evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "GitLost: We Tricked GitHub's AI Agent into Leaking Private Repos", "title_zh": "GitLost：我们如何诱骗 GitHub 的 AI 智能体泄露私有仓库", "url": "https://noma.security/blog/gitlost-how-we-tricked-githubs-ai-agent-into-leaking-private-repos/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Noma Labs reports a prompt injection flaw in GitHub Agentic Workflows that allowed an unauthenticated attacker to leak private repository data through a crafted GitHub Issue.", "keywords": [{"text": "prompt injection", "domain": "context-prompting"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "GitHub Agentic Workflows", "domain": "agent-architecture"}, {"text": "vulnerability", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
