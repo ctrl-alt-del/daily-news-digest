@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-08-24</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">40 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>6 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">40/40 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">29</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:13%"></div></div>
+  <span class="stat-count">4</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:6%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:17%"></div></div>
+  <span class="stat-count">5</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source release</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multilingual retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-a-judge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">document embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">bi-encoder</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long-context retrieval document embeddings bi-encoder retrieval benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.29899</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">REIGN: Refurbished Embeddings with Integrated Guidance Networks for Efficient Context-Length Scaling<div class="title-zh">REIGN：面向高效上下文长度扩展的重构嵌入与集成引导网络</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">document embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">bi-encoder</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span></div>
+  <div class="item-summary">REIGN is a contrastively trained bi-encoder that operates on contextualised chunk embeddings from a frozen Guidance Network rather than on raw tokens, targeting multi-chunk document-to-document retrieval and cutting per-document training cost by roughly four orders of magnitude relative to chunked Transformer fine-tuning. It also releases a synthetic long-document retrieval benchmark, matches dense long-context retrievers at smaller parameter budgets on Wikipedia, LoCo and a patent retrieval case study, and stays within 0.65 nDCG@10 of a 20x-larger model on LoCo.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29899v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal embeddings open-source release multimodal search">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">WeChat team open-sources WeMM-Embedding for multimodal search and recommendation<div class="title-zh">微信团队开源 WeMM-Embedding，用于多模态搜索与推荐</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source release</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal search</span></div>
+  <div class="item-summary">Tencent's WeChat Vision team has open-sourced WeMM-Embedding, a family of multimodal embedding models for representing and matching text, images and videos.</div>
+  <a class="item-link" href="https://technode.com/2026/08/27/wechat-team-open-sources-wemm-embedding-for-multimodal-search-and-recommendation/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+<div class="item-card" data-keywords="structured knowledge base co-evolution knowledge construction compositional reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.26386</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Co-Evolving Structured Knowledge and Reasoning in Language Models<div class="title-zh">语言模型中结构化知识与推理的协同演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">structured knowledge base</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">co-evolution</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge construction</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">compositional reasoning</span></div>
+  <div class="item-summary">KBevo is a co-evolving framework that jointly learns to construct a structured knowledge base and reason over it for knowledge-intensive question answering, optimizing both components end-to-end with QA outcome rewards so that reasoning success directly improves the constructed knowledge base. The authors report larger, better-connected knowledge structures with higher answer reachability, plus improved compositional factual reasoning and controllability compared with standard retrieval baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.26386v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic search biomedical fact-checking evidence grounding GRPO hallucination reduction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.23811</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Generating Biomedical Fact-Checking Reports with RL-Enhanced Agentic Search<div class="title-zh">用 RL 增强的智能体搜索生成生物医学事实核查报告</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">biomedical fact-checking</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GRPO</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination reduction</span></div>
+  <div class="item-summary">BioCheck Agent generates structured biomedical fact-checking reports rather than isolated labels, searching only PubMed with Boolean operators and synthesizing conclusions with retrieved evidence. Trained with Evidence-Grounded GRPO, it improves label accuracy on SciFact by 9.95% over its Qwen3.5-4B base, with a 3.7% higher evidence quality score and a 19.63% lower evidence hallucination rate.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.23811v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent operating system memory governance prompt injection trust boundary">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.29647</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentKernel: The Trust-Native Agentic Operating System<div class="title-zh">AgentKernel：信任原生的 Agent 操作系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent operating system</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory governance</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">trust boundary</span></div>
+  <div class="item-summary">AgentKernel argues that agents need an operating-system substrate with mandatory, non-bypassable services for identity, input mediation, memory governance and execution control, organized into Identity, Perception, Cognition and Execution pillars that adapt classical OS security principles to delegation abuse, prompt injection, memory poisoning and tool misuse. The paper positions it as the missing OS layer beneath orchestration frameworks, agent runtimes, governance platforms and execution sandboxes, supporting the case with systematic comparison and security analysis.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.29647v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[29]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long-context retrieval document embeddings bi-encoder retrieval benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.29899</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">REIGN: Refurbished Embeddings with Integrated Guidance Networks for Efficient Context-Length Scaling<div class="title-zh">REIGN：面向高效上下文长度扩展的重构嵌入与集成引导网络</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">document embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">bi-encoder</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span></div>
+  <div class="item-summary">REIGN is a contrastively trained bi-encoder that operates on contextualised chunk embeddings from a frozen Guidance Network rather than on raw tokens, targeting multi-chunk document-to-document retrieval and cutting per-document training cost by roughly four orders of magnitude relative to chunked Transformer fine-tuning. It also releases a synthetic long-document retrieval benchmark, matches dense long-context retrievers at smaller parameter budgets on Wikipedia, LoCo and a patent retrieval case study, and stays within 0.65 nDCG@10 of a 20x-larger model on LoCo.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29899v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="structured knowledge base co-evolution knowledge construction compositional reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.26386</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Co-Evolving Structured Knowledge and Reasoning in Language Models<div class="title-zh">语言模型中结构化知识与推理的协同演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">structured knowledge base</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">co-evolution</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge construction</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">compositional reasoning</span></div>
+  <div class="item-summary">KBevo is a co-evolving framework that jointly learns to construct a structured knowledge base and reason over it for knowledge-intensive question answering, optimizing both components end-to-end with QA outcome rewards so that reasoning success directly improves the constructed knowledge base. The authors report larger, better-connected knowledge structures with higher answer reachability, plus improved compositional factual reasoning and controllability compared with standard retrieval baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.26386v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic search biomedical fact-checking evidence grounding GRPO hallucination reduction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.23811</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Generating Biomedical Fact-Checking Reports with RL-Enhanced Agentic Search<div class="title-zh">用 RL 增强的智能体搜索生成生物医学事实核查报告</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">biomedical fact-checking</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GRPO</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination reduction</span></div>
+  <div class="item-summary">BioCheck Agent generates structured biomedical fact-checking reports rather than isolated labels, searching only PubMed with Boolean operators and synthesizing conclusions with retrieved evidence. Trained with Evidence-Grounded GRPO, it improves label accuracy on SciFact by 9.95% over its Qwen3.5-4B base, with a 3.7% higher evidence quality score and a 19.63% lower evidence hallucination rate.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.23811v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent operating system memory governance prompt injection trust boundary">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.29647</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentKernel: The Trust-Native Agentic Operating System<div class="title-zh">AgentKernel：信任原生的 Agent 操作系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent operating system</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory governance</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">trust boundary</span></div>
+  <div class="item-summary">AgentKernel argues that agents need an operating-system substrate with mandatory, non-bypassable services for identity, input mediation, memory governance and execution control, organized into Identity, Perception, Cognition and Execution pillars that adapt classical OS security principles to delegation abuse, prompt injection, memory poisoning and tool misuse. The paper positions it as the missing OS layer beneath orchestration frameworks, agent runtimes, governance platforms and execution sandboxes, supporting the case with systematic comparison and security analysis.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.29647v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="synthetic data data evolution closed-loop refinement quality gating post-training">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.23719</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ADE: Agentic Data Evolution Framework for Human-Centered Objectives<div class="title-zh">ADE：面向以人为本目标的智能体数据演化框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">synthetic data</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data evolution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">closed-loop refinement</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">quality gating</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">post-training</span></div>
+  <div class="item-summary">ADE is a data-centric framework that organizes synthetic supervision as evolving data snapshots improved through a closed-loop Observation-Variation-Selection procedure, with a steady-state admission mechanism that conservatively gates updates. On DEV300 it raises the intrinsic win rate from 50% to 75.81% and the extrinsic win rate from 55.20% to 68.86%, and blind expert evaluation shows a 66.11% preference for evolved answers.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.23719v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embedding robustness calibration domain shift frozen encoders">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.25148</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Can You Trust Frozen Hematology Foundation Models under Acquisition Shift?<div class="title-zh">采集偏移下冻结血液学基础模型可信吗？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding robustness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">calibration</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">domain shift</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">frozen encoders</span></div>
+  <div class="item-summary">The authors audit 15 frozen hematology, pathology and general vision encoders across four public single-cell acquisition domains for accuracy robustness and calibration, finding in-domain macro-F1 saturated at 0.98–0.997 while cross-dataset macro-F1 drops 34–72% and model rankings reorder. Source-trained probes are nearly calibrated in-domain (ECE 0.004) but confidently wrong off-domain (ECE 0.35), and a training-free Class-Balanced Re-standardization improves all target-prior scenario means while leaving residual miscalibration.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.25148v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embedding calibration subspace replay continual learning audio classification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.25054</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SPECTRA: Subspace-Preserving Embedding Calibration, Transport, and Replay for Fully Few-Shot Class-Incremental Audio Classification<div class="title-zh">SPECTRA：面向完全少样本类增量音频分类的子空间保持嵌入校准、迁移与回放</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding calibration</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">subspace replay</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">audio classification</span></div>
+  <div class="item-summary">SPECTRA is a frozen-encoder framework for fully few-shot class-incremental audio classification that adds a lightweight trainable adapter, exemplar-free subspace feature replay that samples old classes from their stored low-rank subspaces, and transductive optimal-transport prototype refinement at test time. On NSynth-100, FSC-89 and LS-100 it improves average accuracy and reduces forgetting over prior state-of-the-art, with ablations indicating that subspace replay outperforms equal-variance Gaussian replay.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.25054v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="theory of mind mentalization cognitive modeling strategic prompting">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2608.26291</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Assessing mentalization in humans and large language models<div class="title-zh">评估人类与大语言模型的心理化能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theory of mind</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mentalization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cognitive modeling</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">strategic prompting</span></div>
+  <div class="item-summary">The study uses two economic games with cognitive computational modeling to uncover latent mentalization strategies in LLM agents from four model families (DeepSeek, GPT-4.1, GPT-5 and Gemini 2.0 Flash; N = 2,099), benchmarked against 251 human participants. LLMs showed behavioural and computational signatures of mentalizing that differed by provider and size, strategic prompting generally improved performance, and GPT-5 agents adapted their recursive depth of reasoning to opponent sophistication, outperforming human participants.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.26291v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="adaptive reasoning over-reasoning compute allocation GAIA benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.26442</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Don't Overthink, Don't Underthink: Toward Adaptive Reasoning in Agentic AI<div class="title-zh">别过度思考，也别思考不足：迈向智能体 AI 的自适应推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">adaptive reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">over-reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">compute allocation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">GAIA benchmark</span></div>
+  <div class="item-summary">The paper argues that fixed or pre-allocated reasoning controls suit agentic systems poorly because reasoning demands evolve through planning, tool use, memory retrieval and agent-to-agent interaction, characterizing over-reasoning and under-reasoning as recurring failure modes of misallocated reasoning. On MATH-500 and the GAIA public validation set, over-reasoning cases incur higher computational cost without proportional accuracy gains, while under-reasoning cases are consistently associated with incorrect or incomplete solutions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.26442v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="approximate nearest neighbor temporal indexing vector search index versioning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.27663</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Versioned Unified Graph Index for Dynamic Timestamp-Aware Nearest Neighbor Search<div class="title-zh">面向动态时间戳感知最近邻搜索的版本化统一图索引</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">approximate nearest neighbor</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">temporal indexing</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">vector search</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">index versioning</span></div>
+  <div class="item-summary">TiGER is a time-integrated graph index for approximate nearest neighbor search on dynamic vector datasets that maintains one unified graph with versioned connectivity, so arbitrary time intervals can be queried directly without traversing invalid vectors or post-search filtering. Empirical evaluations report up to 5× improvement in queries per second without compromising accuracy over filtering-based or per-time-segment sub-graph baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.27663v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="diagnostic benchmark multi-step reasoning ontology matching retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.27716</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PCFBench: A Diagnostic Benchmark for Product Carbon Footprint Estimation<div class="title-zh">PCFBench：产品碳足迹估算的诊断性基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">diagnostic benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-step reasoning</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology matching</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval</span></div>
+  <div class="item-summary">PCFBench is a diagnostic benchmark that carves product carbon footprint modeling into six independently evaluable tasks requiring decomposition, retrieval, ontology matching and numerical extraction, comprising 614 expert-labelled items. Across eight frontier LLMs from four providers no single model dominates: the strongest models estimate total product emissions within 2× of declared totals on 77% of products, but that rate drops to 37–58% when the PCF is generated step by step, with only 45–75% obeying mass conservation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.27716v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="epistemic myopia long-tail knowledge knowledge probe graph-based benchmark construction">
+  <div class="item-meta">
+    <span class="item-org">Tencent</span>
+    <span class="arxiv-tag">arxiv:2608.28478</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Blind Men and the Elephant: Probing the Epistemic Myopia of LLMs under Long-Tail Divergent Knowledge<div class="title-zh">盲人摸象：探测大模型在长尾分歧知识下的认知短视</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">epistemic myopia</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">long-tail knowledge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">knowledge probe</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph-based benchmark construction</span></div>
+  <div class="item-summary">The paper introduces ElephantBench, a closed-book knowledge probe of 1,094 questions built through an auditable graph-based pipeline that mines naturally occurring disagreements in a low-exposure web corpus and converts them into multi-account QA records verified against source documents and reviewed by human annotators. Across 32 models, even the strongest recovers both accounts on only 52.4% of questions, and scaling model size and inference-time reasoning improve recall but do not eliminate the incompleteness.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.28478v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning efficiency activation steering interpretability chain-of-thought">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2608.28859</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Halt Vector: Internalizing a Causal Steering Intervention for Efficient Reasoning<div class="title-zh">停止向量：将因果引导干预内化以实现高效推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning efficiency</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">activation steering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">interpretability</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span></div>
+  <div class="item-summary">The authors identify a halt vector at layer 18 of DeepSeek-R1-Distill-Qwen-7B whose steering strength controls thinking length, and internalize the intervention into the weights by reconstructing the whole steered activation with off-axis dimensions pinned to their natural values. Fit from 24 problems without reinforcement learning, it removes about a quarter of the thinking at held accuracy across five unseen benchmarks and tracks each problem's own removable slack at 0.70.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.28859v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge memory knowledge integration graph construction agent architecture">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.29410</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agents as Knowledge Integrator and Utilizer in Multimodal Recommendation<div class="title-zh">Agent 作为多模态推荐中的知识整合者与使用者</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">knowledge memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge integration</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph construction</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent architecture</span></div>
+  <div class="item-summary">AgentMMRec is an agent-based multimodal recommendation framework with an Integrator Agent that infers behavior- and multimodal-aware user preferences and item properties into a reusable knowledge memory, and a Utilizer Agent that converts that memory into refined item-item graphs and reranked candidate lists. Experiments on three Amazon datasets show consistent Recall and NDCG gains over recent multimodal baselines, including under sparsity and item cold-start, and the constructed knowledge transfers to existing backbones.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29410v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal search trajectory distillation preference optimization small vision-language models">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.29357</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LiteSearch-VL: Small Multimodal Search Agents via Trajectory Distillation and Synthetic Step-DPO<div class="title-zh">LiteSearch-VL：通过轨迹蒸馏与合成逐步 DPO 构建小型多模态搜索 Agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">trajectory distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">preference optimization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">small vision-language models</span></div>
+  <div class="item-summary">LiteSearch-VL is a low-compute recipe that distills released OpenSearch-VL agent trajectories into Qwen3-VL-2B and 4B backbones using LoRA adapters and synthetic step-level preferences targeting five local failure modes such as premature answers and wrong tools. Across 12,400 GPT-5-judged rollouts, full-trajectory supervised fine-tuning transfers the agent contract and lifts the 2B model from almost never emitting a usable answer to 28.4% macro Pass@1, and a step-budget ablation identifies answer verification rather than search depth as the next bottleneck.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29357v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="biomedical NER UMLS ontology parallel corpus cross-lingual evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.29890</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">En-ViMedNER: An English-Vietnamese Parallel Biomedical Corpus with UMLS Semantic Type Annotations<div class="title-zh">En-ViMedNER：带 UMLS 语义类型标注的英越平行生物医学语料库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">biomedical NER</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">UMLS ontology</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parallel corpus</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cross-lingual evaluation</span></div>
+  <div class="item-summary">En-ViMedNER is described as the first English-Vietnamese parallel biomedical NER corpus annotated with UMLS semantic types, containing 4,392 PubMed abstract pairs, 44,892 sentence pairs and 202,949 aligned entity-mention pairs across 21 semantic types. It is a silver-standard corpus with a human-audited and consensus-corrected mini-test subset, and the best baselines reach F1 52.70 for Vietnamese NER and 45.44 for cross-lingual NER on that subset.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29890v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="model fingerprinting tokenization model provenance holdout evaluation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2608.29930</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Token Counts Are Not Model Lineage: A Frozen-Threshold Holdout Study of Black-Box LLM API Fingerprinting<div class="title-zh">Token 数不等于模型血统：黑盒 LLM API 指纹识别的冻结阈值留出研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model fingerprinting</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">tokenization</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model provenance</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">holdout evaluation</span></div>
+  <div class="item-summary">The study tests whether prompt-token counts returned by OpenAI-compatible endpoints can attribute black-box models to families, using 24 labelled endpoint pairs split into development and untouched holdout sets with a frozen threshold. The shift-invariant exact-match score separates all 12 development pairs, but on holdout only 6 pairs are eligible, with balanced accuracy 0.75 and sensitivity 0.50, so token-count consistency is validated as a fingerprint of a shared tokenization stack but rejected as a standalone test of model lineage.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29930v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="protocol reasoning benchmark scientific reasoning rubric scoring">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.23898</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BenchBench-Protocol: Evaluating Real-World Wet-Lab Protocol Reasoning and Modification<div class="title-zh">BenchBench-Protocol：评估真实湿实验室实验方案推理与修改能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">protocol reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">rubric scoring</span></div>
+  <div class="item-summary">The benchmark contains 149 protocol-modification tasks reconstructed from changes scientists made to published wet-lab protocols, drawn from 96 source protocols across nine domains of wet-lab biology. Across nine closed and open models, Claude Opus 5 scores highest at 59.2% normalized rubric score while the others fall between 34.1% and 47.1%, and the benchmark remains unsaturated when taking the best of ten attempts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.23898v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="slopsquatting package hallucination supply chain security hallucination detection fallback models">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.23897</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Names Can Hurt: Spotting Slopsquatting Risks Caused by Package Name Hallucinations in Local Coding LLMs<div class="title-zh">名称也能伤人：识别本地编码 LLM 中包名幻觉引发的 slopsquatting 风险</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">slopsquatting</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">package hallucination</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">supply chain security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination detection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">fallback models</span></div>
+  <div class="item-summary">The paper proposes a two-layer detector for slopsquatting that combines a deterministic PyPI existence check with a Random Forest classifier over ten package-name and metadata features, bridged by an import-name reconciler and embedded in a LangGraph state machine that retries at escalating temperatures before falling back to another model family. Across 300 curated prompts the pipeline produced hallucination-free code on 76% of runs, and the authors report that hallucination rates scale almost linearly with prompt adversariality, from 0-10% on routine coding to 40-73% on slopsquat baits.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.23897v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="theorem proving formal verification MILP reformulation agentic verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.25220</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FLARE: Verifying MILP Reformulations with LLM-Based Theorem Proving<div class="title-zh">FLARE：基于 LLM 定理证明的 MILP 重构验证</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theorem proving</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">formal verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">MILP reformulation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic verification</span></div>
+  <div class="item-summary">The paper introduces a constructive definition of MILP reformulation that can be formalized and machine-checked in Lean, plus FLARE, an LLM-based agent paired with Lean that verifies proposed reformulations against a reference formulation. On the new FormulationBench (20 problems and 109 formulations) FLARE reports 100% accuracy on the NP-hard subset and produces a machine-checkable certificate for every reformulation it accepts, while a cheaper LLM-only proxy matches its accuracy without certificates.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.25220v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation transaction embeddings domain-specific retrieval feature aggregation">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2610.28641</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Transaction Foundation Models for Retrieval-Augmented Generation over Financial Transaction Data: A Comparative Evaluation with Text Embeddings<div class="title-zh">面向金融交易数据检索增强生成的事务基础模型：与文本嵌入的对比评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">transaction embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">domain-specific retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">feature aggregation</span></div>
+  <div class="item-summary">The authors build a deterministic 1,026-question QA benchmark with retrieval-level gold-document annotations over IBM's synthetic Anti-Money-Laundering transaction dataset, comparing NVIDIA's 29M-parameter Transaction Foundation Model with five general-purpose and financial text embedding models. The TFM beats every size-matched generic embedder on retrieval (Recall@5 0.81 vs. 0.25–0.39) and end-to-end accuracy (66.7% vs. 27.5%), but a pipeline embedding a hand-engineered aggregated summary with a generic encoder matches or exceeds it overall and dominates on several low-cardinality entity categories.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.28641v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="federated RAG representation exchange privacy-preserving retrieval context compression">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2609.22162</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Raw Context Transfer: Representation-based Federated Retrieval-Augmented Generation<div class="title-zh">超越原始上下文传输：基于表征的联邦检索增强生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">federated RAG</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">representation exchange</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">privacy-preserving retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span></div>
+  <div class="item-summary">FedRepRAG is a decentralized RAG framework that keeps raw documents at their owning clients and exchanges only compact latent representations during cross-client retrieval, using a collaboratively trained projector to turn retrieval embeddings into generator-compatible representation tokens for a frozen LLM or VLM backbone. Across decentralized visual QA and QA benchmarks it consistently beats direct-inference and local-retrieval baselines while substantially reducing retrieval-context length and inference overhead compared with raw-context transfer, though residual representation-level leakage remains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2609.22162v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="late interaction multilingual retrieval knowledge distillation zero-shot retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.26344</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MoganColBERT-TR: A Late-Interaction Multi-Vector Retrieval Model for Turkish<div class="title-zh">MoganColBERT-TR：面向土耳其语的晚期交互多向量检索模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">late interaction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multilingual retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">zero-shot retrieval</span></div>
+  <div class="item-summary">MoganColBERT-TR is a Turkish multi-vector retrieval model that represents queries and documents at the token level through a 768→128 projection and MaxSim late interaction, initialized from the MoganBERT-TR embedding encoder and adapted with single-epoch distillation from a cross-encoder teacher. With 148.9M parameters it scores 37.36 overall (35.53 nDCG@100, 31.81 nDCG@10) across five zero-shot Turkish BEIR datasets, beating the twice-as-large ColmmBERT-base-TR on four of five datasets and finishing second among five compared models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.26344v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="LLM-as-a-judge relevance assessment IR dataset multilingual retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.27746</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">NormasTCU --- A Brazilian Portuguese IR Dataset and an Evaluation of LLM-as-a-Judge for Relevance Assessment<div class="title-zh">NormasTCU：巴西葡萄牙语 IR 数据集与 LLM-as-a-Judge 相关性评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-a-judge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">relevance assessment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">IR dataset</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multilingual retrieval</span></div>
+  <div class="item-summary">NormasTCU is a Brazilian Portuguese IR dataset with 14,469 legal documents, 46 queries and 3,048 human judgments over 812 query-document pairs, used to evaluate LLM-as-a-judge relevance assessment with three models and two prompt techniques. LLM judges show positive scoring bias (MAE 0.46–0.66 on a 0–2 scale) and only fair-to-moderate agreement with humans (Cohen's kappa 0.32–0.53), but their system rankings for nDCG@10 and MRR often match human rankings (observed Kendall's tau ≥ 0.90, though bootstrap confidence intervals did not always stay above that threshold) while being less reliable for P@10 and R@10.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.27746v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="process verification robustness LLM-as-a-judge mathematical reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.28725</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond the Answer Key: Robustness Evaluation of Large Language Models for Step-Level Mathematical Verification<div class="title-zh">超越答案键：大语言模型逐步数学验证的鲁棒性评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">process verification</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">robustness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-a-judge</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span></div>
+  <div class="item-summary">The paper introduces a controlled linear-equation benchmark that asks LLMs to judge final-answer correctness, step-level trace correctness and the first incorrect step, then tests them on perturbed but logically equivalent solutions. Base models that handle canonical traces degrade sharply on perturbed ones, with false-rejection rates of 75.6–85.3% on valid perturbed traces across GPT-OSS 20B, Qwen3-14B and Phi-4-Reasoning.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.28725v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="auto-formalization geometric reasoning execution-based verification few-shot prompting">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.28481</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">NL2AGBench: Benchmarking LLM Auto-Formalization for AlphaGeometry<div class="title-zh">NL2AGBench：评估 LLM 面向 AlphaGeometry 的自动形式化能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">auto-formalization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">geometric reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">execution-based verification</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">few-shot prompting</span></div>
+  <div class="item-summary">NL2AGBench evaluates LLMs on translating English geometry problems into AlphaGeometry-compatible formal representations, using execution-based verification inside AlphaGeometry rather than textual similarity. Across ten open- and closed-source models, leading closed-source models exceed 80% executable translation rates while even the largest open-source models struggle to consistently preserve geometric constraints.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.28481v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal embeddings hyperbolic geometry hierarchical structure contrastive learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.29313</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Hyper3-CLIP: Hierarchy-Conditioned Hyperbolic Vision-Language Training<div class="title-zh">Hyper3-CLIP：层级条件化的双曲视觉-语言训练</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">hyperbolic geometry</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">hierarchical structure</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">contrastive learning</span></div>
+  <div class="item-summary">Hyper3-CLIP is a hierarchy-conditioned hyperbolic vision-language model that combines global, local and global-local contrastive learning with query-conditioned visual pooling, training on lightweight query hierarchies built from captions, sentence fragments, part descriptions and extracted phrases. Query-conditioned pooling is active only during training, and the model improves R@5 and R@10 retrieval on COCO and Flickr plus multi-label classification on VOC and COCO while remaining competitive on hierarchy metrics.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29313v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="user simulation working memory cognitive bounds persona prompting">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.30033</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">"Act Like a 5th Grader" is Not Enough: Bounding Knowledge in LLM-Based User Simulators<div class="title-zh">“表现得像五年级学生”还不够：限定 LLM 用户模拟器的知识边界</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">user simulation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">working memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">cognitive bounds</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">persona prompting</span></div>
+  <div class="item-summary">Using over 71,000 reading-comprehension responses from 2,359 primary-school students in grades 4 to 6, the authors show that standard persona prompting makes LLM user simulators near-perfect and deterministic, missing the natural variance of developing readers. They introduce the Cognitively Bounded User Simulator, an architectural framework that models restricted working memory through an episodic bottleneck and two test-taking strategies, narrowing the simulation gap across multiple backbones.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.30033v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic reasoning evidence grounding tool invocation multimodal reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.29880</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Perceive to Hypothesize, Verify to Ground: An Agentic Reasoning Framework for Open-World Geo-Localization<div class="title-zh">先感知再假设，再验证以落地：开放世界地理定位的 Agent 推理框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool invocation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multimodal reasoning</span></div>
+  <div class="item-summary">GeoPAVE reformulates open-world geo-localization as a perceive-then-verify reasoning problem, using a bi-level agentic framework that generates hypotheses from single-pass rollouts and grounds decisions through support, refute and refine verification actions. The authors also introduce PAVED, a dataset derived from real-world user check-in data with multi-hop queries, multi-round tool invocations and structured perception-verification traces.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.29880v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills developer tooling System One API">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">typesafe-ai/skills<div class="title-zh">typesafe-ai/skills：基于 TypeSafe System One API 的 Agent 技能集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">developer tooling</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">System One API</span></div>
+  <div class="item-summary">The repository collects agent skills aimed at developers building on TypeSafe's System One API.</div>
+  <a class="item-link" href="https://github.com/typesafe-ai/skills" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="multimodal embeddings multimodal retrieval open-source models">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Tencent/WeMM-Embedding<div class="title-zh">Tencent/WeMM-Embedding：微信视觉团队的多模态嵌入模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source models</span></div>
+  <div class="item-summary">WeMM-Embedding is a family of universal multimodal embedding models from Tencent's WeChat Vision Team, supporting multimodal understanding and retrieval; the repository is written in Python.</div>
+  <a class="item-link" href="https://github.com/Tencent/WeMM-Embedding" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="computational research verifiable execution agent tooling">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">brayonpi/hexstellar<div class="title-zh">brayonpi/hexstellar：把 AI Agent 变成计算研究员</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">computational research</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifiable execution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent tooling</span></div>
+  <div class="item-summary">HexStellar Cortex turns an AI agent into a computational researcher, offering software-accelerated optimization, quantum computing, scientific computing, decision intelligence and verifiable execution through a Python CLI and API. It includes certainty labels, verification receipts, examples and a free sandbox, and can be installed with pip.</div>
+  <a class="item-link" href="https://github.com/brayonpi/hexstellar" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="ontology modeling agent skill application generation">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">sharptoolbox/ontology-driven-dev<div class="title-zh">sharptoolbox/ontology-driven-dev：本体驱动业务系统开发技能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology modeling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skill</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">application generation</span></div>
+  <div class="item-summary">The repository packages an ontology-driven development skill that moves from requirement discovery through ontology modeling to application building, built on a seven-model ontology YAML and a code-PaaS base, and supporting WorkBuddy, Claude Code and Codex.</div>
+  <a class="item-link" href="https://github.com/sharptoolbox/ontology-driven-dev" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="large language model open-source release long context">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Hy4 preview<div class="title-zh">腾讯发布 Hy4 预览版</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">large language model</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source release</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span></div>
+  <div class="item-summary">Tencent released and open-sourced Hy4 preview, a large language model with 770B total parameters, 49B active parameters and a context window exceeding 1M tokens.</div>
+  <a class="item-link" href="https://www.tencent.com/tencent-releases-and-open-sources-tencent-hy4-preview/" target="_blank" rel="noopener">&rarr; www.tencent.com</a>
+</div>
+<div class="item-card" data-keywords="bilingual model tokenizer design low-resource language evaluation artifact">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2608.30092</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Arkios: An Open Bilingual English-Nepali Language Model Trained From Scratch, with a Devanagari-Aware Tokenizer<div class="title-zh">Arkios：从零训练的开源英尼双语语言模型与天城文感知分词器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">bilingual model</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">tokenizer design</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-resource language</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation artifact</span></div>
+  <div class="item-summary">Arkios is a 1.04B-parameter dense transformer pretrained from scratch on 150B tokens of bilingual English-Nepali text with a custom single-file C/CUDA training stack and a Devanagari-aware byte-level BPE tokenizer. The authors report that the standard multiple-choice-letter prompt format places the model at chance in both Nepali and English while scoring answer text directly reveals genuine English-favoring comprehension, and they release base and instruction-tuned weights under Apache-2.0.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2608.30092v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal embeddings open-source release multimodal search">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">WeChat team open-sources WeMM-Embedding for multimodal search and recommendation<div class="title-zh">微信团队开源 WeMM-Embedding，用于多模态搜索与推荐</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source release</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal search</span></div>
+  <div class="item-summary">Tencent's WeChat Vision team has open-sourced WeMM-Embedding, a family of multimodal embedding models for representing and matching text, images and videos.</div>
+  <a class="item-link" href="https://technode.com/2026/08/27/wechat-team-open-sources-wemm-embedding-for-multimodal-search-and-recommendation/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+<div class="item-card" data-keywords="security incident model security monitoring alignment">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Hugging Face incident and the road ahead<div class="title-zh">Hugging Face 事件及其后续之路</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">security incident</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">monitoring</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">alignment</span></div>
+  <div class="item-summary">OpenAI shares findings from the Hugging Face security incident and outlines steps it is taking to strengthen AI model security, monitoring and alignment.</div>
+  <a class="item-link" href="https://openai.com/index/hugging-face-incident-and-the-road-ahead" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="double-blind evaluation AI evaluation evaluation methodology">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Piloting the world's first double-blind AI evaluations<div class="title-zh">试点全球首个双盲 AI 评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">double-blind evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">AI evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">evaluation methodology</span></div>
+  <div class="item-summary">Google DeepMind announced a pilot of what it describes as the world's first double-blind AI evaluations.</div>
+  <a class="item-link" href="https://deepmind.google/blog/piloting-the-worlds-first-double-blind-ai-evaluations/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+<div class="item-card" data-keywords="agent evaluation real-world tasks evaluation leaderboard">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Baidu launches DuMateBench benchmark for real-world AI agent delivery<div class="title-zh">百度推出 DuMateBench，衡量 AI Agent 的真实任务交付能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">real-world tasks</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation leaderboard</span></div>
+  <div class="item-summary">Baidu launched DuMateBench, an evaluation leaderboard designed to measure whether AI agents can complete real-world tasks and deliver usable outputs.</div>
+  <a class="item-link" href="https://technode.com/2026/08/28/baidu-launches-dumatebench-benchmark-for-real-world-ai-agent-delivery/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+<div class="item-card" data-keywords="agent memory memory provenance Datalog memory benchmark">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">I accidentally turned LLM memory into program analysis<div class="title-zh">我阴差阳错地把 LLM 记忆做成了程序分析</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">memory provenance</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">Datalog</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory benchmark</span></div>
+  <div class="item-summary">The author explains why he stopped trying to give LLM agents a better memory and instead built Lemmalog, a Datalog engine that keeps an agent's knowledge as analysis state with provenance, retractions and incremental evaluation, reporting benchmark results on LongMemEval and LoCoMo.</div>
+  <a class="item-link" href="https://pwning.systems/posts/llm-memory-program-analysis/" target="_blank" rel="noopener">&rarr; pwning.systems</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://technode.com" target="_blank" rel="noopener">TechNode</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://deepmind.google" target="_blank" rel="noopener">Google DeepMind</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-06 13:02 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-08-24", "week_number": 35, "stats": {"total_items": 40, "unique_items": 40, "sources_count": 6, "links_verified_count": 40, "links_failed_count": 0, "section_counts": {"research_papers": 29, "tools_frameworks": 4, "models_embeddings": 2, "blogs_insights": 5}}, "daily_keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "open-source release", "domain": "ai-knowledge"}, {"text": "multimodal search", "domain": "rag-retrieval"}, {"text": "evidence grounding", "domain": "ai-knowledge"}, {"text": "multilingual retrieval", "domain": "rag-retrieval"}, {"text": "LLM-as-a-judge", "domain": "evaluation-benchmark"}, {"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "document embeddings", "domain": "embeddings-vectors"}, {"text": "bi-encoder", "domain": "embeddings-vectors"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "REIGN: Refurbished Embeddings with Integrated Guidance Networks for Efficient Context-Length Scaling", "title_zh": "REIGN：面向高效上下文长度扩展的重构嵌入与集成引导网络", "url": "http://arxiv.org/abs/2608.29899v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.29899", "summary": "REIGN is a contrastively trained bi-encoder that operates on contextualised chunk embeddings from a frozen Guidance Network rather than on raw tokens, targeting multi-chunk document-to-document retrieval and cutting per-document training cost by roughly four orders of magnitude relative to chunked Transformer fine-tuning. It also releases a synthetic long-document retrieval benchmark, matches dense long-context retrievers at smaller parameter budgets on Wikipedia, LoCo and a patent retrieval case study, and stays within 0.65 nDCG@10 of a 20x-larger model on LoCo.", "keywords": [{"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "document embeddings", "domain": "embeddings-vectors"}, {"text": "bi-encoder", "domain": "embeddings-vectors"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true, "_day": "2026-08-30"}, {"title": "WeChat team open-sources WeMM-Embedding for multimodal search and recommendation", "title_zh": "微信团队开源 WeMM-Embedding，用于多模态搜索与推荐", "url": "https://technode.com/2026/08/27/wechat-team-open-sources-wemm-embedding-for-multimodal-search-and-recommendation/", "source": "TechNode", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Tencent's WeChat Vision team has open-sourced WeMM-Embedding, a family of multimodal embedding models for representing and matching text, images and videos.", "keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "open-source release", "domain": "ai-knowledge"}, {"text": "multimodal search", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true, "_day": "2026-08-27"}, {"title": "Co-Evolving Structured Knowledge and Reasoning in Language Models", "title_zh": "语言模型中结构化知识与推理的协同演化", "url": "http://arxiv.org/abs/2608.26386v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.26386", "summary": "KBevo is a co-evolving framework that jointly learns to construct a structured knowledge base and reason over it for knowledge-intensive question answering, optimizing both components end-to-end with QA outcome rewards so that reasoning success directly improves the constructed knowledge base. The authors report larger, better-connected knowledge structures with higher answer reachability, plus improved compositional factual reasoning and controllability compared with standard retrieval baselines.", "keywords": [{"text": "structured knowledge base", "domain": "knowledge-graph"}, {"text": "co-evolution", "domain": "knowledge-lifecycle"}, {"text": "knowledge construction", "domain": "knowledge-lifecycle"}, {"text": "compositional reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true, "_day": "2026-08-26"}, {"title": "Generating Biomedical Fact-Checking Reports with RL-Enhanced Agentic Search", "title_zh": "用 RL 增强的智能体搜索生成生物医学事实核查报告", "url": "http://arxiv.org/abs/2608.23811v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.23811", "summary": "BioCheck Agent generates structured biomedical fact-checking reports rather than isolated labels, searching only PubMed with Boolean operators and synthesizing conclusions with retrieved evidence. Trained with Evidence-Grounded GRPO, it improves label accuracy on SciFact by 9.95% over its Qwen3.5-4B base, with a 3.7% higher evidence quality score and a 19.63% lower evidence hallucination rate.", "keywords": [{"text": "agentic search", "domain": "rag-retrieval"}, {"text": "biomedical fact-checking", "domain": "ai-knowledge"}, {"text": "evidence grounding", "domain": "cognition-reasoning"}, {"text": "GRPO", "domain": "agent-architecture"}, {"text": "hallucination reduction", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true, "_day": "2026-08-24"}, {"title": "AgentKernel: The Trust-Native Agentic Operating System", "title_zh": "AgentKernel：信任原生的 Agent 操作系统", "url": "http://arxiv.org/abs/2609.29647v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.29647", "summary": "AgentKernel argues that agents need an operating-system substrate with mandatory, non-bypassable services for identity, input mediation, memory governance and execution control, organized into Identity, Perception, Cognition and Execution pillars that adapt classical OS security principles to delegation abuse, prompt injection, memory poisoning and tool misuse. The paper positions it as the missing OS layer beneath orchestration frameworks, agent runtimes, governance platforms and execution sandboxes, supporting the case with systematic comparison and security analysis.", "keywords": [{"text": "agent operating system", "domain": "agent-architecture"}, {"text": "memory governance", "domain": "agent-memory"}, {"text": "prompt injection", "domain": "context-prompting"}, {"text": "trust boundary", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true, "_day": "2026-08-29"}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "REIGN: Refurbished Embeddings with Integrated Guidance Networks for Efficient Context-Length Scaling", "title_zh": "REIGN：面向高效上下文长度扩展的重构嵌入与集成引导网络", "url": "http://arxiv.org/abs/2608.29899v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.29899", "summary": "REIGN is a contrastively trained bi-encoder that operates on contextualised chunk embeddings from a frozen Guidance Network rather than on raw tokens, targeting multi-chunk document-to-document retrieval and cutting per-document training cost by roughly four orders of magnitude relative to chunked Transformer fine-tuning. It also releases a synthetic long-document retrieval benchmark, matches dense long-context retrievers at smaller parameter budgets on Wikipedia, LoCo and a patent retrieval case study, and stays within 0.65 nDCG@10 of a 20x-larger model on LoCo.", "keywords": [{"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "document embeddings", "domain": "embeddings-vectors"}, {"text": "bi-encoder", "domain": "embeddings-vectors"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Co-Evolving Structured Knowledge and Reasoning in Language Models", "title_zh": "语言模型中结构化知识与推理的协同演化", "url": "http://arxiv.org/abs/2608.26386v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.26386", "summary": "KBevo is a co-evolving framework that jointly learns to construct a structured knowledge base and reason over it for knowledge-intensive question answering, optimizing both components end-to-end with QA outcome rewards so that reasoning success directly improves the constructed knowledge base. The authors report larger, better-connected knowledge structures with higher answer reachability, plus improved compositional factual reasoning and controllability compared with standard retrieval baselines.", "keywords": [{"text": "structured knowledge base", "domain": "knowledge-graph"}, {"text": "co-evolution", "domain": "knowledge-lifecycle"}, {"text": "knowledge construction", "domain": "knowledge-lifecycle"}, {"text": "compositional reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Generating Biomedical Fact-Checking Reports with RL-Enhanced Agentic Search", "title_zh": "用 RL 增强的智能体搜索生成生物医学事实核查报告", "url": "http://arxiv.org/abs/2608.23811v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.23811", "summary": "BioCheck Agent generates structured biomedical fact-checking reports rather than isolated labels, searching only PubMed with Boolean operators and synthesizing conclusions with retrieved evidence. Trained with Evidence-Grounded GRPO, it improves label accuracy on SciFact by 9.95% over its Qwen3.5-4B base, with a 3.7% higher evidence quality score and a 19.63% lower evidence hallucination rate.", "keywords": [{"text": "agentic search", "domain": "rag-retrieval"}, {"text": "biomedical fact-checking", "domain": "ai-knowledge"}, {"text": "evidence grounding", "domain": "cognition-reasoning"}, {"text": "GRPO", "domain": "agent-architecture"}, {"text": "hallucination reduction", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "AgentKernel: The Trust-Native Agentic Operating System", "title_zh": "AgentKernel：信任原生的 Agent 操作系统", "url": "http://arxiv.org/abs/2609.29647v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.29647", "summary": "AgentKernel argues that agents need an operating-system substrate with mandatory, non-bypassable services for identity, input mediation, memory governance and execution control, organized into Identity, Perception, Cognition and Execution pillars that adapt classical OS security principles to delegation abuse, prompt injection, memory poisoning and tool misuse. The paper positions it as the missing OS layer beneath orchestration frameworks, agent runtimes, governance platforms and execution sandboxes, supporting the case with systematic comparison and security analysis.", "keywords": [{"text": "agent operating system", "domain": "agent-architecture"}, {"text": "memory governance", "domain": "agent-memory"}, {"text": "prompt injection", "domain": "context-prompting"}, {"text": "trust boundary", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "ADE: Agentic Data Evolution Framework for Human-Centered Objectives", "title_zh": "ADE：面向以人为本目标的智能体数据演化框架", "url": "http://arxiv.org/abs/2608.23719v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.23719", "summary": "ADE is a data-centric framework that organizes synthetic supervision as evolving data snapshots improved through a closed-loop Observation-Variation-Selection procedure, with a steady-state admission mechanism that conservatively gates updates. On DEV300 it raises the intrinsic win rate from 50% to 75.81% and the extrinsic win rate from 55.20% to 68.86%, and blind expert evaluation shows a 66.11% preference for evolved answers.", "keywords": [{"text": "synthetic data", "domain": "ai-knowledge"}, {"text": "data evolution", "domain": "knowledge-lifecycle"}, {"text": "closed-loop refinement", "domain": "agent-architecture"}, {"text": "quality gating", "domain": "evaluation-benchmark"}, {"text": "post-training", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Can You Trust Frozen Hematology Foundation Models under Acquisition Shift?", "title_zh": "采集偏移下冻结血液学基础模型可信吗？", "url": "http://arxiv.org/abs/2608.25148v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.25148", "summary": "The authors audit 15 frozen hematology, pathology and general vision encoders across four public single-cell acquisition domains for accuracy robustness and calibration, finding in-domain macro-F1 saturated at 0.98–0.997 while cross-dataset macro-F1 drops 34–72% and model rankings reorder. Source-trained probes are nearly calibrated in-domain (ECE 0.004) but confidently wrong off-domain (ECE 0.35), and a training-free Class-Balanced Re-standardization improves all target-prior scenario means while leaving residual miscalibration.", "keywords": [{"text": "embedding robustness", "domain": "embeddings-vectors"}, {"text": "calibration", "domain": "evaluation-benchmark"}, {"text": "domain shift", "domain": "ai-knowledge"}, {"text": "frozen encoders", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "SPECTRA: Subspace-Preserving Embedding Calibration, Transport, and Replay for Fully Few-Shot Class-Incremental Audio Classification", "title_zh": "SPECTRA：面向完全少样本类增量音频分类的子空间保持嵌入校准、迁移与回放", "url": "http://arxiv.org/abs/2608.25054v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.25054", "summary": "SPECTRA is a frozen-encoder framework for fully few-shot class-incremental audio classification that adds a lightweight trainable adapter, exemplar-free subspace feature replay that samples old classes from their stored low-rank subspaces, and transductive optimal-transport prototype refinement at test time. On NSynth-100, FSC-89 and LS-100 it improves average accuracy and reduces forgetting over prior state-of-the-art, with ablations indicating that subspace replay outperforms equal-variance Gaussian replay.", "keywords": [{"text": "embedding calibration", "domain": "embeddings-vectors"}, {"text": "subspace replay", "domain": "agent-memory"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "audio classification", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Assessing mentalization in humans and large language models", "title_zh": "评估人类与大语言模型的心理化能力", "url": "http://arxiv.org/abs/2608.26291v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2608.26291", "summary": "The study uses two economic games with cognitive computational modeling to uncover latent mentalization strategies in LLM agents from four model families (DeepSeek, GPT-4.1, GPT-5 and Gemini 2.0 Flash; N = 2,099), benchmarked against 251 human participants. LLMs showed behavioural and computational signatures of mentalizing that differed by provider and size, strategic prompting generally improved performance, and GPT-5 agents adapted their recursive depth of reasoning to opponent sophistication, outperforming human participants.", "keywords": [{"text": "theory of mind", "domain": "cognition-reasoning"}, {"text": "mentalization", "domain": "cognition-reasoning"}, {"text": "cognitive modeling", "domain": "evaluation-benchmark"}, {"text": "strategic prompting", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Don't Overthink, Don't Underthink: Toward Adaptive Reasoning in Agentic AI", "title_zh": "别过度思考，也别思考不足：迈向智能体 AI 的自适应推理", "url": "http://arxiv.org/abs/2608.26442v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.26442", "summary": "The paper argues that fixed or pre-allocated reasoning controls suit agentic systems poorly because reasoning demands evolve through planning, tool use, memory retrieval and agent-to-agent interaction, characterizing over-reasoning and under-reasoning as recurring failure modes of misallocated reasoning. On MATH-500 and the GAIA public validation set, over-reasoning cases incur higher computational cost without proportional accuracy gains, while under-reasoning cases are consistently associated with incorrect or incomplete solutions.", "keywords": [{"text": "adaptive reasoning", "domain": "cognition-reasoning"}, {"text": "over-reasoning", "domain": "cognition-reasoning"}, {"text": "compute allocation", "domain": "agent-architecture"}, {"text": "GAIA benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "A Versioned Unified Graph Index for Dynamic Timestamp-Aware Nearest Neighbor Search", "title_zh": "面向动态时间戳感知最近邻搜索的版本化统一图索引", "url": "http://arxiv.org/abs/2608.27663v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.27663", "summary": "TiGER is a time-integrated graph index for approximate nearest neighbor search on dynamic vector datasets that maintains one unified graph with versioned connectivity, so arbitrary time intervals can be queried directly without traversing invalid vectors or post-search filtering. Empirical evaluations report up to 5× improvement in queries per second without compromising accuracy over filtering-based or per-time-segment sub-graph baselines.", "keywords": [{"text": "approximate nearest neighbor", "domain": "embeddings-vectors"}, {"text": "temporal indexing", "domain": "knowledge-graph"}, {"text": "vector search", "domain": "rag-retrieval"}, {"text": "index versioning", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "PCFBench: A Diagnostic Benchmark for Product Carbon Footprint Estimation", "title_zh": "PCFBench：产品碳足迹估算的诊断性基准", "url": "http://arxiv.org/abs/2608.27716v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.27716", "summary": "PCFBench is a diagnostic benchmark that carves product carbon footprint modeling into six independently evaluable tasks requiring decomposition, retrieval, ontology matching and numerical extraction, comprising 614 expert-labelled items. Across eight frontier LLMs from four providers no single model dominates: the strongest models estimate total product emissions within 2× of declared totals on 77% of products, but that rate drops to 37–58% when the PCF is generated step by step, with only 45–75% obeying mass conservation.", "keywords": [{"text": "diagnostic benchmark", "domain": "evaluation-benchmark"}, {"text": "multi-step reasoning", "domain": "cognition-reasoning"}, {"text": "ontology matching", "domain": "knowledge-graph"}, {"text": "retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Blind Men and the Elephant: Probing the Epistemic Myopia of LLMs under Long-Tail Divergent Knowledge", "title_zh": "盲人摸象：探测大模型在长尾分歧知识下的认知短视", "url": "http://arxiv.org/abs/2608.28478v1", "source": "arXiv", "section": "research_papers", "organization": "Tencent", "language": "en", "arxiv_id": "2608.28478", "summary": "The paper introduces ElephantBench, a closed-book knowledge probe of 1,094 questions built through an auditable graph-based pipeline that mines naturally occurring disagreements in a low-exposure web corpus and converts them into multi-account QA records verified against source documents and reviewed by human annotators. Across 32 models, even the strongest recovers both accounts on only 52.4% of questions, and scaling model size and inference-time reasoning improve recall but do not eliminate the incompleteness.", "keywords": [{"text": "epistemic myopia", "domain": "ai-knowledge"}, {"text": "long-tail knowledge", "domain": "ai-knowledge"}, {"text": "knowledge probe", "domain": "evaluation-benchmark"}, {"text": "graph-based benchmark construction", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": false}, {"title": "The Halt Vector: Internalizing a Causal Steering Intervention for Efficient Reasoning", "title_zh": "停止向量：将因果引导干预内化以实现高效推理", "url": "http://arxiv.org/abs/2608.28859v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2608.28859", "summary": "The authors identify a halt vector at layer 18 of DeepSeek-R1-Distill-Qwen-7B whose steering strength controls thinking length, and internalize the intervention into the weights by reconstructing the whole steered activation with off-axis dimensions pinned to their natural values. Fit from 24 problems without reinforcement learning, it removes about a quarter of the thinking at held accuracy across five unseen benchmarks and tracks each problem's own removable slack at 0.70.", "keywords": [{"text": "reasoning efficiency", "domain": "cognition-reasoning"}, {"text": "activation steering", "domain": "cognition-reasoning"}, {"text": "interpretability", "domain": "ai-knowledge"}, {"text": "chain-of-thought", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Agents as Knowledge Integrator and Utilizer in Multimodal Recommendation", "title_zh": "Agent 作为多模态推荐中的知识整合者与使用者", "url": "http://arxiv.org/abs/2608.29410v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.29410", "summary": "AgentMMRec is an agent-based multimodal recommendation framework with an Integrator Agent that infers behavior- and multimodal-aware user preferences and item properties into a reusable knowledge memory, and a Utilizer Agent that converts that memory into refined item-item graphs and reranked candidate lists. Experiments on three Amazon datasets show consistent Recall and NDCG gains over recent multimodal baselines, including under sparsity and item cold-start, and the constructed knowledge transfers to existing backbones.", "keywords": [{"text": "knowledge memory", "domain": "agent-memory"}, {"text": "knowledge integration", "domain": "ai-knowledge"}, {"text": "graph construction", "domain": "knowledge-graph"}, {"text": "agent architecture", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "LiteSearch-VL: Small Multimodal Search Agents via Trajectory Distillation and Synthetic Step-DPO", "title_zh": "LiteSearch-VL：通过轨迹蒸馏与合成逐步 DPO 构建小型多模态搜索 Agent", "url": "http://arxiv.org/abs/2608.29357v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.29357", "summary": "LiteSearch-VL is a low-compute recipe that distills released OpenSearch-VL agent trajectories into Qwen3-VL-2B and 4B backbones using LoRA adapters and synthetic step-level preferences targeting five local failure modes such as premature answers and wrong tools. Across 12,400 GPT-5-judged rollouts, full-trajectory supervised fine-tuning transfers the agent contract and lifts the 2B model from almost never emitting a usable answer to 28.4% macro Pass@1, and a step-budget ablation identifies answer verification rather than search depth as the next bottleneck.", "keywords": [{"text": "multimodal search", "domain": "rag-retrieval"}, {"text": "trajectory distillation", "domain": "agent-architecture"}, {"text": "preference optimization", "domain": "cognition-reasoning"}, {"text": "small vision-language models", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "En-ViMedNER: An English-Vietnamese Parallel Biomedical Corpus with UMLS Semantic Type Annotations", "title_zh": "En-ViMedNER：带 UMLS 语义类型标注的英越平行生物医学语料库", "url": "http://arxiv.org/abs/2608.29890v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.29890", "summary": "En-ViMedNER is described as the first English-Vietnamese parallel biomedical NER corpus annotated with UMLS semantic types, containing 4,392 PubMed abstract pairs, 44,892 sentence pairs and 202,949 aligned entity-mention pairs across 21 semantic types. It is a silver-standard corpus with a human-audited and consensus-corrected mini-test subset, and the best baselines reach F1 52.70 for Vietnamese NER and 45.44 for cross-lingual NER on that subset.", "keywords": [{"text": "biomedical NER", "domain": "ai-knowledge"}, {"text": "UMLS ontology", "domain": "knowledge-graph"}, {"text": "parallel corpus", "domain": "ai-knowledge"}, {"text": "cross-lingual evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Token Counts Are Not Model Lineage: A Frozen-Threshold Holdout Study of Black-Box LLM API Fingerprinting", "title_zh": "Token 数不等于模型血统：黑盒 LLM API 指纹识别的冻结阈值留出研究", "url": "http://arxiv.org/abs/2608.29930v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2608.29930", "summary": "The study tests whether prompt-token counts returned by OpenAI-compatible endpoints can attribute black-box models to families, using 24 labelled endpoint pairs split into development and untouched holdout sets with a frozen threshold. The shift-invariant exact-match score separates all 12 development pairs, but on holdout only 6 pairs are eligible, with balanced accuracy 0.75 and sensitivity 0.50, so token-count consistency is validated as a fingerprint of a shared tokenization stack but rejected as a standalone test of model lineage.", "keywords": [{"text": "model fingerprinting", "domain": "evaluation-benchmark"}, {"text": "tokenization", "domain": "embeddings-vectors"}, {"text": "model provenance", "domain": "ai-knowledge"}, {"text": "holdout evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "BenchBench-Protocol: Evaluating Real-World Wet-Lab Protocol Reasoning and Modification", "title_zh": "BenchBench-Protocol：评估真实湿实验室实验方案推理与修改能力", "url": "http://arxiv.org/abs/2608.23898v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.23898", "summary": "The benchmark contains 149 protocol-modification tasks reconstructed from changes scientists made to published wet-lab protocols, drawn from 96 source protocols across nine domains of wet-lab biology. Across nine closed and open models, Claude Opus 5 scores highest at 59.2% normalized rubric score while the others fall between 34.1% and 47.1%, and the benchmark remains unsaturated when taking the best of ten attempts.", "keywords": [{"text": "protocol reasoning", "domain": "cognition-reasoning"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "scientific reasoning", "domain": "ai-knowledge"}, {"text": "rubric scoring", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Names Can Hurt: Spotting Slopsquatting Risks Caused by Package Name Hallucinations in Local Coding LLMs", "title_zh": "名称也能伤人：识别本地编码 LLM 中包名幻觉引发的 slopsquatting 风险", "url": "http://arxiv.org/abs/2608.23897v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.23897", "summary": "The paper proposes a two-layer detector for slopsquatting that combines a deterministic PyPI existence check with a Random Forest classifier over ten package-name and metadata features, bridged by an import-name reconciler and embedded in a LangGraph state machine that retries at escalating temperatures before falling back to another model family. Across 300 curated prompts the pipeline produced hallucination-free code on 76% of runs, and the authors report that hallucination rates scale almost linearly with prompt adversariality, from 0-10% on routine coding to 40-73% on slopsquat baits.", "keywords": [{"text": "slopsquatting", "domain": "ai-knowledge"}, {"text": "package hallucination", "domain": "cognition-reasoning"}, {"text": "supply chain security", "domain": "agent-architecture"}, {"text": "hallucination detection", "domain": "evaluation-benchmark"}, {"text": "fallback models", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "FLARE: Verifying MILP Reformulations with LLM-Based Theorem Proving", "title_zh": "FLARE：基于 LLM 定理证明的 MILP 重构验证", "url": "http://arxiv.org/abs/2608.25220v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.25220", "summary": "The paper introduces a constructive definition of MILP reformulation that can be formalized and machine-checked in Lean, plus FLARE, an LLM-based agent paired with Lean that verifies proposed reformulations against a reference formulation. On the new FormulationBench (20 problems and 109 formulations) FLARE reports 100% accuracy on the NP-hard subset and produces a machine-checkable certificate for every reformulation it accepts, while a cheaper LLM-only proxy matches its accuracy without certificates.", "keywords": [{"text": "theorem proving", "domain": "cognition-reasoning"}, {"text": "formal verification", "domain": "evaluation-benchmark"}, {"text": "MILP reformulation", "domain": "ai-knowledge"}, {"text": "agentic verification", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Transaction Foundation Models for Retrieval-Augmented Generation over Financial Transaction Data: A Comparative Evaluation with Text Embeddings", "title_zh": "面向金融交易数据检索增强生成的事务基础模型：与文本嵌入的对比评估", "url": "http://arxiv.org/abs/2610.28641v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2610.28641", "summary": "The authors build a deterministic 1,026-question QA benchmark with retrieval-level gold-document annotations over IBM's synthetic Anti-Money-Laundering transaction dataset, comparing NVIDIA's 29M-parameter Transaction Foundation Model with five general-purpose and financial text embedding models. The TFM beats every size-matched generic embedder on retrieval (Recall@5 0.81 vs. 0.25–0.39) and end-to-end accuracy (66.7% vs. 27.5%), but a pipeline embedding a hand-engineered aggregated summary with a generic encoder matches or exceeds it overall and dominates on several low-cardinality entity categories.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "transaction embeddings", "domain": "embeddings-vectors"}, {"text": "domain-specific retrieval", "domain": "rag-retrieval"}, {"text": "feature aggregation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Beyond Raw Context Transfer: Representation-based Federated Retrieval-Augmented Generation", "title_zh": "超越原始上下文传输：基于表征的联邦检索增强生成", "url": "http://arxiv.org/abs/2609.22162v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2609.22162", "summary": "FedRepRAG is a decentralized RAG framework that keeps raw documents at their owning clients and exchanges only compact latent representations during cross-client retrieval, using a collaboratively trained projector to turn retrieval embeddings into generator-compatible representation tokens for a frozen LLM or VLM backbone. Across decentralized visual QA and QA benchmarks it consistently beats direct-inference and local-retrieval baselines while substantially reducing retrieval-context length and inference overhead compared with raw-context transfer, though residual representation-level leakage remains.", "keywords": [{"text": "federated RAG", "domain": "rag-retrieval"}, {"text": "representation exchange", "domain": "embeddings-vectors"}, {"text": "privacy-preserving retrieval", "domain": "ai-knowledge"}, {"text": "context compression", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "MoganColBERT-TR: A Late-Interaction Multi-Vector Retrieval Model for Turkish", "title_zh": "MoganColBERT-TR：面向土耳其语的晚期交互多向量检索模型", "url": "http://arxiv.org/abs/2608.26344v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.26344", "summary": "MoganColBERT-TR is a Turkish multi-vector retrieval model that represents queries and documents at the token level through a 768→128 projection and MaxSim late interaction, initialized from the MoganBERT-TR embedding encoder and adapted with single-epoch distillation from a cross-encoder teacher. With 148.9M parameters it scores 37.36 overall (35.53 nDCG@100, 31.81 nDCG@10) across five zero-shot Turkish BEIR datasets, beating the twice-as-large ColmmBERT-base-TR on four of five datasets and finishing second among five compared models.", "keywords": [{"text": "late interaction", "domain": "rag-retrieval"}, {"text": "multilingual retrieval", "domain": "rag-retrieval"}, {"text": "knowledge distillation", "domain": "embeddings-vectors"}, {"text": "zero-shot retrieval", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "NormasTCU --- A Brazilian Portuguese IR Dataset and an Evaluation of LLM-as-a-Judge for Relevance Assessment", "title_zh": "NormasTCU：巴西葡萄牙语 IR 数据集与 LLM-as-a-Judge 相关性评估", "url": "http://arxiv.org/abs/2608.27746v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.27746", "summary": "NormasTCU is a Brazilian Portuguese IR dataset with 14,469 legal documents, 46 queries and 3,048 human judgments over 812 query-document pairs, used to evaluate LLM-as-a-judge relevance assessment with three models and two prompt techniques. LLM judges show positive scoring bias (MAE 0.46–0.66 on a 0–2 scale) and only fair-to-moderate agreement with humans (Cohen's kappa 0.32–0.53), but their system rankings for nDCG@10 and MRR often match human rankings (observed Kendall's tau ≥ 0.90, though bootstrap confidence intervals did not always stay above that threshold) while being less reliable for P@10 and R@10.", "keywords": [{"text": "LLM-as-a-judge", "domain": "evaluation-benchmark"}, {"text": "relevance assessment", "domain": "rag-retrieval"}, {"text": "IR dataset", "domain": "ai-knowledge"}, {"text": "multilingual retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Beyond the Answer Key: Robustness Evaluation of Large Language Models for Step-Level Mathematical Verification", "title_zh": "超越答案键：大语言模型逐步数学验证的鲁棒性评估", "url": "http://arxiv.org/abs/2608.28725v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.28725", "summary": "The paper introduces a controlled linear-equation benchmark that asks LLMs to judge final-answer correctness, step-level trace correctness and the first incorrect step, then tests them on perturbed but logically equivalent solutions. Base models that handle canonical traces degrade sharply on perturbed ones, with false-rejection rates of 75.6–85.3% on valid perturbed traces across GPT-OSS 20B, Qwen3-14B and Phi-4-Reasoning.", "keywords": [{"text": "process verification", "domain": "evaluation-benchmark"}, {"text": "robustness", "domain": "evaluation-benchmark"}, {"text": "LLM-as-a-judge", "domain": "evaluation-benchmark"}, {"text": "mathematical reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "NL2AGBench: Benchmarking LLM Auto-Formalization for AlphaGeometry", "title_zh": "NL2AGBench：评估 LLM 面向 AlphaGeometry 的自动形式化能力", "url": "http://arxiv.org/abs/2608.28481v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.28481", "summary": "NL2AGBench evaluates LLMs on translating English geometry problems into AlphaGeometry-compatible formal representations, using execution-based verification inside AlphaGeometry rather than textual similarity. Across ten open- and closed-source models, leading closed-source models exceed 80% executable translation rates while even the largest open-source models struggle to consistently preserve geometric constraints.", "keywords": [{"text": "auto-formalization", "domain": "cognition-reasoning"}, {"text": "geometric reasoning", "domain": "cognition-reasoning"}, {"text": "execution-based verification", "domain": "evaluation-benchmark"}, {"text": "few-shot prompting", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Hyper3-CLIP: Hierarchy-Conditioned Hyperbolic Vision-Language Training", "title_zh": "Hyper3-CLIP：层级条件化的双曲视觉-语言训练", "url": "http://arxiv.org/abs/2608.29313v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.29313", "summary": "Hyper3-CLIP is a hierarchy-conditioned hyperbolic vision-language model that combines global, local and global-local contrastive learning with query-conditioned visual pooling, training on lightweight query hierarchies built from captions, sentence fragments, part descriptions and extracted phrases. Query-conditioned pooling is active only during training, and the model improves R@5 and R@10 retrieval on COCO and Flickr plus multi-label classification on VOC and COCO while remaining competitive on hierarchy metrics.", "keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "hyperbolic geometry", "domain": "embeddings-vectors"}, {"text": "hierarchical structure", "domain": "knowledge-graph"}, {"text": "contrastive learning", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "\"Act Like a 5th Grader\" is Not Enough: Bounding Knowledge in LLM-Based User Simulators", "title_zh": "“表现得像五年级学生”还不够：限定 LLM 用户模拟器的知识边界", "url": "http://arxiv.org/abs/2608.30033v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.30033", "summary": "Using over 71,000 reading-comprehension responses from 2,359 primary-school students in grades 4 to 6, the authors show that standard persona prompting makes LLM user simulators near-perfect and deterministic, missing the natural variance of developing readers. They introduce the Cognitively Bounded User Simulator, an architectural framework that models restricted working memory through an episodic bottleneck and two test-taking strategies, narrowing the simulation gap across multiple backbones.", "keywords": [{"text": "user simulation", "domain": "agent-architecture"}, {"text": "working memory", "domain": "agent-memory"}, {"text": "cognitive bounds", "domain": "cognition-reasoning"}, {"text": "persona prompting", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Perceive to Hypothesize, Verify to Ground: An Agentic Reasoning Framework for Open-World Geo-Localization", "title_zh": "先感知再假设，再验证以落地：开放世界地理定位的 Agent 推理框架", "url": "http://arxiv.org/abs/2608.29880v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2608.29880", "summary": "GeoPAVE reformulates open-world geo-localization as a perceive-then-verify reasoning problem, using a bi-level agentic framework that generates hypotheses from single-pass rollouts and grounds decisions through support, refute and refine verification actions. The authors also introduce PAVED, a dataset derived from real-world user check-in data with multi-hop queries, multi-round tool invocations and structured perception-verification traces.", "keywords": [{"text": "agentic reasoning", "domain": "agent-architecture"}, {"text": "evidence grounding", "domain": "ai-knowledge"}, {"text": "tool invocation", "domain": "agent-architecture"}, {"text": "multimodal reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "typesafe-ai/skills", "title_zh": "typesafe-ai/skills：基于 TypeSafe System One API 的 Agent 技能集", "url": "https://github.com/typesafe-ai/skills", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "The repository collects agent skills aimed at developers building on TypeSafe's System One API.", "keywords": [{"text": "agent skills", "domain": "ai-knowledge"}, {"text": "developer tooling", "domain": "agent-architecture"}, {"text": "System One API", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Tencent/WeMM-Embedding", "title_zh": "Tencent/WeMM-Embedding：微信视觉团队的多模态嵌入模型", "url": "https://github.com/Tencent/WeMM-Embedding", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "WeMM-Embedding is a family of universal multimodal embedding models from Tencent's WeChat Vision Team, supporting multimodal understanding and retrieval; the repository is written in Python.", "keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "open-source models", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "brayonpi/hexstellar", "title_zh": "brayonpi/hexstellar：把 AI Agent 变成计算研究员", "url": "https://github.com/brayonpi/hexstellar", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "HexStellar Cortex turns an AI agent into a computational researcher, offering software-accelerated optimization, quantum computing, scientific computing, decision intelligence and verifiable execution through a Python CLI and API. It includes certainty labels, verification receipts, examples and a free sandbox, and can be installed with pip.", "keywords": [{"text": "computational research", "domain": "agent-architecture"}, {"text": "verifiable execution", "domain": "evaluation-benchmark"}, {"text": "agent tooling", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "sharptoolbox/ontology-driven-dev", "title_zh": "sharptoolbox/ontology-driven-dev：本体驱动业务系统开发技能", "url": "https://github.com/sharptoolbox/ontology-driven-dev", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "The repository packages an ontology-driven development skill that moves from requirement discovery through ontology modeling to application building, built on a seven-model ontology YAML and a code-PaaS base, and supporting WorkBuddy, Claude Code and Codex.", "keywords": [{"text": "ontology modeling", "domain": "knowledge-graph"}, {"text": "agent skill", "domain": "agent-architecture"}, {"text": "application generation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Hy4 preview", "title_zh": "腾讯发布 Hy4 预览版", "url": "https://www.tencent.com/tencent-releases-and-open-sources-tencent-hy4-preview/", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "Tencent released and open-sourced Hy4 preview, a large language model with 770B total parameters, 49B active parameters and a context window exceeding 1M tokens.", "keywords": [{"text": "large language model", "domain": "ai-knowledge"}, {"text": "open-source release", "domain": "ai-knowledge"}, {"text": "long context", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Arkios: An Open Bilingual English-Nepali Language Model Trained From Scratch, with a Devanagari-Aware Tokenizer", "title_zh": "Arkios：从零训练的开源英尼双语语言模型与天城文感知分词器", "url": "http://arxiv.org/abs/2608.30092v2", "source": "arXiv", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "2608.30092", "summary": "Arkios is a 1.04B-parameter dense transformer pretrained from scratch on 150B tokens of bilingual English-Nepali text with a custom single-file C/CUDA training stack and a Devanagari-aware byte-level BPE tokenizer. The authors report that the standard multiple-choice-letter prompt format places the model at chance in both Nepali and English while scoring answer text directly reveals genuine English-favoring comprehension, and they release base and instruction-tuned weights under Apache-2.0.", "keywords": [{"text": "bilingual model", "domain": "ai-knowledge"}, {"text": "tokenizer design", "domain": "embeddings-vectors"}, {"text": "low-resource language", "domain": "ai-knowledge"}, {"text": "evaluation artifact", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "WeChat team open-sources WeMM-Embedding for multimodal search and recommendation", "title_zh": "微信团队开源 WeMM-Embedding，用于多模态搜索与推荐", "url": "https://technode.com/2026/08/27/wechat-team-open-sources-wemm-embedding-for-multimodal-search-and-recommendation/", "source": "TechNode", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Tencent's WeChat Vision team has open-sourced WeMM-Embedding, a family of multimodal embedding models for representing and matching text, images and videos.", "keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "open-source release", "domain": "ai-knowledge"}, {"text": "multimodal search", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "The Hugging Face incident and the road ahead", "title_zh": "Hugging Face 事件及其后续之路", "url": "https://openai.com/index/hugging-face-incident-and-the-road-ahead", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI shares findings from the Hugging Face security incident and outlines steps it is taking to strengthen AI model security, monitoring and alignment.", "keywords": [{"text": "security incident", "domain": "ai-knowledge"}, {"text": "model security", "domain": "ai-knowledge"}, {"text": "monitoring", "domain": "agent-architecture"}, {"text": "alignment", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Piloting the world's first double-blind AI evaluations", "title_zh": "试点全球首个双盲 AI 评估", "url": "https://deepmind.google/blog/piloting-the-worlds-first-double-blind-ai-evaluations/", "source": "Google DeepMind", "section": "blogs_insights", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind announced a pilot of what it describes as the world's first double-blind AI evaluations.", "keywords": [{"text": "double-blind evaluation", "domain": "evaluation-benchmark"}, {"text": "AI evaluation", "domain": "evaluation-benchmark"}, {"text": "evaluation methodology", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Baidu launches DuMateBench benchmark for real-world AI agent delivery", "title_zh": "百度推出 DuMateBench，衡量 AI Agent 的真实任务交付能力", "url": "https://technode.com/2026/08/28/baidu-launches-dumatebench-benchmark-for-real-world-ai-agent-delivery/", "source": "TechNode", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Baidu launched DuMateBench, an evaluation leaderboard designed to measure whether AI agents can complete real-world tasks and deliver usable outputs.", "keywords": [{"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "real-world tasks", "domain": "agent-architecture"}, {"text": "evaluation leaderboard", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "I accidentally turned LLM memory into program analysis", "title_zh": "我阴差阳错地把 LLM 记忆做成了程序分析", "url": "https://pwning.systems/posts/llm-memory-program-analysis/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "The author explains why he stopped trying to give LLM agents a better memory and instead built Lemmalog, a Datalog engine that keeps an agent's knowledge as analysis state with provenance, retractions and incremental evaluation, reporting benchmark results on LongMemEval and LoCoMo.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "memory provenance", "domain": "ai-knowledge"}, {"text": "Datalog", "domain": "knowledge-graph"}, {"text": "memory benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "TechNode", "url": "https://technode.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "Google DeepMind", "url": "https://deepmind.google"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
