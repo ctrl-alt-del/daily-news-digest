@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-02-02</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">parallel agent workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise data agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">dynamic reasoning routing</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contrastive retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-context memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent social networks</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning instability</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought complexity</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory long-context reasoning in-document retrieval memory compression post-training">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.02704</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">InfMem: Learning System-2 Memory Control for Long-Context Agent<div class="title-zh">InfMem：面向长上下文智能体的 System-2 记忆控制学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-context reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">in-document retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory compression</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">post-training</span></div>
+  <div class="item-summary">InfMem is a control-centric agent that uses a PreThink–Retrieve–Write protocol to monitor evidence sufficiency, perform targeted in-document retrieval and update a bounded memory with evidence-aware compression. Trained with an SFT-to-RL recipe, it improves average accuracy by 10.17, 11.84 and 8.23 points over MemAgent on three backbones for 32k–1M-token QA, while cutting inference time 3.9x on average and up to 5.1x.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.02704v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="AI coding agent parallel workflows long-running tasks developer tooling">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Introducing the Codex app<div class="title-zh">推出 Codex 应用：面向 AI 编程的指挥中心</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI coding agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">parallel workflows</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-running tasks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">developer tooling</span></div>
+  <div class="item-summary">OpenAI introduced a Codex app for macOS that acts as a command center for AI coding and software development, with multiple agents, parallel workflows and long-running tasks.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-the-codex-app" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="agent social network multi-agent interaction toxicity platform governance empirical analysis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.10127</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">"Humans welcome to observe": A First Look at the Agent Social Network Moltbook<div class="title-zh">“人类欢迎旁观”：智能体社交网络 Moltbook 初探</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent social network</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent interaction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">toxicity</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">platform governance</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">empirical analysis</span></div>
+  <div class="item-summary">The authors analyze 44,411 posts and 12,209 sub-communities from Moltbook, a social network designed exclusively for AI agents, collected before February 1, 2026. They find explosive growth and diversification into viewpoint, incentive-driven, promotional and political discourse, topic-dependent toxicity, and bursty automation that can flood the platform at sub-minute intervals.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.10127v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory long-context reasoning in-document retrieval memory compression post-training">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.02704</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">InfMem: Learning System-2 Memory Control for Long-Context Agent<div class="title-zh">InfMem：面向长上下文智能体的 System-2 记忆控制学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-context reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">in-document retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory compression</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">post-training</span></div>
+  <div class="item-summary">InfMem is a control-centric agent that uses a PreThink–Retrieve–Write protocol to monitor evidence sufficiency, perform targeted in-document retrieval and update a bounded memory with evidence-aware compression. Trained with an SFT-to-RL recipe, it improves average accuracy by 10.17, 11.84 and 8.23 points over MemAgent on three backbones for 32k–1M-token QA, while cutting inference time 3.9x on average and up to 5.1x.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.02704v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent social network multi-agent interaction toxicity platform governance empirical analysis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.10127</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">"Humans welcome to observe": A First Look at the Agent Social Network Moltbook<div class="title-zh">“人类欢迎旁观”：智能体社交网络 Moltbook 初探</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent social network</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent interaction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">toxicity</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">platform governance</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">empirical analysis</span></div>
+  <div class="item-summary">The authors analyze 44,411 posts and 12,209 sub-communities from Moltbook, a social network designed exclusively for AI agents, collected before February 1, 2026. They find explosive growth and diversification into viewpoint, incentive-driven, promotional and political discourse, topic-dependent toxicity, and bursty automation that can flood the platform at sub-minute intervals.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.10127v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning modes problem routing chain-of-thought self-consistency reasoning benchmarks">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.02842</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Chain of Simulation: A Dual-Mode Reasoning Framework for Large Language Models with Dynamic Problem Routing<div class="title-zh">思维模拟链：带动态问题路由的大模型双模式推理框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning modes</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">problem routing</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-consistency</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning benchmarks</span></div>
+  <div class="item-summary">Chain of Simulation routes problems among three reasoning modes: computational flow with self-consistency for math, JSON-based symbolic state tracking for spatial reasoning, and hybrid fact extraction for multi-hop inference. Across GSM8K, StrategyQA and bAbI with four models it reports 71.5%, 90.0% and 19.0% accuracy, the last a 65.2% relative gain, at 54% lower compute than self-consistency.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.02842v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="contrastive retrieval evidence selection embedding diversity medical imaging faithful abstention">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.02894</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DoubleTake: Contrastive Reasoning for Faithful Decision-Making in Medical Imaging<div class="title-zh">DoubleTake：医学影像中忠实决策的对比推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contrastive retrieval</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence selection</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding diversity</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">medical imaging</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">faithful abstention</span></div>
+  <div class="item-summary">DoubleTake builds compact, document-aware reference sets that optimize for discrimination rather than similarity by balancing visual relevance, embedding diversity and source-level provenance, and releases a reproducible selection protocol and curated reference bank. Its Counterfactual-Contrastive Inference framework reports state-of-the-art set-level accuracy on MediConfusion, nearly 15% relative above prior methods, with faithful abstention.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.02894v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning instability token log probabilities failure prediction inference-time diagnostics">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.02863</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">"I May Not Have Articulated Myself Clearly": Diagnosing Dynamic Instability in LLM Reasoning at Inference Time<div class="title-zh">“我可能没表达清楚”：诊断大模型推理的推理时动态不稳定性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning instability</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">token log probabilities</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">failure prediction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">inference-time diagnostics</span></div>
+  <div class="item-summary">The study defines an instability signal combining consecutive-step Jensen–Shannon divergence and entropy from standard token log probabilities, requiring no training or fine-tuning. Across GSM8K and HotpotQA it predicts wrong answers above chance and distinguishes early corrective instability from late destructive instability, which more often precedes failure.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.02863v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="chain-of-thought computational complexity reasoning budget frontier models">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.02909</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Reasoning about Reasoning: BAPO Bounds on Chain-of-Thought Token Complexity in LLMs<div class="title-zh">关于推理的推理：LLM 思维链 token 复杂度的 BAPO 界</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">computational complexity</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">reasoning budget</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">frontier models</span></div>
+  <div class="item-summary">Extending the bounded attention prefix oracle model, the authors prove that three BAPO-hard tasks require Omega(n) chain-of-thought tokens for input size n. They also find that frontier reasoning models scale reasoning tokens roughly linearly on these tasks and fail when given smaller reasoning budgets.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.02909v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills skill library workflow automation open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">anbeime/skill<div class="title-zh">anbeime/skill：AI Agent 技能库与 Skills 商店</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">skill library</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">workflow automation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">The repository is a Python-based AI agent skill library offering curated, installable skill packs for document processing, content creation, programming, machine learning and automated workflows, plus an index of GitHub skill projects sorted by category, update time and stars.</div>
+  <a class="item-link" href="https://github.com/anbeime/skill" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="AI coding agent parallel workflows long-running tasks developer tooling">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Introducing the Codex app<div class="title-zh">推出 Codex 应用：面向 AI 编程的指挥中心</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI coding agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">parallel workflows</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-running tasks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">developer tooling</span></div>
+  <div class="item-summary">OpenAI introduced a Codex app for macOS that acts as a command center for AI coding and software development, with multiple agents, parallel workflows and long-running tasks.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-the-codex-app" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="enterprise data AI agents data platform $200M agreement">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Snowflake and OpenAI partner to bring frontier intelligence to enterprise data<div class="title-zh">Snowflake 与 OpenAI 合作，将前沿智能引入企业数据</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise data</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data platform</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">$200M agreement</span></div>
+  <div class="item-summary">OpenAI and Snowflake announced a $200M agreement to bring frontier intelligence into enterprise data, enabling AI agents and insights directly inside Snowflake.</div>
+  <a class="item-link" href="https://openai.com/index/snowflake-partnership" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-02-02", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 3, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 6, "tools_frameworks": 1, "blogs_insights": 1, "industry_applications": 1}}, "daily_keywords": [{"text": "AI coding agents", "domain": "agent-architecture"}, {"text": "parallel agent workflows", "domain": "agent-architecture"}, {"text": "enterprise data agents", "domain": "ai-knowledge"}, {"text": "dynamic reasoning routing", "domain": "cognition-reasoning"}, {"text": "contrastive retrieval", "domain": "rag-retrieval"}, {"text": "long-context memory", "domain": "agent-memory"}, {"text": "agent social networks", "domain": "agent-architecture"}, {"text": "reasoning instability", "domain": "cognition-reasoning"}, {"text": "chain-of-thought complexity", "domain": "cognition-reasoning"}, {"text": "agent skills", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "InfMem: Learning System-2 Memory Control for Long-Context Agent", "title_zh": "InfMem：面向长上下文智能体的 System-2 记忆控制学习", "url": "http://arxiv.org/abs/2602.02704v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.02704", "summary": "InfMem is a control-centric agent that uses a PreThink–Retrieve–Write protocol to monitor evidence sufficiency, perform targeted in-document retrieval and update a bounded memory with evidence-aware compression. Trained with an SFT-to-RL recipe, it improves average accuracy by 10.17, 11.84 and 8.23 points over MemAgent on three backbones for 32k–1M-token QA, while cutting inference time 3.9x on average and up to 5.1x.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "long-context reasoning", "domain": "cognition-reasoning"}, {"text": "in-document retrieval", "domain": "rag-retrieval"}, {"text": "memory compression", "domain": "agent-memory"}, {"text": "post-training", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Introducing the Codex app", "title_zh": "推出 Codex 应用：面向 AI 编程的指挥中心", "url": "https://openai.com/index/introducing-the-codex-app", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduced a Codex app for macOS that acts as a command center for AI coding and software development, with multiple agents, parallel workflows and long-running tasks.", "keywords": [{"text": "AI coding agent", "domain": "agent-architecture"}, {"text": "parallel workflows", "domain": "agent-architecture"}, {"text": "long-running tasks", "domain": "agent-architecture"}, {"text": "developer tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "\"Humans welcome to observe\": A First Look at the Agent Social Network Moltbook", "title_zh": "“人类欢迎旁观”：智能体社交网络 Moltbook 初探", "url": "http://arxiv.org/abs/2602.10127v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.10127", "summary": "The authors analyze 44,411 posts and 12,209 sub-communities from Moltbook, a social network designed exclusively for AI agents, collected before February 1, 2026. They find explosive growth and diversification into viewpoint, incentive-driven, promotional and political discourse, topic-dependent toxicity, and bursty automation that can flood the platform at sub-minute intervals.", "keywords": [{"text": "agent social network", "domain": "agent-architecture"}, {"text": "multi-agent interaction", "domain": "agent-architecture"}, {"text": "toxicity", "domain": "ai-knowledge"}, {"text": "platform governance", "domain": "knowledge-lifecycle"}, {"text": "empirical analysis", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "InfMem: Learning System-2 Memory Control for Long-Context Agent", "title_zh": "InfMem：面向长上下文智能体的 System-2 记忆控制学习", "url": "http://arxiv.org/abs/2602.02704v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.02704", "summary": "InfMem is a control-centric agent that uses a PreThink–Retrieve–Write protocol to monitor evidence sufficiency, perform targeted in-document retrieval and update a bounded memory with evidence-aware compression. Trained with an SFT-to-RL recipe, it improves average accuracy by 10.17, 11.84 and 8.23 points over MemAgent on three backbones for 32k–1M-token QA, while cutting inference time 3.9x on average and up to 5.1x.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "long-context reasoning", "domain": "cognition-reasoning"}, {"text": "in-document retrieval", "domain": "rag-retrieval"}, {"text": "memory compression", "domain": "agent-memory"}, {"text": "post-training", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "\"Humans welcome to observe\": A First Look at the Agent Social Network Moltbook", "title_zh": "“人类欢迎旁观”：智能体社交网络 Moltbook 初探", "url": "http://arxiv.org/abs/2602.10127v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.10127", "summary": "The authors analyze 44,411 posts and 12,209 sub-communities from Moltbook, a social network designed exclusively for AI agents, collected before February 1, 2026. They find explosive growth and diversification into viewpoint, incentive-driven, promotional and political discourse, topic-dependent toxicity, and bursty automation that can flood the platform at sub-minute intervals.", "keywords": [{"text": "agent social network", "domain": "agent-architecture"}, {"text": "multi-agent interaction", "domain": "agent-architecture"}, {"text": "toxicity", "domain": "ai-knowledge"}, {"text": "platform governance", "domain": "knowledge-lifecycle"}, {"text": "empirical analysis", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Chain of Simulation: A Dual-Mode Reasoning Framework for Large Language Models with Dynamic Problem Routing", "title_zh": "思维模拟链：带动态问题路由的大模型双模式推理框架", "url": "http://arxiv.org/abs/2602.02842v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.02842", "summary": "Chain of Simulation routes problems among three reasoning modes: computational flow with self-consistency for math, JSON-based symbolic state tracking for spatial reasoning, and hybrid fact extraction for multi-hop inference. Across GSM8K, StrategyQA and bAbI with four models it reports 71.5%, 90.0% and 19.0% accuracy, the last a 65.2% relative gain, at 54% lower compute than self-consistency.", "keywords": [{"text": "reasoning modes", "domain": "cognition-reasoning"}, {"text": "problem routing", "domain": "agent-architecture"}, {"text": "chain-of-thought", "domain": "context-prompting"}, {"text": "self-consistency", "domain": "cognition-reasoning"}, {"text": "reasoning benchmarks", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "DoubleTake: Contrastive Reasoning for Faithful Decision-Making in Medical Imaging", "title_zh": "DoubleTake：医学影像中忠实决策的对比推理", "url": "http://arxiv.org/abs/2602.02894v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.02894", "summary": "DoubleTake builds compact, document-aware reference sets that optimize for discrimination rather than similarity by balancing visual relevance, embedding diversity and source-level provenance, and releases a reproducible selection protocol and curated reference bank. Its Counterfactual-Contrastive Inference framework reports state-of-the-art set-level accuracy on MediConfusion, nearly 15% relative above prior methods, with faithful abstention.", "keywords": [{"text": "contrastive retrieval", "domain": "rag-retrieval"}, {"text": "evidence selection", "domain": "rag-retrieval"}, {"text": "embedding diversity", "domain": "embeddings-vectors"}, {"text": "medical imaging", "domain": "ai-knowledge"}, {"text": "faithful abstention", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "\"I May Not Have Articulated Myself Clearly\": Diagnosing Dynamic Instability in LLM Reasoning at Inference Time", "title_zh": "“我可能没表达清楚”：诊断大模型推理的推理时动态不稳定性", "url": "http://arxiv.org/abs/2602.02863v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.02863", "summary": "The study defines an instability signal combining consecutive-step Jensen–Shannon divergence and entropy from standard token log probabilities, requiring no training or fine-tuning. Across GSM8K and HotpotQA it predicts wrong answers above chance and distinguishes early corrective instability from late destructive instability, which more often precedes failure.", "keywords": [{"text": "reasoning instability", "domain": "cognition-reasoning"}, {"text": "token log probabilities", "domain": "cognition-reasoning"}, {"text": "failure prediction", "domain": "evaluation-benchmark"}, {"text": "inference-time diagnostics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Reasoning about Reasoning: BAPO Bounds on Chain-of-Thought Token Complexity in LLMs", "title_zh": "关于推理的推理：LLM 思维链 token 复杂度的 BAPO 界", "url": "http://arxiv.org/abs/2602.02909v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.02909", "summary": "Extending the bounded attention prefix oracle model, the authors prove that three BAPO-hard tasks require Omega(n) chain-of-thought tokens for input size n. They also find that frontier reasoning models scale reasoning tokens roughly linearly on these tasks and fail when given smaller reasoning budgets.", "keywords": [{"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "computational complexity", "domain": "cognition-reasoning"}, {"text": "reasoning budget", "domain": "context-prompting"}, {"text": "frontier models", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "anbeime/skill", "title_zh": "anbeime/skill：AI Agent 技能库与 Skills 商店", "url": "https://github.com/anbeime/skill", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "The repository is a Python-based AI agent skill library offering curated, installable skill packs for document processing, content creation, programming, machine learning and automated workflows, plus an index of GitHub skill projects sorted by category, update time and stars.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "skill library", "domain": "agent-architecture"}, {"text": "workflow automation", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Introducing the Codex app", "title_zh": "推出 Codex 应用：面向 AI 编程的指挥中心", "url": "https://openai.com/index/introducing-the-codex-app", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduced a Codex app for macOS that acts as a command center for AI coding and software development, with multiple agents, parallel workflows and long-running tasks.", "keywords": [{"text": "AI coding agent", "domain": "agent-architecture"}, {"text": "parallel workflows", "domain": "agent-architecture"}, {"text": "long-running tasks", "domain": "agent-architecture"}, {"text": "developer tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Snowflake and OpenAI partner to bring frontier intelligence to enterprise data", "title_zh": "Snowflake 与 OpenAI 合作，将前沿智能引入企业数据", "url": "https://openai.com/index/snowflake-partnership", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI and Snowflake announced a $200M agreement to bring frontier intelligence into enterprise data, enabling AI agents and insights directly inside Snowflake.", "keywords": [{"text": "enterprise data", "domain": "ai-knowledge"}, {"text": "AI agents", "domain": "agent-architecture"}, {"text": "data platform", "domain": "ai-knowledge"}, {"text": "$200M agreement", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-01-24</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">5</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:40%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query generation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">feedback-driven refinement</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding alignment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">semantic anchoring</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query reformulation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector database</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous cloud operations</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">production deployment</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="continual learning query generation trend detection catastrophic forgetting">
+  <div class="item-meta">
+    <span class="item-org">Meta AI</span>
+    <span class="arxiv-tag">arxiv:2601.17567</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Real-Time Trend Prediction via Continually-Aligned LLM Query Generation<div class="title-zh">通过持续对齐的 LLM 查询生成实现实时趋势预测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">trend detection</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span></div>
+  <div class="item-summary">RTTP generates search-style queries directly from news content with a continually learning LLM and scores them by engagement strength and creator authority, aiming to surface trends before search volume forms. Deployed at production scale on Facebook and Meta AI products, it reports a 91.4% improvement in tail-trend detection precision@500 and 19% higher query-generation accuracy, while Mix-Policy DPO mitigates catastrophic forgetting during updates.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.17567v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic search query reformulation search logs context tracking">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.17617</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Search in the Wild: Intents and Trajectory Dynamics from 14M+ Real Search Requests<div class="title-zh">野外智能体搜索：来自 1400 万次真实搜索请求的意图与轨迹动态</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query reformulation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">search logs</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context tracking</span></div>
+  <div class="item-summary">The authors analyze 14.44 million search requests across 3.97 million sessions from DeepResearchGym, labeling session intents and query reformulations and proposing Context-driven Term Adoption Rate (CTAR) to measure whether new query terms trace back to retrieved evidence. They find over 90% of multi-turn sessions contain at most ten steps, fact-seeking sessions grow more repetitive, and on average 54% of newly introduced query terms appear in the accumulated evidence context.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.17617v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="feedback-driven refinement programming QA answer revision human evaluation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.17604</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Human-Aligned Enhancement of Programming Answers with LLMs Guided by User Feedback<div class="title-zh">基于用户反馈、由 LLM 引导的编程回答人类对齐增强</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">feedback-driven refinement</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">programming QA</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">answer revision</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">human evaluation</span></div>
+  <div class="item-summary">The authors introduce ReSOlve, a benchmark of 790 Stack Overflow answers with comment threads annotated for improvement-related and general feedback, and AUTOCOMBAT, a tool that revises answers using comments and question context. AUTOCOMBAT produces near-human-quality improvements while preserving original intent, and 84.5% of 58 surveyed practitioners said they would adopt or recommend it.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.17604v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="vision-language alignment embedding collapse semantic anchoring cross-species transfer">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.04405</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Lost in Translation: How Language Re-Aligns Vision for Cross-Species Pathology<div class="title-zh">语言如何重新对齐视觉：跨物种病理学的语义锚定</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vision-language alignment</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding collapse</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">semantic anchoring</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cross-species transfer</span></div>
+  <div class="item-summary">The study fine-tunes CPath-CLIP for cross-cancer and cross-species pathology and finds that few-shot tuning improves same-cancer AUC from 64.9% to 72.6% and cross-cancer AUC from 56.84% to 66.31%, but cross-species transfer remains below the H-optimus-0 benchmark. Embedding analysis shows extremely high cosine similarity (above 0.99) between tumor and normal prototypes, and the proposed Semantic Anchoring uses language to provide a stable coordinate system for visual features.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.04405v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning catastrophic forgetting mixture of experts sparse subspace decomposition">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.17616</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Sparse Subspace-to-Expert Sharing for Task-Agnostic Continual Learning<div class="title-zh">面向任务无关持续学习的稀疏子空间到专家共享</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">mixture of experts</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">sparse subspace decomposition</span></div>
+  <div class="item-summary">SETA separates task-specific knowledge into unique sparse experts and shared capabilities into shared experts, sharing parameters only when a new task passes subspace-agreement and sign tests, with adaptive elastic anchoring protecting shared knowledge. It improves over the strongest continual-learning baseline by 1.1–1.7 points on TRACE and up to 5.5 points on O-LoRA, with backward transfer between -2.2 and -1.3 on TRACE.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.17616v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic search query reformulation search logs context tracking">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.17617</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Search in the Wild: Intents and Trajectory Dynamics from 14M+ Real Search Requests<div class="title-zh">野外智能体搜索：来自 1400 万次真实搜索请求的意图与轨迹动态</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query reformulation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">search logs</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context tracking</span></div>
+  <div class="item-summary">The authors analyze 14.44 million search requests across 3.97 million sessions from DeepResearchGym, labeling session intents and query reformulations and proposing Context-driven Term Adoption Rate (CTAR) to measure whether new query terms trace back to retrieved evidence. They find over 90% of multi-turn sessions contain at most ten steps, fact-seeking sessions grow more repetitive, and on average 54% of newly introduced query terms appear in the accumulated evidence context.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.17617v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="autonomous operations AIOps policy orchestration anomaly detection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.17542</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Cognitive Platform Engineering for Autonomous Cloud Operations<div class="title-zh">面向自主云运维的认知平台工程</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous operations</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AIOps</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">policy orchestration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">anomaly detection</span></div>
+  <div class="item-summary">The paper proposes Cognitive Platform Engineering, a four-plane reference architecture that combines data collection, intelligent inference, policy-driven orchestration and human experience in a continuous feedback loop for cloud operations. A prototype built with Kubernetes, Terraform, Open Policy Agent and ML-based anomaly detection reports improvements in mean time to resolution, resource efficiency and compliance.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.17542v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="vector database vector search single-node scaling">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">endee-io/endee<div class="title-zh">endee：单节点支持 10 亿向量的高性能向量数据库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector database</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">vector search</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">single-node scaling</span></div>
+  <div class="item-summary">endee is a high-performance vector database designed to handle up to 1 billion vectors on a single node through optimized indexing and execution, and is also offered in the cloud and under an enterprise license with a 30-day evaluation.</div>
+  <a class="item-link" href="https://github.com/endee-io/endee" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skills skill catalog agent tooling">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">alchaincyf/huashu-skills<div class="title-zh">huashu-skills：花叔开源的 Agent Skills 总目录</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill catalog</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent tooling</span></div>
+  <div class="item-summary">huashu-skills is an open-source catalog of 52 Agent Skills from Huashu, organized into 16 flagship, 14 persona-based and 22 built-in skills, with tiered categories, an AI-agent install protocol, a machine-readable skills.json and update checks.</div>
+  <a class="item-link" href="https://github.com/alchaincyf/huashu-skills" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="continual learning query generation trend detection catastrophic forgetting">
+  <div class="item-meta">
+    <span class="item-org">Meta AI</span>
+    <span class="arxiv-tag">arxiv:2601.17567</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Real-Time Trend Prediction via Continually-Aligned LLM Query Generation<div class="title-zh">通过持续对齐的 LLM 查询生成实现实时趋势预测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">trend detection</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span></div>
+  <div class="item-summary">RTTP generates search-style queries directly from news content with a continually learning LLM and scores them by engagement strength and creator authority, aiming to surface trends before search volume forms. Deployed at production scale on Facebook and Meta AI products, it reports a 91.4% improvement in tail-trend detection precision@500 and 19% higher query-generation accuracy, while Mix-Policy DPO mitigates catastrophic forgetting during updates.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.17567v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-01-24", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 2, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 5, "tools_frameworks": 2, "industry_applications": 1}}, "daily_keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "query generation", "domain": "rag-retrieval"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "feedback-driven refinement", "domain": "knowledge-lifecycle"}, {"text": "embedding alignment", "domain": "embeddings-vectors"}, {"text": "semantic anchoring", "domain": "ai-knowledge"}, {"text": "agentic search", "domain": "rag-retrieval"}, {"text": "query reformulation", "domain": "rag-retrieval"}, {"text": "vector database", "domain": "embeddings-vectors"}, {"text": "autonomous cloud operations", "domain": "agent-architecture"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "production deployment", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Real-Time Trend Prediction via Continually-Aligned LLM Query Generation", "title_zh": "通过持续对齐的 LLM 查询生成实现实时趋势预测", "url": "http://arxiv.org/abs/2601.17567v1", "source": "arXiv", "section": "industry_applications", "organization": "Meta AI", "language": "en", "arxiv_id": "2601.17567", "summary": "RTTP generates search-style queries directly from news content with a continually learning LLM and scores them by engagement strength and creator authority, aiming to surface trends before search volume forms. Deployed at production scale on Facebook and Meta AI products, it reports a 91.4% improvement in tail-trend detection precision@500 and 19% higher query-generation accuracy, while Mix-Policy DPO mitigates catastrophic forgetting during updates.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "query generation", "domain": "rag-retrieval"}, {"text": "trend detection", "domain": "ai-knowledge"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Agentic Search in the Wild: Intents and Trajectory Dynamics from 14M+ Real Search Requests", "title_zh": "野外智能体搜索：来自 1400 万次真实搜索请求的意图与轨迹动态", "url": "http://arxiv.org/abs/2601.17617v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.17617", "summary": "The authors analyze 14.44 million search requests across 3.97 million sessions from DeepResearchGym, labeling session intents and query reformulations and proposing Context-driven Term Adoption Rate (CTAR) to measure whether new query terms trace back to retrieved evidence. They find over 90% of multi-turn sessions contain at most ten steps, fact-seeking sessions grow more repetitive, and on average 54% of newly introduced query terms appear in the accumulated evidence context.", "keywords": [{"text": "agentic search", "domain": "rag-retrieval"}, {"text": "query reformulation", "domain": "rag-retrieval"}, {"text": "search logs", "domain": "evaluation-benchmark"}, {"text": "context tracking", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Human-Aligned Enhancement of Programming Answers with LLMs Guided by User Feedback", "title_zh": "基于用户反馈、由 LLM 引导的编程回答人类对齐增强", "url": "http://arxiv.org/abs/2601.17604v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.17604", "summary": "The authors introduce ReSOlve, a benchmark of 790 Stack Overflow answers with comment threads annotated for improvement-related and general feedback, and AUTOCOMBAT, a tool that revises answers using comments and question context. AUTOCOMBAT produces near-human-quality improvements while preserving original intent, and 84.5% of 58 surveyed practitioners said they would adopt or recommend it.", "keywords": [{"text": "feedback-driven refinement", "domain": "knowledge-lifecycle"}, {"text": "programming QA", "domain": "ai-knowledge"}, {"text": "answer revision", "domain": "knowledge-lifecycle"}, {"text": "human evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Lost in Translation: How Language Re-Aligns Vision for Cross-Species Pathology", "title_zh": "语言如何重新对齐视觉：跨物种病理学的语义锚定", "url": "http://arxiv.org/abs/2603.04405v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.04405", "summary": "The study fine-tunes CPath-CLIP for cross-cancer and cross-species pathology and finds that few-shot tuning improves same-cancer AUC from 64.9% to 72.6% and cross-cancer AUC from 56.84% to 66.31%, but cross-species transfer remains below the H-optimus-0 benchmark. Embedding analysis shows extremely high cosine similarity (above 0.99) between tumor and normal prototypes, and the proposed Semantic Anchoring uses language to provide a stable coordinate system for visual features.", "keywords": [{"text": "vision-language alignment", "domain": "embeddings-vectors"}, {"text": "embedding collapse", "domain": "embeddings-vectors"}, {"text": "semantic anchoring", "domain": "ai-knowledge"}, {"text": "cross-species transfer", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Sparse Subspace-to-Expert Sharing for Task-Agnostic Continual Learning", "title_zh": "面向任务无关持续学习的稀疏子空间到专家共享", "url": "http://arxiv.org/abs/2601.17616v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.17616", "summary": "SETA separates task-specific knowledge into unique sparse experts and shared capabilities into shared experts, sharing parameters only when a new task passes subspace-agreement and sign tests, with adaptive elastic anchoring protecting shared knowledge. It improves over the strongest continual-learning baseline by 1.1–1.7 points on TRACE and up to 5.5 points on O-LoRA, with backward transfer between -2.2 and -1.3 on TRACE.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "mixture of experts", "domain": "agent-architecture"}, {"text": "sparse subspace decomposition", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic Search in the Wild: Intents and Trajectory Dynamics from 14M+ Real Search Requests", "title_zh": "野外智能体搜索：来自 1400 万次真实搜索请求的意图与轨迹动态", "url": "http://arxiv.org/abs/2601.17617v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.17617", "summary": "The authors analyze 14.44 million search requests across 3.97 million sessions from DeepResearchGym, labeling session intents and query reformulations and proposing Context-driven Term Adoption Rate (CTAR) to measure whether new query terms trace back to retrieved evidence. They find over 90% of multi-turn sessions contain at most ten steps, fact-seeking sessions grow more repetitive, and on average 54% of newly introduced query terms appear in the accumulated evidence context.", "keywords": [{"text": "agentic search", "domain": "rag-retrieval"}, {"text": "query reformulation", "domain": "rag-retrieval"}, {"text": "search logs", "domain": "evaluation-benchmark"}, {"text": "context tracking", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Cognitive Platform Engineering for Autonomous Cloud Operations", "title_zh": "面向自主云运维的认知平台工程", "url": "http://arxiv.org/abs/2601.17542v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.17542", "summary": "The paper proposes Cognitive Platform Engineering, a four-plane reference architecture that combines data collection, intelligent inference, policy-driven orchestration and human experience in a continuous feedback loop for cloud operations. A prototype built with Kubernetes, Terraform, Open Policy Agent and ML-based anomaly detection reports improvements in mean time to resolution, resource efficiency and compliance.", "keywords": [{"text": "autonomous operations", "domain": "agent-architecture"}, {"text": "AIOps", "domain": "ai-knowledge"}, {"text": "policy orchestration", "domain": "agent-architecture"}, {"text": "anomaly detection", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "endee-io/endee", "title_zh": "endee：单节点支持 10 亿向量的高性能向量数据库", "url": "https://github.com/endee-io/endee", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "endee is a high-performance vector database designed to handle up to 1 billion vectors on a single node through optimized indexing and execution, and is also offered in the cloud and under an enterprise license with a 30-day evaluation.", "keywords": [{"text": "vector database", "domain": "embeddings-vectors"}, {"text": "vector search", "domain": "rag-retrieval"}, {"text": "single-node scaling", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "alchaincyf/huashu-skills", "title_zh": "huashu-skills：花叔开源的 Agent Skills 总目录", "url": "https://github.com/alchaincyf/huashu-skills", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "huashu-skills is an open-source catalog of 52 Agent Skills from Huashu, organized into 16 flagship, 14 persona-based and 22 built-in skills, with tiered categories, an AI-agent install protocol, a machine-readable skills.json and update checks.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "skill catalog", "domain": "knowledge-lifecycle"}, {"text": "agent tooling", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Real-Time Trend Prediction via Continually-Aligned LLM Query Generation", "title_zh": "通过持续对齐的 LLM 查询生成实现实时趋势预测", "url": "http://arxiv.org/abs/2601.17567v1", "source": "arXiv", "section": "industry_applications", "organization": "Meta AI", "language": "en", "arxiv_id": "2601.17567", "summary": "RTTP generates search-style queries directly from news content with a continually learning LLM and scores them by engagement strength and creator authority, aiming to surface trends before search volume forms. Deployed at production scale on Facebook and Meta AI products, it reports a 91.4% improvement in tail-trend detection precision@500 and 19% higher query-generation accuracy, while Mix-Policy DPO mitigates catastrophic forgetting during updates.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "query generation", "domain": "rag-retrieval"}, {"text": "trend detection", "domain": "ai-knowledge"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

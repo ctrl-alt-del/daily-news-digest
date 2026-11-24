@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-03-01</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">codebase navigation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent working memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">skills retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">test-time adaptation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multilingual embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding drift</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">neuro-symbolic reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">autonomous materials discovery</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="code localization agent working memory multi-agent framework SWE-bench git checkpoints">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01327</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SWE-Adept: An LLM-Based Agentic Framework for Deep Codebase Analysis and Structured Issue Resolution<div class="title-zh">SWE-Adept：面向深度代码库分析与结构化问题解决的 LLM 智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">code localization</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent working memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent framework</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SWE-bench</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">git checkpoints</span></div>
+  <div class="item-summary">SWE-Adept is a two-agent framework in which a localization agent finds issue-relevant code via agent-directed depth-first search over dependencies, and a resolution agent implements fixes with adaptive planning and Git-based tools. A shared working memory stores code-state checkpoints indexed by execution step, enabling branching and reverting; on SWE-Bench Lite and SWE-Bench Pro it improves end-to-end resolve rate by up to 4.3%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01327v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research agents multi-hop QA search trajectories reinforcement learning benchmark dataset">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01152</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepResearch-9K: A Challenging Benchmark Dataset of Deep-Research Agent<div class="title-zh">DeepResearch-9K：面向深度研究智能体的高难度基准数据集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">search trajectories</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark dataset</span></div>
+  <div class="item-summary">DeepResearch-9K is a 9,000-question deep-research dataset with three difficulty levels, search trajectories and reasoning chains from Tongyi-DeepResearch-30B-A3B, and verifiable answers, built from open-source multi-hop QA data through a low-cost autonomous pipeline. The authors also release DeepResearch-R1, an open training framework supporting multi-turn web interaction, multiple RL approaches and rule-based or LLM-judge rewards, and report state-of-the-art results for agents trained with it.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01152v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="skills retrieval experience memory test-time adaptation clinical reasoning step-aware retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01241</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TARSE: Test-Time Adaptation via Retrieval of Skills and Experience for Reasoning Agents<div class="title-zh">TARSE：面向推理智能体的技能与经验检索测试时自适应</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">skills retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">test-time adaptation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">clinical reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">step-aware retrieval</span></div>
+  <div class="item-summary">TARSE frames clinical question answering as an agent problem with two retrievable resources: reusable skills such as guidelines and protocols, and verified reasoning trajectories from solved cases indexed by step-level transitions. At test time a step-aware retriever selects items and the model is lightly adapted to align its intermediate reasoning, yielding consistent gains over strong medical RAG and prompting-only baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01241v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multilingual embeddings vision-language alignment concept space video captioning low-resource languages">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01096</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Unified Vision-Language Modeling via Concept Space Alignment<div class="title-zh">通过概念空间对齐实现统一视觉-语言建模</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multilingual embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vision-language alignment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">concept space</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">video captioning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-resource languages</span></div>
+  <div class="item-summary">V-SONAR extends the text-only SONAR embedding space to vision through a post-hoc alignment pipeline that maps an existing vision encoder into it, achieving competitive text-to-video retrieval. With the OMNISONAR decoder it surpasses state-of-the-art vision-language models on video captioning, and the resulting V-LCM matches them on captioning and QA while outperforming them in 61 of 62 tested languages.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01096v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="code localization agent working memory multi-agent framework SWE-bench git checkpoints">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01327</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SWE-Adept: An LLM-Based Agentic Framework for Deep Codebase Analysis and Structured Issue Resolution<div class="title-zh">SWE-Adept：面向深度代码库分析与结构化问题解决的 LLM 智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">code localization</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent working memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent framework</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SWE-bench</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">git checkpoints</span></div>
+  <div class="item-summary">SWE-Adept is a two-agent framework in which a localization agent finds issue-relevant code via agent-directed depth-first search over dependencies, and a resolution agent implements fixes with adaptive planning and Git-based tools. A shared working memory stores code-state checkpoints indexed by execution step, enabling branching and reverting; on SWE-Bench Lite and SWE-Bench Pro it improves end-to-end resolve rate by up to 4.3%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01327v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research agents multi-hop QA search trajectories reinforcement learning benchmark dataset">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01152</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepResearch-9K: A Challenging Benchmark Dataset of Deep-Research Agent<div class="title-zh">DeepResearch-9K：面向深度研究智能体的高难度基准数据集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">search trajectories</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark dataset</span></div>
+  <div class="item-summary">DeepResearch-9K is a 9,000-question deep-research dataset with three difficulty levels, search trajectories and reasoning chains from Tongyi-DeepResearch-30B-A3B, and verifiable answers, built from open-source multi-hop QA data through a low-cost autonomous pipeline. The authors also release DeepResearch-R1, an open training framework supporting multi-turn web interaction, multiple RL approaches and rule-based or LLM-judge rewards, and report state-of-the-art results for agents trained with it.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01152v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="policy optimization U-statistics group size scaling theoretical analysis reasoning models">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2603.01162</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Demystifying Group Relative Policy Optimization: Its Policy Gradient is a U-Statistic<div class="title-zh">解构组相对策略优化：其策略梯度是一个 U 统计量</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">policy optimization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">U-statistics</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">group size scaling</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">theoretical analysis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning models</span></div>
+  <div class="item-summary">The paper shows that the GRPO policy gradient is a U-statistic, deriving its mean squared error, finite-sample error bound and asymptotic suboptimality gap. It finds GRPO asymptotically equivalent to an oracle policy gradient algorithm and derives a universal scaling law for choosing group size, with experiments supporting the theory.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01162v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="skills retrieval experience memory test-time adaptation clinical reasoning step-aware retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01241</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TARSE: Test-Time Adaptation via Retrieval of Skills and Experience for Reasoning Agents<div class="title-zh">TARSE：面向推理智能体的技能与经验检索测试时自适应</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">skills retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">test-time adaptation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">clinical reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">step-aware retrieval</span></div>
+  <div class="item-summary">TARSE frames clinical question answering as an agent problem with two retrievable resources: reusable skills such as guidelines and protocols, and verified reasoning trajectories from solved cases indexed by step-level transitions. At test time a step-aware retriever selects items and the model is lightly adapted to align its intermediate reasoning, yielding consistent gains over strong medical RAG and prompting-only baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01241v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multilingual embeddings vision-language alignment concept space video captioning low-resource languages">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01096</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Unified Vision-Language Modeling via Concept Space Alignment<div class="title-zh">通过概念空间对齐实现统一视觉-语言建模</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multilingual embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vision-language alignment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">concept space</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">video captioning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-resource languages</span></div>
+  <div class="item-summary">V-SONAR extends the text-only SONAR embedding space to vision through a post-hoc alignment pipeline that maps an existing vision encoder into it, achieving competitive text-to-video retrieval. With the OMNISONAR decoder it surpasses state-of-the-art vision-language models on video captioning, and the resulting V-LCM matches them on captioning and QA while outperforming them in 61 of 62 tested languages.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01096v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embedding drift safety classifiers adversarial robustness calibration">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01297</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">I Can't Believe It's Not Robust: Catastrophic Collapse of Safety Classifiers under Embedding Drift<div class="title-zh">难以置信的不稳健：嵌入漂移下安全分类器的灾难性崩溃</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding drift</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">safety classifiers</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial robustness</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">calibration</span></div>
+  <div class="item-summary">The authors find that safety classifiers trained on frozen embeddings break under small perturbations of normalized magnitude 0.02, about one degree of angular drift, with ROC-AUC falling from 85% to 50% while mean confidence drops only 14%. They report that 72% of misclassifications occur with high confidence and that instruction-tuned models show 20% worse class separability than base models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01297v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="materials discovery MCP server closed-loop screening autonomous experimentation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01311</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Catalyst-Agent: Autonomous heterogeneous catalyst screening with an LLM Agent<div class="title-zh">Catalyst-Agent：用 LLM 智能体自主筛选多相催化剂</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">materials discovery</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP server</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">closed-loop screening</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">autonomous experimentation</span></div>
+  <div class="item-summary">Catalyst-Agent is an MCP-server-based LLM agent that runs closed-loop heterogeneous catalyst screening by querying OPTIMADE materials databases, building slabs, computing adsorption energies with Meta FAIRchem's UMA potential in AdsorbML, evaluating descriptors and modifying near-miss candidates. It converged in 1.40-3.41 trials per successful material and proposed previously unreported CO2RR candidates including Sn3Sc, Sn3Y, Tl3La, Pb3Y and In3Y.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01311v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="egocentric agents hierarchical context compression temporal chain-of-thought smart glasses long-horizon QA">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.01104</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Egocentric Co-Pilot: Web-Native Smart-Glasses Agents for Assistive Egocentric AI<div class="title-zh">第一视角副驾驶：面向辅助式第一视角 AI 的网络原生智能眼镜智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">egocentric agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">hierarchical context compression</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">temporal chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">smart glasses</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-horizon QA</span></div>
+  <div class="item-summary">Egocentric Co-Pilot is a web-native neuro-symbolic framework for smart glasses in which an LLM orchestrates perception, reasoning and web tools, with an egocentric reasoning core combining Temporal Chain-of-Thought and Hierarchical Context Compression for long-horizon first-person video QA. Experiments on Egolife and HD-EPIC show competitive or state-of-the-art results, and a human-in-the-loop study reports higher task completion and satisfaction than leading commercial baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.01104v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="neuro-symbolic agent inverse reasoning drug response world model">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.02274</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Contextual Invertible World Models: A Neuro-Symbolic Agentic Framework for Colorectal Cancer Drug Response<div class="title-zh">情境可逆世界模型：面向结直肠癌药物反应的神经符号智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">neuro-symbolic agent</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">inverse reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">drug response</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">world model</span></div>
+  <div class="item-summary">The authors present a Contextual Invertible World Model that couples a quantitative machine-learning emulator with an LLM reasoning layer, using a curated Sanger GDSC subset of 83 samples. Through inverse reasoning and in-silico CRISPR perturbations it identifies mutant KRAS dominance over the APC/Wnt axis in 5-fluorouracil resistance and a PIK3CA paradox where repair increases chemoresistance.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.02274v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills product management plugin marketplace">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">phuryn/pm-skills<div class="title-zh">pm-skills：覆盖产品管理全流程的智能体技能市场</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">product management</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">plugin marketplace</span></div>
+  <div class="item-summary">A marketplace of more than 100 agentic skills, commands and plugins covering product management work from discovery and strategy through execution, launch and growth.</div>
+  <a class="item-link" href="https://github.com/phuryn/pm-skills" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-03-01", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 2, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 9, "tools_frameworks": 1}}, "daily_keywords": [{"text": "codebase navigation", "domain": "rag-retrieval"}, {"text": "agent working memory", "domain": "agent-memory"}, {"text": "deep research agents", "domain": "agent-architecture"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "skills retrieval", "domain": "rag-retrieval"}, {"text": "test-time adaptation", "domain": "knowledge-lifecycle"}, {"text": "multilingual embeddings", "domain": "embeddings-vectors"}, {"text": "embedding drift", "domain": "embeddings-vectors"}, {"text": "neuro-symbolic reasoning", "domain": "agent-architecture"}, {"text": "autonomous materials discovery", "domain": "ai-knowledge"}, {"text": "agent skills", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "SWE-Adept: An LLM-Based Agentic Framework for Deep Codebase Analysis and Structured Issue Resolution", "title_zh": "SWE-Adept：面向深度代码库分析与结构化问题解决的 LLM 智能体框架", "url": "http://arxiv.org/abs/2603.01327v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01327", "summary": "SWE-Adept is a two-agent framework in which a localization agent finds issue-relevant code via agent-directed depth-first search over dependencies, and a resolution agent implements fixes with adaptive planning and Git-based tools. A shared working memory stores code-state checkpoints indexed by execution step, enabling branching and reverting; on SWE-Bench Lite and SWE-Bench Pro it improves end-to-end resolve rate by up to 4.3%.", "keywords": [{"text": "code localization", "domain": "rag-retrieval"}, {"text": "agent working memory", "domain": "agent-memory"}, {"text": "multi-agent framework", "domain": "agent-architecture"}, {"text": "SWE-bench", "domain": "evaluation-benchmark"}, {"text": "git checkpoints", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "DeepResearch-9K: A Challenging Benchmark Dataset of Deep-Research Agent", "title_zh": "DeepResearch-9K：面向深度研究智能体的高难度基准数据集", "url": "http://arxiv.org/abs/2603.01152v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01152", "summary": "DeepResearch-9K is a 9,000-question deep-research dataset with three difficulty levels, search trajectories and reasoning chains from Tongyi-DeepResearch-30B-A3B, and verifiable answers, built from open-source multi-hop QA data through a low-cost autonomous pipeline. The authors also release DeepResearch-R1, an open training framework supporting multi-turn web interaction, multiple RL approaches and rule-based or LLM-judge rewards, and report state-of-the-art results for agents trained with it.", "keywords": [{"text": "deep research agents", "domain": "agent-architecture"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "search trajectories", "domain": "cognition-reasoning"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "benchmark dataset", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "TARSE: Test-Time Adaptation via Retrieval of Skills and Experience for Reasoning Agents", "title_zh": "TARSE：面向推理智能体的技能与经验检索测试时自适应", "url": "http://arxiv.org/abs/2603.01241v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01241", "summary": "TARSE frames clinical question answering as an agent problem with two retrievable resources: reusable skills such as guidelines and protocols, and verified reasoning trajectories from solved cases indexed by step-level transitions. At test time a step-aware retriever selects items and the model is lightly adapted to align its intermediate reasoning, yielding consistent gains over strong medical RAG and prompting-only baselines.", "keywords": [{"text": "skills retrieval", "domain": "rag-retrieval"}, {"text": "experience memory", "domain": "agent-memory"}, {"text": "test-time adaptation", "domain": "knowledge-lifecycle"}, {"text": "clinical reasoning", "domain": "cognition-reasoning"}, {"text": "step-aware retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Unified Vision-Language Modeling via Concept Space Alignment", "title_zh": "通过概念空间对齐实现统一视觉-语言建模", "url": "http://arxiv.org/abs/2603.01096v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01096", "summary": "V-SONAR extends the text-only SONAR embedding space to vision through a post-hoc alignment pipeline that maps an existing vision encoder into it, achieving competitive text-to-video retrieval. With the OMNISONAR decoder it surpasses state-of-the-art vision-language models on video captioning, and the resulting V-LCM matches them on captioning and QA while outperforming them in 61 of 62 tested languages.", "keywords": [{"text": "multilingual embeddings", "domain": "embeddings-vectors"}, {"text": "vision-language alignment", "domain": "embeddings-vectors"}, {"text": "concept space", "domain": "ai-knowledge"}, {"text": "video captioning", "domain": "ai-knowledge"}, {"text": "low-resource languages", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "SWE-Adept: An LLM-Based Agentic Framework for Deep Codebase Analysis and Structured Issue Resolution", "title_zh": "SWE-Adept：面向深度代码库分析与结构化问题解决的 LLM 智能体框架", "url": "http://arxiv.org/abs/2603.01327v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01327", "summary": "SWE-Adept is a two-agent framework in which a localization agent finds issue-relevant code via agent-directed depth-first search over dependencies, and a resolution agent implements fixes with adaptive planning and Git-based tools. A shared working memory stores code-state checkpoints indexed by execution step, enabling branching and reverting; on SWE-Bench Lite and SWE-Bench Pro it improves end-to-end resolve rate by up to 4.3%.", "keywords": [{"text": "code localization", "domain": "rag-retrieval"}, {"text": "agent working memory", "domain": "agent-memory"}, {"text": "multi-agent framework", "domain": "agent-architecture"}, {"text": "SWE-bench", "domain": "evaluation-benchmark"}, {"text": "git checkpoints", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "DeepResearch-9K: A Challenging Benchmark Dataset of Deep-Research Agent", "title_zh": "DeepResearch-9K：面向深度研究智能体的高难度基准数据集", "url": "http://arxiv.org/abs/2603.01152v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01152", "summary": "DeepResearch-9K is a 9,000-question deep-research dataset with three difficulty levels, search trajectories and reasoning chains from Tongyi-DeepResearch-30B-A3B, and verifiable answers, built from open-source multi-hop QA data through a low-cost autonomous pipeline. The authors also release DeepResearch-R1, an open training framework supporting multi-turn web interaction, multiple RL approaches and rule-based or LLM-judge rewards, and report state-of-the-art results for agents trained with it.", "keywords": [{"text": "deep research agents", "domain": "agent-architecture"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "search trajectories", "domain": "cognition-reasoning"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "benchmark dataset", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Demystifying Group Relative Policy Optimization: Its Policy Gradient is a U-Statistic", "title_zh": "解构组相对策略优化：其策略梯度是一个 U 统计量", "url": "http://arxiv.org/abs/2603.01162v3", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2603.01162", "summary": "The paper shows that the GRPO policy gradient is a U-statistic, deriving its mean squared error, finite-sample error bound and asymptotic suboptimality gap. It finds GRPO asymptotically equivalent to an oracle policy gradient algorithm and derives a universal scaling law for choosing group size, with experiments supporting the theory.", "keywords": [{"text": "policy optimization", "domain": "cognition-reasoning"}, {"text": "U-statistics", "domain": "evaluation-benchmark"}, {"text": "group size scaling", "domain": "cognition-reasoning"}, {"text": "theoretical analysis", "domain": "ai-knowledge"}, {"text": "reasoning models", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "TARSE: Test-Time Adaptation via Retrieval of Skills and Experience for Reasoning Agents", "title_zh": "TARSE：面向推理智能体的技能与经验检索测试时自适应", "url": "http://arxiv.org/abs/2603.01241v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01241", "summary": "TARSE frames clinical question answering as an agent problem with two retrievable resources: reusable skills such as guidelines and protocols, and verified reasoning trajectories from solved cases indexed by step-level transitions. At test time a step-aware retriever selects items and the model is lightly adapted to align its intermediate reasoning, yielding consistent gains over strong medical RAG and prompting-only baselines.", "keywords": [{"text": "skills retrieval", "domain": "rag-retrieval"}, {"text": "experience memory", "domain": "agent-memory"}, {"text": "test-time adaptation", "domain": "knowledge-lifecycle"}, {"text": "clinical reasoning", "domain": "cognition-reasoning"}, {"text": "step-aware retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Unified Vision-Language Modeling via Concept Space Alignment", "title_zh": "通过概念空间对齐实现统一视觉-语言建模", "url": "http://arxiv.org/abs/2603.01096v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01096", "summary": "V-SONAR extends the text-only SONAR embedding space to vision through a post-hoc alignment pipeline that maps an existing vision encoder into it, achieving competitive text-to-video retrieval. With the OMNISONAR decoder it surpasses state-of-the-art vision-language models on video captioning, and the resulting V-LCM matches them on captioning and QA while outperforming them in 61 of 62 tested languages.", "keywords": [{"text": "multilingual embeddings", "domain": "embeddings-vectors"}, {"text": "vision-language alignment", "domain": "embeddings-vectors"}, {"text": "concept space", "domain": "ai-knowledge"}, {"text": "video captioning", "domain": "ai-knowledge"}, {"text": "low-resource languages", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "I Can't Believe It's Not Robust: Catastrophic Collapse of Safety Classifiers under Embedding Drift", "title_zh": "难以置信的不稳健：嵌入漂移下安全分类器的灾难性崩溃", "url": "http://arxiv.org/abs/2603.01297v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01297", "summary": "The authors find that safety classifiers trained on frozen embeddings break under small perturbations of normalized magnitude 0.02, about one degree of angular drift, with ROC-AUC falling from 85% to 50% while mean confidence drops only 14%. They report that 72% of misclassifications occur with high confidence and that instruction-tuned models show 20% worse class separability than base models.", "keywords": [{"text": "embedding drift", "domain": "embeddings-vectors"}, {"text": "safety classifiers", "domain": "evaluation-benchmark"}, {"text": "adversarial robustness", "domain": "evaluation-benchmark"}, {"text": "calibration", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Catalyst-Agent: Autonomous heterogeneous catalyst screening with an LLM Agent", "title_zh": "Catalyst-Agent：用 LLM 智能体自主筛选多相催化剂", "url": "http://arxiv.org/abs/2603.01311v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01311", "summary": "Catalyst-Agent is an MCP-server-based LLM agent that runs closed-loop heterogeneous catalyst screening by querying OPTIMADE materials databases, building slabs, computing adsorption energies with Meta FAIRchem's UMA potential in AdsorbML, evaluating descriptors and modifying near-miss candidates. It converged in 1.40-3.41 trials per successful material and proposed previously unreported CO2RR candidates including Sn3Sc, Sn3Y, Tl3La, Pb3Y and In3Y.", "keywords": [{"text": "materials discovery", "domain": "ai-knowledge"}, {"text": "MCP server", "domain": "agent-architecture"}, {"text": "closed-loop screening", "domain": "agent-architecture"}, {"text": "autonomous experimentation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Egocentric Co-Pilot: Web-Native Smart-Glasses Agents for Assistive Egocentric AI", "title_zh": "第一视角副驾驶：面向辅助式第一视角 AI 的网络原生智能眼镜智能体", "url": "http://arxiv.org/abs/2603.01104v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.01104", "summary": "Egocentric Co-Pilot is a web-native neuro-symbolic framework for smart glasses in which an LLM orchestrates perception, reasoning and web tools, with an egocentric reasoning core combining Temporal Chain-of-Thought and Hierarchical Context Compression for long-horizon first-person video QA. Experiments on Egolife and HD-EPIC show competitive or state-of-the-art results, and a human-in-the-loop study reports higher task completion and satisfaction than leading commercial baselines.", "keywords": [{"text": "egocentric agents", "domain": "agent-architecture"}, {"text": "hierarchical context compression", "domain": "context-prompting"}, {"text": "temporal chain-of-thought", "domain": "cognition-reasoning"}, {"text": "smart glasses", "domain": "ai-knowledge"}, {"text": "long-horizon QA", "domain": "agent-memory"}], "link_verified": true, "is_highlight": false}, {"title": "Contextual Invertible World Models: A Neuro-Symbolic Agentic Framework for Colorectal Cancer Drug Response", "title_zh": "情境可逆世界模型：面向结直肠癌药物反应的神经符号智能体框架", "url": "http://arxiv.org/abs/2603.02274v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.02274", "summary": "The authors present a Contextual Invertible World Model that couples a quantitative machine-learning emulator with an LLM reasoning layer, using a curated Sanger GDSC subset of 83 samples. Through inverse reasoning and in-silico CRISPR perturbations it identifies mutant KRAS dominance over the APC/Wnt axis in 5-fluorouracil resistance and a PIK3CA paradox where repair increases chemoresistance.", "keywords": [{"text": "neuro-symbolic agent", "domain": "agent-architecture"}, {"text": "inverse reasoning", "domain": "cognition-reasoning"}, {"text": "drug response", "domain": "ai-knowledge"}, {"text": "world model", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "phuryn/pm-skills", "title_zh": "pm-skills：覆盖产品管理全流程的智能体技能市场", "url": "https://github.com/phuryn/pm-skills", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "A marketplace of more than 100 agentic skills, commands and plugins covering product management work from discovery and strategy through execution, launch and growth.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "product management", "domain": "ai-knowledge"}, {"text": "plugin marketplace", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

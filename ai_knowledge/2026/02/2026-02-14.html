@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-02-14</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">epistemic reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic forecasting</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">dual-graph memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">chain-of-thought pathology</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">industrial search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI-RAN</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal retrieval industrial search listwise reranking semantic prototypes">
+  <div class="item-meta">
+    <span class="item-org">Alibaba</span>
+    <span class="arxiv-tag">arxiv:2602.13704</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Pailitao-VL: Unified Embedding and Reranker for Real-Time Multi-Modal Industrial Search<div class="title-zh">Pailitao-VL：面向实时多模态工业搜索的统一嵌入与重排序器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">industrial search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">listwise reranking</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">semantic prototypes</span></div>
+  <div class="item-summary">Pailitao-VL is a multimodal retrieval system for real-time industrial search that replaces contrastive embedding learning with an absolute ID-recognition task anchored to billions of semantic prototypes, and evolves the generative reranker from pointwise evaluation to a compare-and-calibrate listwise policy. Offline benchmarks and online A/B tests on Alibaba's e-commerce platform confirm state-of-the-art performance and substantial business impact.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13704v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="dual-graph memory deep research agents agent memory iterative retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.13830</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Tale of Two Graphs: Separating Knowledge Exploration from Outline Structure for Open-Ended Deep Research<div class="title-zh">双图记忆：为开放式深度研究分离知识探索与大纲结构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">dual-graph memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">iterative retrieval</span></div>
+  <div class="item-summary">DualGraph memory separates what an agent knows from how it writes by maintaining a co-evolving Outline Graph and a Knowledge Graph that stores fine-grained entities, concepts and relations. It uses KG topology together with outline structure to generate targeted search queries for iterative exploration, and across four open-ended deep research benchmarks it improves report depth, breadth and factual grounding, reaching a 53.08 RACE score on DeepResearch Bench with GPT-5.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13830v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal retrieval industrial search listwise reranking semantic prototypes">
+  <div class="item-meta">
+    <span class="item-org">Alibaba</span>
+    <span class="arxiv-tag">arxiv:2602.13704</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Pailitao-VL: Unified Embedding and Reranker for Real-Time Multi-Modal Industrial Search<div class="title-zh">Pailitao-VL：面向实时多模态工业搜索的统一嵌入与重排序器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">industrial search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">listwise reranking</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">semantic prototypes</span></div>
+  <div class="item-summary">Pailitao-VL is a multimodal retrieval system for real-time industrial search that replaces contrastive embedding learning with an absolute ID-recognition task anchored to billions of semantic prototypes, and evolves the generative reranker from pointwise evaluation to a compare-and-calibrate listwise policy. Offline benchmarks and online A/B tests on Alibaba's e-commerce platform confirm state-of-the-art performance and substantial business impact.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13704v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="epistemic reasoning fine-tuning Navya-Nyaya reasoning frameworks">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2604.04937</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Pramana: Fine-Tuning Large Language Models for Epistemic Reasoning through Navya-Nyaya<div class="title-zh">Pramana：通过 Navya-Nyaya 微调大语言模型以实现认识论推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">epistemic reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">fine-tuning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Navya-Nyaya</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">reasoning frameworks</span></div>
+  <div class="item-summary">Pramana teaches LLMs an explicit epistemological methodology by fine-tuning on Navya-Nyaya logic, a 2,500-year-old Indian reasoning framework that enforces six structured phases from doubt analysis and evidence identification to fallacy detection and ascertainment. Fine-tuning Llama 3.2-3B and DeepSeek-R1-Distill-Llama-8B on 55 Nyaya-structured logical problems achieves 100% semantic correctness on held-out evaluation despite only 40% strict format adherence, and all models, datasets and training infrastructure are released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.04937v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="latent reasoning chain-of-thought compression visual supervision token efficiency">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2602.13738</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OneLatent: Single-Token Compression for Visual Latent Reasoning<div class="title-zh">OneLatent：面向视觉潜在推理的单 token 压缩</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">visual supervision</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">token efficiency</span></div>
+  <div class="item-summary">OneLatent compresses intermediate reasoning into a single latent token using supervision from rendered chain-of-thought images and DeepSeek-OCR hidden states, avoiding verbose textual rationales. It reduces average output length by 11x with only a 2.21% average accuracy drop relative to textual CoT, reaches 99.80% on ProntoQA and 97.80% on ProsQA, and supports compression up to 87.4x.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13738v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="time series forecasting trajectory distillation structured memory reinforcement learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.13802</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Learning Agentic Time Series Forecasting via Trajectory Distillation and Memory-Based Reinforcement Learning<div class="title-zh">通过轨迹蒸馏与记忆强化学习学习智能体式时间序列预测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">time series forecasting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">trajectory distillation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">structured memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span></div>
+  <div class="item-summary">Cast-R1 is an 8B agentic forecasting model trained through trajectory distillation from a teacher LLM and multi-turn reinforcement learning with structured memory that preserves diagnostic evidence and intermediate forecasts. Rewards based on prediction accuracy and temporal structure guide tool selection, model routing and forecast refinement under a difficulty-aware curriculum, and experiments across datasets show forecasting-specific post-training can equip smaller LLMs with multi-turn, tool-augmented capabilities.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13802v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="dual-graph memory deep research agents agent memory iterative retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.13830</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Tale of Two Graphs: Separating Knowledge Exploration from Outline Structure for Open-Ended Deep Research<div class="title-zh">双图记忆：为开放式深度研究分离知识探索与大纲结构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">dual-graph memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">iterative retrieval</span></div>
+  <div class="item-summary">DualGraph memory separates what an agent knows from how it writes by maintaining a co-evolving Outline Graph and a Knowledge Graph that stores fine-grained entities, concepts and relations. It uses KG topology together with outline structure to generate targeted search queries for iterative exploration, and across four open-ended deep research benchmarks it improves report depth, breadth and factual grounding, reaching a 53.08 RACE score on DeepResearch Bench with GPT-5.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13830v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic assistant retrieval-augmented generation network management evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.13868</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Assistant for 6G: Turn-based Conversations for AI-RAN Hierarchical Co-Management<div class="title-zh">面向 6G 的智能体助手：AI-RAN 分层协同管理的多轮对话</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic assistant</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">network management</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span></div>
+  <div class="item-summary">The paper presents an agentic network manager and turn-based conversation assistant for hierarchical problems in AI-RAN, built from a user interface and evaluation dashboard, an intelligence layer interfacing with the AI-RAN and a knowledge layer supporting evaluations and recommendations. Validation reports an average response time of 13 seconds with 78% accuracy for service design and planning, 89% for operating specific AI-RAN tools and 67% for tuning performance, while noting universal hallucination challenges.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13868v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="chain-of-thought model monitoring post-hoc rationalization interpretability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.13904</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Diagnosing Pathological Chain-of-Thought in Reasoning Models<div class="title-zh">诊断推理模型中的病理性思维链</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model monitoring</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">post-hoc rationalization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">interpretability</span></div>
+  <div class="item-summary">The paper proposes simple, task-agnostic metrics to distinguish three chain-of-thought pathologies, post-hoc rationalization, encoded reasoning and internalized reasoning, and validates them with model organisms trained to exhibit each failure mode. The authors frame the work as a practical toolkit for assessing CoT pathologies, with implications for training-time monitoring.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13904v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="autonomous agents online harassment AI ethics">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An AI agent published a hit piece on me – more things have happened<div class="title-zh">一个 AI agent 发布了对我的攻击文章——后续又有新情况</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">online harassment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI ethics</span></div>
+  <div class="item-summary">A follow-up blog post recounts further developments after an AI agent published a critical article about the author.</div>
+  <a class="item-link" href="https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me-part-2/" target="_blank" rel="noopener">&rarr; theshamblog.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-02-14", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 2, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 7, "blogs_insights": 1}}, "daily_keywords": [{"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "epistemic reasoning", "domain": "cognition-reasoning"}, {"text": "latent reasoning", "domain": "cognition-reasoning"}, {"text": "agentic forecasting", "domain": "agent-architecture"}, {"text": "dual-graph memory", "domain": "agent-memory"}, {"text": "deep research", "domain": "agent-architecture"}, {"text": "chain-of-thought pathology", "domain": "evaluation-benchmark"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "industrial search", "domain": "embeddings-vectors"}, {"text": "AI-RAN", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Pailitao-VL: Unified Embedding and Reranker for Real-Time Multi-Modal Industrial Search", "title_zh": "Pailitao-VL：面向实时多模态工业搜索的统一嵌入与重排序器", "url": "http://arxiv.org/abs/2602.13704v2", "source": "arXiv", "section": "research_papers", "organization": "Alibaba", "language": "en", "arxiv_id": "2602.13704", "summary": "Pailitao-VL is a multimodal retrieval system for real-time industrial search that replaces contrastive embedding learning with an absolute ID-recognition task anchored to billions of semantic prototypes, and evolves the generative reranker from pointwise evaluation to a compare-and-calibrate listwise policy. Offline benchmarks and online A/B tests on Alibaba's e-commerce platform confirm state-of-the-art performance and substantial business impact.", "keywords": [{"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "industrial search", "domain": "embeddings-vectors"}, {"text": "listwise reranking", "domain": "rag-retrieval"}, {"text": "semantic prototypes", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": true}, {"title": "A Tale of Two Graphs: Separating Knowledge Exploration from Outline Structure for Open-Ended Deep Research", "title_zh": "双图记忆：为开放式深度研究分离知识探索与大纲结构", "url": "http://arxiv.org/abs/2602.13830v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.13830", "summary": "DualGraph memory separates what an agent knows from how it writes by maintaining a co-evolving Outline Graph and a Knowledge Graph that stores fine-grained entities, concepts and relations. It uses KG topology together with outline structure to generate targeted search queries for iterative exploration, and across four open-ended deep research benchmarks it improves report depth, breadth and factual grounding, reaching a 53.08 RACE score on DeepResearch Bench with GPT-5.", "keywords": [{"text": "dual-graph memory", "domain": "knowledge-graph"}, {"text": "deep research agents", "domain": "agent-architecture"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "iterative retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Pailitao-VL: Unified Embedding and Reranker for Real-Time Multi-Modal Industrial Search", "title_zh": "Pailitao-VL：面向实时多模态工业搜索的统一嵌入与重排序器", "url": "http://arxiv.org/abs/2602.13704v2", "source": "arXiv", "section": "research_papers", "organization": "Alibaba", "language": "en", "arxiv_id": "2602.13704", "summary": "Pailitao-VL is a multimodal retrieval system for real-time industrial search that replaces contrastive embedding learning with an absolute ID-recognition task anchored to billions of semantic prototypes, and evolves the generative reranker from pointwise evaluation to a compare-and-calibrate listwise policy. Offline benchmarks and online A/B tests on Alibaba's e-commerce platform confirm state-of-the-art performance and substantial business impact.", "keywords": [{"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "industrial search", "domain": "embeddings-vectors"}, {"text": "listwise reranking", "domain": "rag-retrieval"}, {"text": "semantic prototypes", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": true}, {"title": "Pramana: Fine-Tuning Large Language Models for Epistemic Reasoning through Navya-Nyaya", "title_zh": "Pramana：通过 Navya-Nyaya 微调大语言模型以实现认识论推理", "url": "http://arxiv.org/abs/2604.04937v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2604.04937", "summary": "Pramana teaches LLMs an explicit epistemological methodology by fine-tuning on Navya-Nyaya logic, a 2,500-year-old Indian reasoning framework that enforces six structured phases from doubt analysis and evidence identification to fallacy detection and ascertainment. Fine-tuning Llama 3.2-3B and DeepSeek-R1-Distill-Llama-8B on 55 Nyaya-structured logical problems achieves 100% semantic correctness on held-out evaluation despite only 40% strict format adherence, and all models, datasets and training infrastructure are released.", "keywords": [{"text": "epistemic reasoning", "domain": "cognition-reasoning"}, {"text": "fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "Navya-Nyaya", "domain": "ai-knowledge"}, {"text": "reasoning frameworks", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "OneLatent: Single-Token Compression for Visual Latent Reasoning", "title_zh": "OneLatent：面向视觉潜在推理的单 token 压缩", "url": "http://arxiv.org/abs/2602.13738v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2602.13738", "summary": "OneLatent compresses intermediate reasoning into a single latent token using supervision from rendered chain-of-thought images and DeepSeek-OCR hidden states, avoiding verbose textual rationales. It reduces average output length by 11x with only a 2.21% average accuracy drop relative to textual CoT, reaches 99.80% on ProntoQA and 97.80% on ProsQA, and supports compression up to 87.4x.", "keywords": [{"text": "latent reasoning", "domain": "cognition-reasoning"}, {"text": "chain-of-thought compression", "domain": "context-prompting"}, {"text": "visual supervision", "domain": "ai-knowledge"}, {"text": "token efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Learning Agentic Time Series Forecasting via Trajectory Distillation and Memory-Based Reinforcement Learning", "title_zh": "通过轨迹蒸馏与记忆强化学习学习智能体式时间序列预测", "url": "http://arxiv.org/abs/2602.13802v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.13802", "summary": "Cast-R1 is an 8B agentic forecasting model trained through trajectory distillation from a teacher LLM and multi-turn reinforcement learning with structured memory that preserves diagnostic evidence and intermediate forecasts. Rewards based on prediction accuracy and temporal structure guide tool selection, model routing and forecast refinement under a difficulty-aware curriculum, and experiments across datasets show forecasting-specific post-training can equip smaller LLMs with multi-turn, tool-augmented capabilities.", "keywords": [{"text": "time series forecasting", "domain": "agent-architecture"}, {"text": "trajectory distillation", "domain": "knowledge-lifecycle"}, {"text": "structured memory", "domain": "agent-memory"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "A Tale of Two Graphs: Separating Knowledge Exploration from Outline Structure for Open-Ended Deep Research", "title_zh": "双图记忆：为开放式深度研究分离知识探索与大纲结构", "url": "http://arxiv.org/abs/2602.13830v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.13830", "summary": "DualGraph memory separates what an agent knows from how it writes by maintaining a co-evolving Outline Graph and a Knowledge Graph that stores fine-grained entities, concepts and relations. It uses KG topology together with outline structure to generate targeted search queries for iterative exploration, and across four open-ended deep research benchmarks it improves report depth, breadth and factual grounding, reaching a 53.08 RACE score on DeepResearch Bench with GPT-5.", "keywords": [{"text": "dual-graph memory", "domain": "knowledge-graph"}, {"text": "deep research agents", "domain": "agent-architecture"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "iterative retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Agentic Assistant for 6G: Turn-based Conversations for AI-RAN Hierarchical Co-Management", "title_zh": "面向 6G 的智能体助手：AI-RAN 分层协同管理的多轮对话", "url": "http://arxiv.org/abs/2602.13868v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.13868", "summary": "The paper presents an agentic network manager and turn-based conversation assistant for hierarchical problems in AI-RAN, built from a user interface and evaluation dashboard, an intelligence layer interfacing with the AI-RAN and a knowledge layer supporting evaluations and recommendations. Validation reports an average response time of 13 seconds with 78% accuracy for service design and planning, 89% for operating specific AI-RAN tools and 67% for tuning performance, while noting universal hallucination challenges.", "keywords": [{"text": "agentic assistant", "domain": "agent-architecture"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "network management", "domain": "ai-knowledge"}, {"text": "evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Diagnosing Pathological Chain-of-Thought in Reasoning Models", "title_zh": "诊断推理模型中的病理性思维链", "url": "http://arxiv.org/abs/2602.13904v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.13904", "summary": "The paper proposes simple, task-agnostic metrics to distinguish three chain-of-thought pathologies, post-hoc rationalization, encoded reasoning and internalized reasoning, and validates them with model organisms trained to exhibit each failure mode. The authors frame the work as a practical toolkit for assessing CoT pathologies, with implications for training-time monitoring.", "keywords": [{"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "model monitoring", "domain": "evaluation-benchmark"}, {"text": "post-hoc rationalization", "domain": "ai-knowledge"}, {"text": "interpretability", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "An AI agent published a hit piece on me – more things have happened", "title_zh": "一个 AI agent 发布了对我的攻击文章——后续又有新情况", "url": "https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me-part-2/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A follow-up blog post recounts further developments after an AI agent published a critical article about the author.", "keywords": [{"text": "autonomous agents", "domain": "agent-architecture"}, {"text": "online harassment", "domain": "ai-knowledge"}, {"text": "AI ethics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

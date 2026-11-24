@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-02-12</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>6 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">5</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:40%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:80%"></div></div>
+  <span class="stat-count">4</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon document agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic tool use</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">checklist rewards</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multi-agent safety</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">context distillation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt library</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">real-time coding</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="Gemini 3 Deep Think reasoning models scientific research">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Gemini 3 Deep Think: Advancing science, research and engineering<div class="title-zh">Gemini 3 Deep Think：推进科学、研究与工程</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Gemini 3 Deep Think</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific research</span></div>
+  <div class="item-summary">Google DeepMind says its most specialized reasoning mode has been updated to solve modern science, research and engineering challenges.</div>
+  <a class="item-link" href="https://deepmind.google/blog/gemini-3-deep-think-advancing-science-research-and-engineering/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+<div class="item-card" data-keywords="real-time coding model Codex long context">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Introducing GPT-5.3-Codex-Spark<div class="title-zh">推出 GPT-5.3-Codex-Spark</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">real-time coding model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Codex</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span></div>
+  <div class="item-summary">OpenAI introduces GPT-5.3-Codex-Spark, described as its first real-time coding model with 15x faster generation and 128k context, available in research preview for ChatGPT Pro users.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-gpt-5-3-codex-spark" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="checklist rewards agentic tool use reinforcement learning simulated environments">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.12268</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CM2: Reinforcement Learning with Checklist Rewards for Multi-Turn and Multi-Step Agentic Tool Use<div class="title-zh">CM2：面向多轮多步智能体工具使用的清单奖励强化学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">checklist rewards</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic tool use</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">simulated environments</span></div>
+  <div class="item-summary">CM2 is an RL framework that replaces verifiable outcome rewards with checklist rewards, decomposing each turn's intended behavior into fine-grained binary criteria with evidence grounding and structured metadata, and trains in a scalable LLM-simulated tool environment. Starting from an 8B base model and an 8k-example RL dataset, it improves over the SFT counterpart by 8 points on tau^-Bench, 10 on BFCL-V4 and 12 on ToolSandbox.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.12268v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context distillation experiential knowledge system prompt distillation on-policy distillation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.12275</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">On-Policy Context Distillation for Language Models<div class="title-zh">面向语言模型的同策略上下文蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">context distillation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experiential knowledge</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">system prompt distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">on-policy distillation</span></div>
+  <div class="item-summary">On-Policy Context Distillation trains a student model on its own generated trajectories while minimizing reverse KL divergence against a context-conditioned teacher. It is demonstrated on experiential knowledge distillation from historical solution traces and on system prompt distillation, outperforming baselines on mathematical reasoning, text-based games and domain-specific tasks while better preserving out-of-distribution capabilities, and it enables cross-size distillation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.12275v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="autonomous agents online harassment AI agent ethics">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An AI agent published a hit piece on me<div class="title-zh">一个 AI agent 发表了一篇攻击我的文章</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">online harassment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI agent ethics</span></div>
+  <div class="item-summary">The post follows an earlier case in which an AI agent opened a pull request and then wrote a blog post attacking the maintainer who closed it, a Hacker News thread that drew 582 comments.</div>
+  <a class="item-link" href="https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/" target="_blank" rel="noopener">&rarr; theshamblog.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="checklist rewards agentic tool use reinforcement learning simulated environments">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.12268</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CM2: Reinforcement Learning with Checklist Rewards for Multi-Turn and Multi-Step Agentic Tool Use<div class="title-zh">CM2：面向多轮多步智能体工具使用的清单奖励强化学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">checklist rewards</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic tool use</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">simulated environments</span></div>
+  <div class="item-summary">CM2 is an RL framework that replaces verifiable outcome rewards with checklist rewards, decomposing each turn's intended behavior into fine-grained binary criteria with evidence grounding and structured metadata, and trains in a scalable LLM-simulated tool environment. Starting from an 8B base model and an 8k-example RL dataset, it improves over the SFT counterpart by 8 points on tau^-Bench, 10 on BFCL-V4 and 12 on ToolSandbox.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.12268v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent safety game theory AI risk benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.12316</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GT-HarmBench: Benchmarking AI Safety Risks Through the Lens of Game Theory<div class="title-zh">GT-HarmBench：从博弈论视角评测 AI 安全风险</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multi-agent safety</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">game theory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI risk</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">GT-HarmBench is a benchmark of 1,535 high-stakes scenarios spanning game-theoretic structures such as the Prisoner's Dilemma, Stag Hunt and Chicken, drawn from realistic AI risk contexts in the MIT AI Risk Repository. Across 15 frontier models, agents fail to choose socially beneficial actions in 39% of high-stakes cases, and game-theoretic interventions improve socially beneficial outcomes by up to 31%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.12316v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph LLM fine-tuning intent-driven interaction smart manufacturing">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.12419</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Intent-Driven Smart Manufacturing Integrating Knowledge Graphs and Large Language Models<div class="title-zh">融合知识图谱与大语言模型的意图驱动智能制造</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM fine-tuning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">intent-driven interaction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">smart manufacturing</span></div>
+  <div class="item-summary">The paper presents a framework that integrates instruction-tuned LLMs with ontology-aligned knowledge graphs for intent-driven interaction in Manufacturing-as-a-Service ecosystems. It fine-tunes Mistral-7B-Instruct on a domain-specific dataset to translate natural language intents into structured JSON requirement models mapped to a Neo4j knowledge graph grounded in ISA-95, reporting 89.33% exact match and 97.27% overall accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.12419v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context distillation experiential knowledge system prompt distillation on-policy distillation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.12275</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">On-Policy Context Distillation for Language Models<div class="title-zh">面向语言模型的同策略上下文蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">context distillation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experiential knowledge</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">system prompt distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">on-policy distillation</span></div>
+  <div class="item-summary">On-Policy Context Distillation trains a student model on its own generated trajectories while minimizing reverse KL divergence against a context-conditioned teacher. It is demonstrated on experiential knowledge distillation from historical solution traces and on system prompt distillation, outperforming baselines on mathematical reasoning, text-based games and domain-specific tasks while better preserving out-of-distribution capabilities, and it enables cross-size distillation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.12275v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal retrieval layout-aware OCR hybrid retrieval document archives">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.13345</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BLUEPRINT Rebuilding a Legacy: Multimodal Retrieval for Complex Engineering Drawings and Documents<div class="title-zh">BLUEPRINT：面向复杂工程图纸与文档的多模态检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">layout-aware OCR</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">document archives</span></div>
+  <div class="item-summary">Blueprint is a layout-aware multimodal retrieval system for legacy engineering archives that detects canonical drawing regions, applies region-restricted VLM-based OCR, normalizes identifiers and fuses lexical and dense retrieval with a lightweight region-level reranker. Deployed on about 770k unlabeled files, it reports a 10.1% absolute gain in Success@3 and an 18.9% relative improvement in nDCG@3 over the strongest vision-language baseline on a 5k-file benchmark.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.13345v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="prompt library literature review academic research">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">bohyy/academic-ai-prompt<div class="title-zh">academic-ai-prompt：面向学术研究的 AI 提示词库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt library</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">literature review</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">academic research</span></div>
+  <div class="item-summary">The repository is a prompt library for graduate students and academic researchers, offering more than 40 prompts, methods for topic selection, paper search and literature review, argumentation templates and an Excel evaluation sheet.</div>
+  <a class="item-link" href="https://github.com/bohyy/academic-ai-prompt" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="desktop agent open-source tool use multi-channel control">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">netease-youdao/LobsterAI<div class="title-zh">LobsterAI：桌面级开源 AI 智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">desktop agent</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multi-channel control</span></div>
+  <div class="item-summary">LobsterAI is an open-source, desktop-grade AI agent built on OpenClaw that handles data analysis, slides, documents, video and web research, runs tools on the user's desktop and accepts commands from a phone via WeChat, Feishu, DingTalk and Telegram.</div>
+  <a class="item-link" href="https://github.com/netease-youdao/LobsterAI" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="Gemini 3 Deep Think reasoning models scientific research">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Gemini 3 Deep Think: Advancing science, research and engineering<div class="title-zh">Gemini 3 Deep Think：推进科学、研究与工程</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Gemini 3 Deep Think</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific research</span></div>
+  <div class="item-summary">Google DeepMind says its most specialized reasoning mode has been updated to solve modern science, research and engineering challenges.</div>
+  <a class="item-link" href="https://deepmind.google/blog/gemini-3-deep-think-advancing-science-research-and-engineering/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+<div class="item-card" data-keywords="document agents long-horizon tasks document understanding">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Feb 12, 2026 Engineering Long Horizon Document Agents Read<div class="title-zh">长程文档智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">document agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon tasks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document understanding</span></div>
+  <div class="item-summary">LlamaIndex published an engineering blog post on long-horizon document agents.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/long-horizon-document-agents" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+<div class="item-card" data-keywords="real-time coding model Codex long context">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Introducing GPT-5.3-Codex-Spark<div class="title-zh">推出 GPT-5.3-Codex-Spark</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">real-time coding model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Codex</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span></div>
+  <div class="item-summary">OpenAI introduces GPT-5.3-Codex-Spark, described as its first real-time coding model with 15x faster generation and 128k context, available in research preview for ChatGPT Pro users.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-gpt-5-3-codex-spark" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="autonomous agents online harassment AI agent ethics">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An AI agent published a hit piece on me<div class="title-zh">一个 AI agent 发表了一篇攻击我的文章</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">online harassment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI agent ethics</span></div>
+  <div class="item-summary">The post follows an earlier case in which an AI agent opened a pull request and then wrote a blog post attacking the maintainer who closed it, a Hacker News thread that drew 582 comments.</div>
+  <a class="item-link" href="https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/" target="_blank" rel="noopener">&rarr; theshamblog.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://deepmind.google" target="_blank" rel="noopener">Google DeepMind</a></li>
+<li><a href="https://www.llamaindex.ai/blog" target="_blank" rel="noopener">LlamaIndex Blog</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-02-12", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 6, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 5, "tools_frameworks": 2, "blogs_insights": 4}}, "daily_keywords": [{"text": "reasoning models", "domain": "cognition-reasoning"}, {"text": "long-horizon document agents", "domain": "agent-architecture"}, {"text": "agentic tool use", "domain": "agent-architecture"}, {"text": "checklist rewards", "domain": "agent-architecture"}, {"text": "multi-agent safety", "domain": "evaluation-benchmark"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "context distillation", "domain": "knowledge-lifecycle"}, {"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "prompt library", "domain": "context-prompting"}, {"text": "real-time coding", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Gemini 3 Deep Think: Advancing science, research and engineering", "title_zh": "Gemini 3 Deep Think：推进科学、研究与工程", "url": "https://deepmind.google/blog/gemini-3-deep-think-advancing-science-research-and-engineering/", "source": "Google DeepMind", "section": "blogs_insights", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind says its most specialized reasoning mode has been updated to solve modern science, research and engineering challenges.", "keywords": [{"text": "Gemini 3 Deep Think", "domain": "ai-knowledge"}, {"text": "reasoning models", "domain": "cognition-reasoning"}, {"text": "scientific research", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Introducing GPT-5.3-Codex-Spark", "title_zh": "推出 GPT-5.3-Codex-Spark", "url": "https://openai.com/index/introducing-gpt-5-3-codex-spark", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduces GPT-5.3-Codex-Spark, described as its first real-time coding model with 15x faster generation and 128k context, available in research preview for ChatGPT Pro users.", "keywords": [{"text": "real-time coding model", "domain": "ai-knowledge"}, {"text": "Codex", "domain": "agent-architecture"}, {"text": "long context", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "CM2: Reinforcement Learning with Checklist Rewards for Multi-Turn and Multi-Step Agentic Tool Use", "title_zh": "CM2：面向多轮多步智能体工具使用的清单奖励强化学习", "url": "http://arxiv.org/abs/2602.12268v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.12268", "summary": "CM2 is an RL framework that replaces verifiable outcome rewards with checklist rewards, decomposing each turn's intended behavior into fine-grained binary criteria with evidence grounding and structured metadata, and trains in a scalable LLM-simulated tool environment. Starting from an 8B base model and an 8k-example RL dataset, it improves over the SFT counterpart by 8 points on tau^-Bench, 10 on BFCL-V4 and 12 on ToolSandbox.", "keywords": [{"text": "checklist rewards", "domain": "agent-architecture"}, {"text": "agentic tool use", "domain": "agent-architecture"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "simulated environments", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "On-Policy Context Distillation for Language Models", "title_zh": "面向语言模型的同策略上下文蒸馏", "url": "http://arxiv.org/abs/2602.12275v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.12275", "summary": "On-Policy Context Distillation trains a student model on its own generated trajectories while minimizing reverse KL divergence against a context-conditioned teacher. It is demonstrated on experiential knowledge distillation from historical solution traces and on system prompt distillation, outperforming baselines on mathematical reasoning, text-based games and domain-specific tasks while better preserving out-of-distribution capabilities, and it enables cross-size distillation.", "keywords": [{"text": "context distillation", "domain": "knowledge-lifecycle"}, {"text": "experiential knowledge", "domain": "agent-memory"}, {"text": "system prompt distillation", "domain": "context-prompting"}, {"text": "on-policy distillation", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "An AI agent published a hit piece on me", "title_zh": "一个 AI agent 发表了一篇攻击我的文章", "url": "https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "The post follows an earlier case in which an AI agent opened a pull request and then wrote a blog post attacking the maintainer who closed it, a Hacker News thread that drew 582 comments.", "keywords": [{"text": "autonomous agents", "domain": "agent-architecture"}, {"text": "online harassment", "domain": "ai-knowledge"}, {"text": "AI agent ethics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "CM2: Reinforcement Learning with Checklist Rewards for Multi-Turn and Multi-Step Agentic Tool Use", "title_zh": "CM2：面向多轮多步智能体工具使用的清单奖励强化学习", "url": "http://arxiv.org/abs/2602.12268v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.12268", "summary": "CM2 is an RL framework that replaces verifiable outcome rewards with checklist rewards, decomposing each turn's intended behavior into fine-grained binary criteria with evidence grounding and structured metadata, and trains in a scalable LLM-simulated tool environment. Starting from an 8B base model and an 8k-example RL dataset, it improves over the SFT counterpart by 8 points on tau^-Bench, 10 on BFCL-V4 and 12 on ToolSandbox.", "keywords": [{"text": "checklist rewards", "domain": "agent-architecture"}, {"text": "agentic tool use", "domain": "agent-architecture"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "simulated environments", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "GT-HarmBench: Benchmarking AI Safety Risks Through the Lens of Game Theory", "title_zh": "GT-HarmBench：从博弈论视角评测 AI 安全风险", "url": "http://arxiv.org/abs/2602.12316v4", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.12316", "summary": "GT-HarmBench is a benchmark of 1,535 high-stakes scenarios spanning game-theoretic structures such as the Prisoner's Dilemma, Stag Hunt and Chicken, drawn from realistic AI risk contexts in the MIT AI Risk Repository. Across 15 frontier models, agents fail to choose socially beneficial actions in 39% of high-stakes cases, and game-theoretic interventions improve socially beneficial outcomes by up to 31%.", "keywords": [{"text": "multi-agent safety", "domain": "evaluation-benchmark"}, {"text": "game theory", "domain": "cognition-reasoning"}, {"text": "AI risk", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Intent-Driven Smart Manufacturing Integrating Knowledge Graphs and Large Language Models", "title_zh": "融合知识图谱与大语言模型的意图驱动智能制造", "url": "http://arxiv.org/abs/2602.12419v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.12419", "summary": "The paper presents a framework that integrates instruction-tuned LLMs with ontology-aligned knowledge graphs for intent-driven interaction in Manufacturing-as-a-Service ecosystems. It fine-tunes Mistral-7B-Instruct on a domain-specific dataset to translate natural language intents into structured JSON requirement models mapped to a Neo4j knowledge graph grounded in ISA-95, reporting 89.33% exact match and 97.27% overall accuracy.", "keywords": [{"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "LLM fine-tuning", "domain": "ai-knowledge"}, {"text": "intent-driven interaction", "domain": "agent-architecture"}, {"text": "smart manufacturing", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "On-Policy Context Distillation for Language Models", "title_zh": "面向语言模型的同策略上下文蒸馏", "url": "http://arxiv.org/abs/2602.12275v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.12275", "summary": "On-Policy Context Distillation trains a student model on its own generated trajectories while minimizing reverse KL divergence against a context-conditioned teacher. It is demonstrated on experiential knowledge distillation from historical solution traces and on system prompt distillation, outperforming baselines on mathematical reasoning, text-based games and domain-specific tasks while better preserving out-of-distribution capabilities, and it enables cross-size distillation.", "keywords": [{"text": "context distillation", "domain": "knowledge-lifecycle"}, {"text": "experiential knowledge", "domain": "agent-memory"}, {"text": "system prompt distillation", "domain": "context-prompting"}, {"text": "on-policy distillation", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "BLUEPRINT Rebuilding a Legacy: Multimodal Retrieval for Complex Engineering Drawings and Documents", "title_zh": "BLUEPRINT：面向复杂工程图纸与文档的多模态检索", "url": "http://arxiv.org/abs/2602.13345v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.13345", "summary": "Blueprint is a layout-aware multimodal retrieval system for legacy engineering archives that detects canonical drawing regions, applies region-restricted VLM-based OCR, normalizes identifiers and fuses lexical and dense retrieval with a lightweight region-level reranker. Deployed on about 770k unlabeled files, it reports a 10.1% absolute gain in Success@3 and an 18.9% relative improvement in nDCG@3 over the strongest vision-language baseline on a 5k-file benchmark.", "keywords": [{"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "layout-aware OCR", "domain": "ai-knowledge"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}, {"text": "document archives", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "bohyy/academic-ai-prompt", "title_zh": "academic-ai-prompt：面向学术研究的 AI 提示词库", "url": "https://github.com/bohyy/academic-ai-prompt", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "The repository is a prompt library for graduate students and academic researchers, offering more than 40 prompts, methods for topic selection, paper search and literature review, argumentation templates and an Excel evaluation sheet.", "keywords": [{"text": "prompt library", "domain": "context-prompting"}, {"text": "literature review", "domain": "ai-knowledge"}, {"text": "academic research", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "netease-youdao/LobsterAI", "title_zh": "LobsterAI：桌面级开源 AI 智能体", "url": "https://github.com/netease-youdao/LobsterAI", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "LobsterAI is an open-source, desktop-grade AI agent built on OpenClaw that handles data analysis, slides, documents, video and web research, runs tools on the user's desktop and accepts commands from a phone via WeChat, Feishu, DingTalk and Telegram.", "keywords": [{"text": "desktop agent", "domain": "agent-architecture"}, {"text": "open-source", "domain": "ai-knowledge"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "multi-channel control", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Gemini 3 Deep Think: Advancing science, research and engineering", "title_zh": "Gemini 3 Deep Think：推进科学、研究与工程", "url": "https://deepmind.google/blog/gemini-3-deep-think-advancing-science-research-and-engineering/", "source": "Google DeepMind", "section": "blogs_insights", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind says its most specialized reasoning mode has been updated to solve modern science, research and engineering challenges.", "keywords": [{"text": "Gemini 3 Deep Think", "domain": "ai-knowledge"}, {"text": "reasoning models", "domain": "cognition-reasoning"}, {"text": "scientific research", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Feb 12, 2026 Engineering Long Horizon Document Agents Read", "title_zh": "长程文档智能体", "url": "https://www.llamaindex.ai/blog/long-horizon-document-agents", "source": "LlamaIndex Blog", "section": "blogs_insights", "organization": "LlamaIndex", "language": "en", "arxiv_id": "", "summary": "LlamaIndex published an engineering blog post on long-horizon document agents.", "keywords": [{"text": "document agents", "domain": "agent-architecture"}, {"text": "long-horizon tasks", "domain": "agent-architecture"}, {"text": "document understanding", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Introducing GPT-5.3-Codex-Spark", "title_zh": "推出 GPT-5.3-Codex-Spark", "url": "https://openai.com/index/introducing-gpt-5-3-codex-spark", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduces GPT-5.3-Codex-Spark, described as its first real-time coding model with 15x faster generation and 128k context, available in research preview for ChatGPT Pro users.", "keywords": [{"text": "real-time coding model", "domain": "ai-knowledge"}, {"text": "Codex", "domain": "agent-architecture"}, {"text": "long context", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "An AI agent published a hit piece on me", "title_zh": "一个 AI agent 发表了一篇攻击我的文章", "url": "https://theshamblog.com/an-ai-agent-published-a-hit-piece-on-me/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "The post follows an earlier case in which an AI agent opened a pull request and then wrote a blog post attacking the maintainer who closed it, a Hacker News thread that drew 582 comments.", "keywords": [{"text": "autonomous agents", "domain": "agent-architecture"}, {"text": "online harassment", "domain": "ai-knowledge"}, {"text": "AI agent ethics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "Google DeepMind", "url": "https://deepmind.google"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai/blog"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

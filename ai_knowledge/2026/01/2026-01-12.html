@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-01-12</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">executive memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">dependency-aware memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory backend comparison</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tool retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">query planning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-hop reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">citation verification</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">latent feature steering</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG prompting</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">meta-level reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent platform</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="executive memory dependency-aware memory context budget sub-trajectory folding tool-augmented agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08079</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MemoBrain: Executive Memory as an Agentic Brain for Reasoning<div class="title-zh">MemoBrain：作为推理代理大脑的执行记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">executive memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">dependency-aware memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context budget</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">sub-trajectory folding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-augmented agents</span></div>
+  <div class="item-summary">MemoBrain is proposed as an executive memory layer for agents that use tools, maintaining a dependency-aware record of reasoning steps while discarding invalid ones and collapsing finished sub-trajectories so the core reasoning trace fits a fixed context budget. The authors report gains over strong baselines on GAIA, WebWalker and BrowseComp-Plus.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08079v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-term memory memory backend comparison graph memory retrieval completeness total cost of ownership">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.07978</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Cost and Accuracy of Long-Term Memory in Distributed Multi-Agent Systems Based on Large Language Models<div class="title-zh">基于大语言模型的分布式多智能体系统中长期记忆的成本与准确率</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory backend comparison</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval completeness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">total cost of ownership</span></div>
+  <div class="item-summary">The authors build an independent, reproducible cloud-edge testbed that measures accuracy, latency, CPU time, peak RAM, disk I/O and network use for mem0, Graphiti and cognee alongside RAG and full-context baselines on LoCoMo. mem0, RAG and full-context score 77% to 81%, whereas Graphiti and cognee score 55% to 56% because of incomplete retrieval, and RAG matches the top group while costing 8.4 times less overall than mem0.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07978v5" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="citation verification knowledge integrity evidence aggregation miscitation taxonomy agentic retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.16993</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature<div class="title-zh">BibAgent：面向科学文献可追溯错误引用检测的智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">citation verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge integrity</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence aggregation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">miscitation taxonomy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic retrieval</span></div>
+  <div class="item-summary">BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.16993v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="executive memory dependency-aware memory context budget sub-trajectory folding tool-augmented agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08079</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MemoBrain: Executive Memory as an Agentic Brain for Reasoning<div class="title-zh">MemoBrain：作为推理代理大脑的执行记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">executive memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">dependency-aware memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context budget</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">sub-trajectory folding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-augmented agents</span></div>
+  <div class="item-summary">MemoBrain is proposed as an executive memory layer for agents that use tools, maintaining a dependency-aware record of reasoning steps while discarding invalid ones and collapsing finished sub-trajectories so the core reasoning trace fits a fixed context budget. The authors report gains over strong baselines on GAIA, WebWalker and BrowseComp-Plus.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08079v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-term memory memory backend comparison graph memory retrieval completeness total cost of ownership">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.07978</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Cost and Accuracy of Long-Term Memory in Distributed Multi-Agent Systems Based on Large Language Models<div class="title-zh">基于大语言模型的分布式多智能体系统中长期记忆的成本与准确率</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory backend comparison</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval completeness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">total cost of ownership</span></div>
+  <div class="item-summary">The authors build an independent, reproducible cloud-edge testbed that measures accuracy, latency, CPU time, peak RAM, disk I/O and network use for mem0, Graphiti and cognee alongside RAG and full-context baselines on LoCoMo. mem0, RAG and full-context score 77% to 81%, whereas Graphiti and cognee score 55% to 56% because of incomplete retrieval, and RAG matches the top group while costing 8.4 times less overall than mem0.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07978v5" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool retrieval query planning dense retrieval reinforcement learning multi-step retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.07782</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Single-Shot: Multi-step Tool Retrieval via Query Planning<div class="title-zh">超越单次检索：通过查询规划实现多步工具检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tool retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">query planning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">dense retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-step retrieval</span></div>
+  <div class="item-summary">TOOLQP models tool retrieval as iterative query planning, decomposing an instruction into sub-tasks and dynamically generating queries instead of relying on single-shot dense matching. It is trained on synthetic query trajectories with reinforcement learning from verifiable rewards and reports state-of-the-art performance, zero-shot generalization and downstream agentic gains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07782v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-hop reasoning kinship systems compositional reasoning benchmark contamination cultural knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.07794</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Kinship Data Benchmark for Multi-hop Reasoning<div class="title-zh">面向多跳推理的亲属关系数据基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-hop reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">kinship systems</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">compositional reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark contamination</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cultural knowledge</span></div>
+  <div class="item-summary">KinshipQA is a procedurally generated benchmark covering seven documented kinship systems and up to six reasoning hops, with a tunable simulator horizon intended to eliminate exact-instance pretraining overlap. Evaluating six LLMs, the authors find a 40.9% accuracy drop when reasoning shifts from biological multi-hop relations to culturally marked classification on the five non-descriptive systems, and the drop persists under chain-of-thought and few-shot prompting.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07794v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sparse autoencoders latent feature steering chain-of-thought activation intervention mechanistic interpretability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08058</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Triggering Chain-of-Thought via Latent Feature Interventions in Large Language Models<div class="title-zh">通过潜在特征干预触发大语言模型的思维链</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">sparse autoencoders</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">latent feature steering</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">activation intervention</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mechanistic interpretability</span></div>
+  <div class="item-summary">With sparse autoencoders, the authors isolate a handful of latent features associated with reasoning and find that nudging just one or a few of them triggers reasoning-like behavior without an explicit chain-of-thought prompt, at accuracy close to CoT. Suppressing those features hurt performance even when CoT prompting was used, which the authors read as evidence of a causal role.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08058v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="citation verification knowledge integrity evidence aggregation miscitation taxonomy agentic retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.16993</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature<div class="title-zh">BibAgent：面向科学文献可追溯错误引用检测的智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">citation verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge integrity</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence aggregation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">miscitation taxonomy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic retrieval</span></div>
+  <div class="item-summary">BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.16993v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="RAG prompting small language models retrieval integration log comprehension model efficiency">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.07790</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Benchmarking Small Language Models and Small Reasoning Language Models on System Log Severity Classification<div class="title-zh">小语言模型与小推理模型在系统日志严重性分类上的基准测试</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG prompting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">small language models</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">retrieval integration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">log comprehension</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model efficiency</span></div>
+  <div class="item-summary">Using real journalctl data from Linux production servers, the authors evaluate nine models drawn from small language models and small reasoning language models under zero-shot, few-shot and RAG prompting, treating severity classification as a probe of runtime log comprehension. Qwen3-4B reaches 95.64% with RAG and Gemma3-1B improves from 20.25% to 85.28%, while several small reasoning models degrade substantially when paired with retrieval.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07790v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="meta-level reasoning tool selection tabular QA task decomposition numeracy">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.07696</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Exploring the Meta-level Reasoning of Large Language Models via a Tool-based Multi-hop Tabular Question Answering Task<div class="title-zh">通过基于工具的多跳表格问答任务探索大语言模型的元级推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">meta-level reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool selection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tabular QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">task decomposition</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">numeracy</span></div>
+  <div class="item-summary">The authors distinguish meta-level reasoning, or reasoning about the intermediate steps needed for a task, from object-level execution, and design a tool-based multi-hop tabular QA task over geopolitical indicators with "essential actions" for comparing tool calls. They find LLMs show good meta-level reasoning but flawed task understanding, that n-shot prompting has little effect on accuracy, and provide further evidence of poor numeracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07696v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-agent platform long-term memory agent sandbox coding agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">felinics/Memoh<div class="title-zh">felinics/Memoh：为每个智能体提供独立计算机与长期记忆的多智能体平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent platform</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent sandbox</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span></div>
+  <div class="item-summary">Memoh is an open-source multi-agent platform written in Go in which each agent gets a separate computer, desktop, network and long-term memory. It supports bring-your-own-key setups and can host coding agents including Claude Code and Codex.</div>
+  <a class="item-link" href="https://github.com/felinics/Memoh" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="autonomous coding file-based agents agent loop">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">iannuttall/ralph<div class="title-zh">iannuttall/ralph：极简的基于文件的自主编码智能体循环</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous coding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">file-based agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent loop</span></div>
+  <div class="item-summary">Ralph is a minimal, file-based agent loop for autonomous coding, written in TypeScript.</div>
+  <a class="item-link" href="https://github.com/iannuttall/ralph" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-01-12", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 2, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 2}}, "daily_keywords": [{"text": "executive memory", "domain": "agent-memory"}, {"text": "dependency-aware memory", "domain": "agent-memory"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "memory backend comparison", "domain": "agent-memory"}, {"text": "tool retrieval", "domain": "rag-retrieval"}, {"text": "query planning", "domain": "cognition-reasoning"}, {"text": "multi-hop reasoning", "domain": "cognition-reasoning"}, {"text": "citation verification", "domain": "knowledge-lifecycle"}, {"text": "latent feature steering", "domain": "context-prompting"}, {"text": "RAG prompting", "domain": "rag-retrieval"}, {"text": "meta-level reasoning", "domain": "cognition-reasoning"}, {"text": "multi-agent platform", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "MemoBrain: Executive Memory as an Agentic Brain for Reasoning", "title_zh": "MemoBrain：作为推理代理大脑的执行记忆", "url": "http://arxiv.org/abs/2601.08079v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08079", "summary": "MemoBrain is proposed as an executive memory layer for agents that use tools, maintaining a dependency-aware record of reasoning steps while discarding invalid ones and collapsing finished sub-trajectories so the core reasoning trace fits a fixed context budget. The authors report gains over strong baselines on GAIA, WebWalker and BrowseComp-Plus.", "keywords": [{"text": "executive memory", "domain": "agent-memory"}, {"text": "dependency-aware memory", "domain": "agent-memory"}, {"text": "context budget", "domain": "context-prompting"}, {"text": "sub-trajectory folding", "domain": "knowledge-lifecycle"}, {"text": "tool-augmented agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Cost and Accuracy of Long-Term Memory in Distributed Multi-Agent Systems Based on Large Language Models", "title_zh": "基于大语言模型的分布式多智能体系统中长期记忆的成本与准确率", "url": "http://arxiv.org/abs/2601.07978v5", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.07978", "summary": "The authors build an independent, reproducible cloud-edge testbed that measures accuracy, latency, CPU time, peak RAM, disk I/O and network use for mem0, Graphiti and cognee alongside RAG and full-context baselines on LoCoMo. mem0, RAG and full-context score 77% to 81%, whereas Graphiti and cognee score 55% to 56% because of incomplete retrieval, and RAG matches the top group while costing 8.4 times less overall than mem0.", "keywords": [{"text": "long-term memory", "domain": "agent-memory"}, {"text": "memory backend comparison", "domain": "agent-memory"}, {"text": "graph memory", "domain": "knowledge-graph"}, {"text": "retrieval completeness", "domain": "rag-retrieval"}, {"text": "total cost of ownership", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature", "title_zh": "BibAgent：面向科学文献可追溯错误引用检测的智能体框架", "url": "http://arxiv.org/abs/2601.16993v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.16993", "summary": "BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.", "keywords": [{"text": "citation verification", "domain": "knowledge-lifecycle"}, {"text": "knowledge integrity", "domain": "ai-knowledge"}, {"text": "evidence aggregation", "domain": "rag-retrieval"}, {"text": "miscitation taxonomy", "domain": "evaluation-benchmark"}, {"text": "agentic retrieval", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "MemoBrain: Executive Memory as an Agentic Brain for Reasoning", "title_zh": "MemoBrain：作为推理代理大脑的执行记忆", "url": "http://arxiv.org/abs/2601.08079v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08079", "summary": "MemoBrain is proposed as an executive memory layer for agents that use tools, maintaining a dependency-aware record of reasoning steps while discarding invalid ones and collapsing finished sub-trajectories so the core reasoning trace fits a fixed context budget. The authors report gains over strong baselines on GAIA, WebWalker and BrowseComp-Plus.", "keywords": [{"text": "executive memory", "domain": "agent-memory"}, {"text": "dependency-aware memory", "domain": "agent-memory"}, {"text": "context budget", "domain": "context-prompting"}, {"text": "sub-trajectory folding", "domain": "knowledge-lifecycle"}, {"text": "tool-augmented agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Cost and Accuracy of Long-Term Memory in Distributed Multi-Agent Systems Based on Large Language Models", "title_zh": "基于大语言模型的分布式多智能体系统中长期记忆的成本与准确率", "url": "http://arxiv.org/abs/2601.07978v5", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.07978", "summary": "The authors build an independent, reproducible cloud-edge testbed that measures accuracy, latency, CPU time, peak RAM, disk I/O and network use for mem0, Graphiti and cognee alongside RAG and full-context baselines on LoCoMo. mem0, RAG and full-context score 77% to 81%, whereas Graphiti and cognee score 55% to 56% because of incomplete retrieval, and RAG matches the top group while costing 8.4 times less overall than mem0.", "keywords": [{"text": "long-term memory", "domain": "agent-memory"}, {"text": "memory backend comparison", "domain": "agent-memory"}, {"text": "graph memory", "domain": "knowledge-graph"}, {"text": "retrieval completeness", "domain": "rag-retrieval"}, {"text": "total cost of ownership", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Beyond Single-Shot: Multi-step Tool Retrieval via Query Planning", "title_zh": "超越单次检索：通过查询规划实现多步工具检索", "url": "http://arxiv.org/abs/2601.07782v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.07782", "summary": "TOOLQP models tool retrieval as iterative query planning, decomposing an instruction into sub-tasks and dynamically generating queries instead of relying on single-shot dense matching. It is trained on synthetic query trajectories with reinforcement learning from verifiable rewards and reports state-of-the-art performance, zero-shot generalization and downstream agentic gains.", "keywords": [{"text": "tool retrieval", "domain": "rag-retrieval"}, {"text": "query planning", "domain": "cognition-reasoning"}, {"text": "dense retrieval", "domain": "embeddings-vectors"}, {"text": "reinforcement learning", "domain": "agent-architecture"}, {"text": "multi-step retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Kinship Data Benchmark for Multi-hop Reasoning", "title_zh": "面向多跳推理的亲属关系数据基准", "url": "http://arxiv.org/abs/2601.07794v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.07794", "summary": "KinshipQA is a procedurally generated benchmark covering seven documented kinship systems and up to six reasoning hops, with a tunable simulator horizon intended to eliminate exact-instance pretraining overlap. Evaluating six LLMs, the authors find a 40.9% accuracy drop when reasoning shifts from biological multi-hop relations to culturally marked classification on the five non-descriptive systems, and the drop persists under chain-of-thought and few-shot prompting.", "keywords": [{"text": "multi-hop reasoning", "domain": "cognition-reasoning"}, {"text": "kinship systems", "domain": "ai-knowledge"}, {"text": "compositional reasoning", "domain": "cognition-reasoning"}, {"text": "benchmark contamination", "domain": "evaluation-benchmark"}, {"text": "cultural knowledge", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Triggering Chain-of-Thought via Latent Feature Interventions in Large Language Models", "title_zh": "通过潜在特征干预触发大语言模型的思维链", "url": "http://arxiv.org/abs/2601.08058v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08058", "summary": "With sparse autoencoders, the authors isolate a handful of latent features associated with reasoning and find that nudging just one or a few of them triggers reasoning-like behavior without an explicit chain-of-thought prompt, at accuracy close to CoT. Suppressing those features hurt performance even when CoT prompting was used, which the authors read as evidence of a causal role.", "keywords": [{"text": "sparse autoencoders", "domain": "cognition-reasoning"}, {"text": "latent feature steering", "domain": "context-prompting"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "activation intervention", "domain": "agent-architecture"}, {"text": "mechanistic interpretability", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature", "title_zh": "BibAgent：面向科学文献可追溯错误引用检测的智能体框架", "url": "http://arxiv.org/abs/2601.16993v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.16993", "summary": "BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.", "keywords": [{"text": "citation verification", "domain": "knowledge-lifecycle"}, {"text": "knowledge integrity", "domain": "ai-knowledge"}, {"text": "evidence aggregation", "domain": "rag-retrieval"}, {"text": "miscitation taxonomy", "domain": "evaluation-benchmark"}, {"text": "agentic retrieval", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Benchmarking Small Language Models and Small Reasoning Language Models on System Log Severity Classification", "title_zh": "小语言模型与小推理模型在系统日志严重性分类上的基准测试", "url": "http://arxiv.org/abs/2601.07790v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.07790", "summary": "Using real journalctl data from Linux production servers, the authors evaluate nine models drawn from small language models and small reasoning language models under zero-shot, few-shot and RAG prompting, treating severity classification as a probe of runtime log comprehension. Qwen3-4B reaches 95.64% with RAG and Gemma3-1B improves from 20.25% to 85.28%, while several small reasoning models degrade substantially when paired with retrieval.", "keywords": [{"text": "RAG prompting", "domain": "rag-retrieval"}, {"text": "small language models", "domain": "ai-knowledge"}, {"text": "retrieval integration", "domain": "context-prompting"}, {"text": "log comprehension", "domain": "evaluation-benchmark"}, {"text": "model efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Exploring the Meta-level Reasoning of Large Language Models via a Tool-based Multi-hop Tabular Question Answering Task", "title_zh": "通过基于工具的多跳表格问答任务探索大语言模型的元级推理", "url": "http://arxiv.org/abs/2601.07696v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.07696", "summary": "The authors distinguish meta-level reasoning, or reasoning about the intermediate steps needed for a task, from object-level execution, and design a tool-based multi-hop tabular QA task over geopolitical indicators with \"essential actions\" for comparing tool calls. They find LLMs show good meta-level reasoning but flawed task understanding, that n-shot prompting has little effect on accuracy, and provide further evidence of poor numeracy.", "keywords": [{"text": "meta-level reasoning", "domain": "cognition-reasoning"}, {"text": "tool selection", "domain": "agent-architecture"}, {"text": "tabular QA", "domain": "rag-retrieval"}, {"text": "task decomposition", "domain": "cognition-reasoning"}, {"text": "numeracy", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "felinics/Memoh", "title_zh": "felinics/Memoh：为每个智能体提供独立计算机与长期记忆的多智能体平台", "url": "https://github.com/felinics/Memoh", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Memoh is an open-source multi-agent platform written in Go in which each agent gets a separate computer, desktop, network and long-term memory. It supports bring-your-own-key setups and can host coding agents including Claude Code and Codex.", "keywords": [{"text": "multi-agent platform", "domain": "agent-architecture"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "agent sandbox", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "iannuttall/ralph", "title_zh": "iannuttall/ralph：极简的基于文件的自主编码智能体循环", "url": "https://github.com/iannuttall/ralph", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Ralph is a minimal, file-based agent loop for autonomous coding, written in TypeScript.", "keywords": [{"text": "autonomous coding", "domain": "agent-architecture"}, {"text": "file-based agents", "domain": "agent-architecture"}, {"text": "agent loop", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

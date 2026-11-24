@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-02-11</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">12 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>5 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">12/12 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:37%"></div></div>
+  <span class="stat-count">3</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">neural paging</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context management</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt optimization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">domain-specific LLM</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="neural paging context management differentiable page controller long-horizon reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.02228</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Neural Paging: Learning Context Management Policies for Turing-Complete Agents<div class="title-zh">Neural Paging：为图灵完备智能体学习上下文管理策略</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">neural paging</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context management</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">differentiable page controller</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-horizon reasoning</span></div>
+  <div class="item-summary">Neural Paging introduces a hierarchical architecture with a differentiable page controller that manages an LLM agent's context window, reducing long-horizon reasoning complexity from quadratic to O(N·K²) under a bounded window.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.02228v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embedding models diffusion pretraining contextual embeddings late chunking multilingual retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11151</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Diffusion-Pretrained Dense and Contextual Embeddings<div class="title-zh">扩散预训练的稠密与上下文嵌入</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding models</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">diffusion pretraining</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contextual embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">late chunking</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multilingual retrieval</span></div>
+  <div class="item-summary">The report introduces pplx-embed, a family of multilingual embedding models that apply multi-stage contrastive learning on a diffusion-pretrained backbone for web-scale retrieval, using mean pooling and late chunking to preserve global context. pplx-embed-v1 is competitive on MTEB, MTEB(Code), MIRACL, BERGEN and ToolRet, while pplx-embed-context-v1 sets new records on ConTEB, and the models are tested on an internal suite built from 1B production web pages.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11151v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-hop QA ontology cube structure training-free RAG">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.15898</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MultiCube-RAG for Multi-hop Question Answering<div class="title-zh">面向多跳问答的 MultiCube-RAG</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">cube structure</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">training-free RAG</span></div>
+  <div class="item-summary">MultiCube-RAG is a training-free method that builds an ontology-based cube structure with multiple orthogonal dimensions to model subjects, attributes and relations, then decomposes complex multi-hop queries into subqueries along cube dimensions for sequential retrieval. Across four multi-hop QA datasets it improves response accuracy by 8.9% over the average of various baselines while reporting greater efficiency and inherent explainability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.15898v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="GLM-5 foundation models long-horizon agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GLM-5: Targeting complex systems engineering and long-horizon agentic tasks<div class="title-zh">GLM-5：面向复杂系统工程与长程智能体任务</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">GLM-5</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">foundation models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span></div>
+  <div class="item-summary">Z.ai published a post on GLM-5, describing the model as targeting complex systems engineering and long-horizon agentic tasks.</div>
+  <a class="item-link" href="https://z.ai/blog/glm-5" target="_blank" rel="noopener">&rarr; z.ai</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="neural paging context management differentiable page controller long-horizon reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.02228</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Neural Paging: Learning Context Management Policies for Turing-Complete Agents<div class="title-zh">Neural Paging：为图灵完备智能体学习上下文管理策略</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">neural paging</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context management</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">differentiable page controller</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-horizon reasoning</span></div>
+  <div class="item-summary">Neural Paging introduces a hierarchical architecture with a differentiable page controller that manages an LLM agent's context window, reducing long-horizon reasoning complexity from quadratic to O(N·K²) under a bounded window.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.02228v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reinforcement learning with verifiable rewards prompt weighting reasoning post-training policy optimization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11128</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Asymmetric Prompt Weighting for Reinforcement Learning with Verifiable Rewards<div class="title-zh">面向可验证奖励强化学习的不对称提示加权</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning with verifiable rewards</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt weighting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">reasoning post-training</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">policy optimization</span></div>
+  <div class="item-summary">The paper studies asymmetric prompt weighting for reinforcement learning with verifiable rewards, assigning higher weights to prompts with low or even zero empirical success probability. It reports that this particularly benefits from-scratch RL such as R1-Zero and less so post-SFT RL, and provides theory on weights that minimize the time needed to reach a target accuracy under a fixed update budget.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11128v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt optimization multimodal evaluation LLM-as-a-judge visual tokenization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11340</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Bi-Level Prompt Optimization for Multimodal LLM-as-a-Judge<div class="title-zh">面向多模态 LLM-as-a-Judge 的双层提示优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt optimization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multimodal evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-a-judge</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">visual tokenization</span></div>
+  <div class="item-summary">BLPO is a bi-level prompt optimization framework for multimodal LLM-as-a-judge that converts images into textual representations preserving evaluation-relevant visual cues, jointly refining the judge prompt and the image-to-text prompt under limited context budgets. Experiments on four datasets and three LLM judges demonstrate its effectiveness.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11340v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="data repetition chain-of-thought supervised fine-tuning catastrophic forgetting">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11149</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Data Repetition Beats Data Scaling in Long-CoT Supervised Fine-Tuning<div class="title-zh">数据重复胜过数据扩展：长思维链监督微调中的发现</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data repetition</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">supervised fine-tuning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span></div>
+  <div class="item-summary">The authors show that under a fixed update budget, supervised fine-tuning with more epochs on smaller chain-of-thought datasets outperforms single-epoch training on larger ones. Olmo3-7B trained for 128 epochs on 400 samples beats one epoch on 51,200 samples by 12-26 percentage points on AIME'24/25 and GPQA without additional catastrophic forgetting, and token accuracy signals when repetition saturates.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11149v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embedding models diffusion pretraining contextual embeddings late chunking multilingual retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11151</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Diffusion-Pretrained Dense and Contextual Embeddings<div class="title-zh">扩散预训练的稠密与上下文嵌入</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding models</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">diffusion pretraining</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contextual embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">late chunking</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multilingual retrieval</span></div>
+  <div class="item-summary">The report introduces pplx-embed, a family of multilingual embedding models that apply multi-stage contrastive learning on a diffusion-pretrained backbone for web-scale retrieval, using mean pooling and late chunking to preserve global context. pplx-embed-v1 is competitive on MTEB, MTEB(Code), MIRACL, BERGEN and ToolRet, while pplx-embed-context-v1 sets new records on ConTEB, and the models are tested on an internal suite built from 1B production web pages.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11151v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-hop QA ontology cube structure training-free RAG">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.15898</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MultiCube-RAG for Multi-hop Question Answering<div class="title-zh">面向多跳问答的 MultiCube-RAG</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">cube structure</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">training-free RAG</span></div>
+  <div class="item-summary">MultiCube-RAG is a training-free method that builds an ontology-based cube structure with multiple orthogonal dimensions to model subjects, attributes and relations, then decomposes complex multi-hop queries into subqueries along cube dimensions for sequential retrieval. Across four multi-hop QA datasets it improves response accuracy by 8.9% over the average of various baselines while reporting greater efficiency and inherent explainability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.15898v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt injection agent security autonomy metrics human-in-the-loop">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11416</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Optimizing Agent Planning for Security and Autonomy<div class="title-zh">为安全与自主性优化智能体规划</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">autonomy metrics</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">human-in-the-loop</span></div>
+  <div class="item-summary">The authors introduce autonomy metrics measuring how many consequential actions an agent can execute without human-in-the-loop approval while preserving security, and design a security-aware agent with richer HITL interactions and explicit planning for both task progress and policy compliance. Implemented atop an information-flow control defense against prompt injection and evaluated on AgentDojo and WASP, the approach yields higher autonomy without sacrificing utility.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11416v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="domain adaptation legal reasoning retrieval-augmented generation benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11081</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SteuerLLM: Local specialized large language model for German tax law analysis<div class="title-zh">SteuerLLM：用于德国税法分析的本地专用大语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">domain adaptation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">legal reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">The authors release SteuerEx, an open benchmark of 115 expert-validated German tax law examination questions with statement-level partial-credit evaluation, and present SteuerLLM, a 28B domain-adapted model trained on synthetic data generated through a controlled retrieval-augmented pipeline. SteuerLLM consistently outperforms general-purpose instruction-tuned models of comparable size and, in several cases, substantially larger systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11081v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="AI pipeline engine vector databases agent orchestration open-source tooling">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">rocketride-org/rocketride-server<div class="title-zh">rocketride-server：高性能 AI 流水线引擎</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI pipeline engine</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector databases</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source tooling</span></div>
+  <div class="item-summary">RocketRide Server is a high-performance AI pipeline engine with a C++ core and more than 50 Python-extensible nodes, supporting 13+ model providers, 8+ vector databases and agent orchestration, and shipping with a VS Code extension, TypeScript and Python SDKs and Docker deployment.</div>
+  <a class="item-link" href="https://github.com/rocketride-org/rocketride-server" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent harness coding agents Codex">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Harness engineering: leveraging Codex in an agent-first world<div class="title-zh">Harness engineering：在智能体优先的世界中运用 Codex</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Codex</span></div>
+  <div class="item-summary">OpenAI published an engineering post by Ryan Lopopolo on harness engineering and the use of Codex in an agent-first world.</div>
+  <a class="item-link" href="https://openai.com/index/harness-engineering" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="open source AI-generated content software ecosystem">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Feb 11, 2026 Engineering Open Source On the Incoming Slopocalypse and the Death(?) of Open Source Read<div class="title-zh">关于即将到来的 Slopocalypse 与开源的死亡（？）</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">AI-generated content</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">software ecosystem</span></div>
+  <div class="item-summary">A LlamaIndex engineering blog post dated February 11, 2026 discusses the incoming "slopocalypse" and the possible death of open source.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/on-the-incoming-slopocalypse-and-the-death-of-open-source" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+<div class="item-card" data-keywords="GLM-5 foundation models long-horizon agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GLM-5: Targeting complex systems engineering and long-horizon agentic tasks<div class="title-zh">GLM-5：面向复杂系统工程与长程智能体任务</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">GLM-5</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">foundation models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span></div>
+  <div class="item-summary">Z.ai published a post on GLM-5, describing the model as targeting complex systems engineering and long-horizon agentic tasks.</div>
+  <a class="item-link" href="https://z.ai/blog/glm-5" target="_blank" rel="noopener">&rarr; z.ai</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://www.llamaindex.ai/blog" target="_blank" rel="noopener">LlamaIndex Blog</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-02-11", "stats": {"total_items": 12, "unique_items": 12, "sources_count": 5, "links_verified_count": 12, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 1, "blogs_insights": 3}}, "daily_keywords": [{"text": "neural paging", "domain": "context-prompting"}, {"text": "context management", "domain": "agent-memory"}, {"text": "embedding models", "domain": "embeddings-vectors"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "prompt optimization", "domain": "context-prompting"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "domain-specific LLM", "domain": "ai-knowledge"}, {"text": "long-horizon agents", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Neural Paging: Learning Context Management Policies for Turing-Complete Agents", "title_zh": "Neural Paging：为图灵完备智能体学习上下文管理策略", "url": "http://arxiv.org/abs/2603.02228v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.02228", "summary": "Neural Paging introduces a hierarchical architecture with a differentiable page controller that manages an LLM agent's context window, reducing long-horizon reasoning complexity from quadratic to O(N·K²) under a bounded window.", "keywords": [{"text": "neural paging", "domain": "context-prompting"}, {"text": "context management", "domain": "agent-memory"}, {"text": "differentiable page controller", "domain": "agent-architecture"}, {"text": "long-horizon reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Diffusion-Pretrained Dense and Contextual Embeddings", "title_zh": "扩散预训练的稠密与上下文嵌入", "url": "http://arxiv.org/abs/2602.11151v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11151", "summary": "The report introduces pplx-embed, a family of multilingual embedding models that apply multi-stage contrastive learning on a diffusion-pretrained backbone for web-scale retrieval, using mean pooling and late chunking to preserve global context. pplx-embed-v1 is competitive on MTEB, MTEB(Code), MIRACL, BERGEN and ToolRet, while pplx-embed-context-v1 sets new records on ConTEB, and the models are tested on an internal suite built from 1B production web pages.", "keywords": [{"text": "embedding models", "domain": "embeddings-vectors"}, {"text": "diffusion pretraining", "domain": "embeddings-vectors"}, {"text": "contextual embeddings", "domain": "rag-retrieval"}, {"text": "late chunking", "domain": "rag-retrieval"}, {"text": "multilingual retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "MultiCube-RAG for Multi-hop Question Answering", "title_zh": "面向多跳问答的 MultiCube-RAG", "url": "http://arxiv.org/abs/2602.15898v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.15898", "summary": "MultiCube-RAG is a training-free method that builds an ontology-based cube structure with multiple orthogonal dimensions to model subjects, attributes and relations, then decomposes complex multi-hop queries into subqueries along cube dimensions for sequential retrieval. Across four multi-hop QA datasets it improves response accuracy by 8.9% over the average of various baselines while reporting greater efficiency and inherent explainability.", "keywords": [{"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "cube structure", "domain": "knowledge-graph"}, {"text": "training-free RAG", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "GLM-5: Targeting complex systems engineering and long-horizon agentic tasks", "title_zh": "GLM-5：面向复杂系统工程与长程智能体任务", "url": "https://z.ai/blog/glm-5", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Z.ai published a post on GLM-5, describing the model as targeting complex systems engineering and long-horizon agentic tasks.", "keywords": [{"text": "GLM-5", "domain": "ai-knowledge"}, {"text": "foundation models", "domain": "ai-knowledge"}, {"text": "long-horizon agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Neural Paging: Learning Context Management Policies for Turing-Complete Agents", "title_zh": "Neural Paging：为图灵完备智能体学习上下文管理策略", "url": "http://arxiv.org/abs/2603.02228v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.02228", "summary": "Neural Paging introduces a hierarchical architecture with a differentiable page controller that manages an LLM agent's context window, reducing long-horizon reasoning complexity from quadratic to O(N·K²) under a bounded window.", "keywords": [{"text": "neural paging", "domain": "context-prompting"}, {"text": "context management", "domain": "agent-memory"}, {"text": "differentiable page controller", "domain": "agent-architecture"}, {"text": "long-horizon reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Asymmetric Prompt Weighting for Reinforcement Learning with Verifiable Rewards", "title_zh": "面向可验证奖励强化学习的不对称提示加权", "url": "http://arxiv.org/abs/2602.11128v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11128", "summary": "The paper studies asymmetric prompt weighting for reinforcement learning with verifiable rewards, assigning higher weights to prompts with low or even zero empirical success probability. It reports that this particularly benefits from-scratch RL such as R1-Zero and less so post-SFT RL, and provides theory on weights that minimize the time needed to reach a target accuracy under a fixed update budget.", "keywords": [{"text": "reinforcement learning with verifiable rewards", "domain": "cognition-reasoning"}, {"text": "prompt weighting", "domain": "context-prompting"}, {"text": "reasoning post-training", "domain": "knowledge-lifecycle"}, {"text": "policy optimization", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Bi-Level Prompt Optimization for Multimodal LLM-as-a-Judge", "title_zh": "面向多模态 LLM-as-a-Judge 的双层提示优化", "url": "http://arxiv.org/abs/2602.11340v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11340", "summary": "BLPO is a bi-level prompt optimization framework for multimodal LLM-as-a-judge that converts images into textual representations preserving evaluation-relevant visual cues, jointly refining the judge prompt and the image-to-text prompt under limited context budgets. Experiments on four datasets and three LLM judges demonstrate its effectiveness.", "keywords": [{"text": "prompt optimization", "domain": "context-prompting"}, {"text": "multimodal evaluation", "domain": "evaluation-benchmark"}, {"text": "LLM-as-a-judge", "domain": "evaluation-benchmark"}, {"text": "visual tokenization", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "Data Repetition Beats Data Scaling in Long-CoT Supervised Fine-Tuning", "title_zh": "数据重复胜过数据扩展：长思维链监督微调中的发现", "url": "http://arxiv.org/abs/2602.11149v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11149", "summary": "The authors show that under a fixed update budget, supervised fine-tuning with more epochs on smaller chain-of-thought datasets outperforms single-epoch training on larger ones. Olmo3-7B trained for 128 epochs on 400 samples beats one epoch on 51,200 samples by 12-26 percentage points on AIME'24/25 and GPQA without additional catastrophic forgetting, and token accuracy signals when repetition saturates.", "keywords": [{"text": "data repetition", "domain": "knowledge-lifecycle"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "supervised fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Diffusion-Pretrained Dense and Contextual Embeddings", "title_zh": "扩散预训练的稠密与上下文嵌入", "url": "http://arxiv.org/abs/2602.11151v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11151", "summary": "The report introduces pplx-embed, a family of multilingual embedding models that apply multi-stage contrastive learning on a diffusion-pretrained backbone for web-scale retrieval, using mean pooling and late chunking to preserve global context. pplx-embed-v1 is competitive on MTEB, MTEB(Code), MIRACL, BERGEN and ToolRet, while pplx-embed-context-v1 sets new records on ConTEB, and the models are tested on an internal suite built from 1B production web pages.", "keywords": [{"text": "embedding models", "domain": "embeddings-vectors"}, {"text": "diffusion pretraining", "domain": "embeddings-vectors"}, {"text": "contextual embeddings", "domain": "rag-retrieval"}, {"text": "late chunking", "domain": "rag-retrieval"}, {"text": "multilingual retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "MultiCube-RAG for Multi-hop Question Answering", "title_zh": "面向多跳问答的 MultiCube-RAG", "url": "http://arxiv.org/abs/2602.15898v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.15898", "summary": "MultiCube-RAG is a training-free method that builds an ontology-based cube structure with multiple orthogonal dimensions to model subjects, attributes and relations, then decomposes complex multi-hop queries into subqueries along cube dimensions for sequential retrieval. Across four multi-hop QA datasets it improves response accuracy by 8.9% over the average of various baselines while reporting greater efficiency and inherent explainability.", "keywords": [{"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "cube structure", "domain": "knowledge-graph"}, {"text": "training-free RAG", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Optimizing Agent Planning for Security and Autonomy", "title_zh": "为安全与自主性优化智能体规划", "url": "http://arxiv.org/abs/2602.11416v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11416", "summary": "The authors introduce autonomy metrics measuring how many consequential actions an agent can execute without human-in-the-loop approval while preserving security, and design a security-aware agent with richer HITL interactions and explicit planning for both task progress and policy compliance. Implemented atop an information-flow control defense against prompt injection and evaluated on AgentDojo and WASP, the approach yields higher autonomy without sacrificing utility.", "keywords": [{"text": "prompt injection", "domain": "agent-architecture"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "autonomy metrics", "domain": "evaluation-benchmark"}, {"text": "human-in-the-loop", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "SteuerLLM: Local specialized large language model for German tax law analysis", "title_zh": "SteuerLLM：用于德国税法分析的本地专用大语言模型", "url": "http://arxiv.org/abs/2602.11081v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11081", "summary": "The authors release SteuerEx, an open benchmark of 115 expert-validated German tax law examination questions with statement-level partial-credit evaluation, and present SteuerLLM, a 28B domain-adapted model trained on synthetic data generated through a controlled retrieval-augmented pipeline. SteuerLLM consistently outperforms general-purpose instruction-tuned models of comparable size and, in several cases, substantially larger systems.", "keywords": [{"text": "domain adaptation", "domain": "ai-knowledge"}, {"text": "legal reasoning", "domain": "cognition-reasoning"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "rocketride-org/rocketride-server", "title_zh": "rocketride-server：高性能 AI 流水线引擎", "url": "https://github.com/rocketride-org/rocketride-server", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "RocketRide Server is a high-performance AI pipeline engine with a C++ core and more than 50 Python-extensible nodes, supporting 13+ model providers, 8+ vector databases and agent orchestration, and shipping with a VS Code extension, TypeScript and Python SDKs and Docker deployment.", "keywords": [{"text": "AI pipeline engine", "domain": "agent-architecture"}, {"text": "vector databases", "domain": "embeddings-vectors"}, {"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "open-source tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Harness engineering: leveraging Codex in an agent-first world", "title_zh": "Harness engineering：在智能体优先的世界中运用 Codex", "url": "https://openai.com/index/harness-engineering", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI published an engineering post by Ryan Lopopolo on harness engineering and the use of Codex in an agent-first world.", "keywords": [{"text": "agent harness", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "Codex", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Feb 11, 2026 Engineering Open Source On the Incoming Slopocalypse and the Death(?) of Open Source Read", "title_zh": "关于即将到来的 Slopocalypse 与开源的死亡（？）", "url": "https://www.llamaindex.ai/blog/on-the-incoming-slopocalypse-and-the-death-of-open-source", "source": "LlamaIndex Blog", "section": "blogs_insights", "organization": "LlamaIndex", "language": "en", "arxiv_id": "", "summary": "A LlamaIndex engineering blog post dated February 11, 2026 discusses the incoming \"slopocalypse\" and the possible death of open source.", "keywords": [{"text": "open source", "domain": "ai-knowledge"}, {"text": "AI-generated content", "domain": "knowledge-lifecycle"}, {"text": "software ecosystem", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "GLM-5: Targeting complex systems engineering and long-horizon agentic tasks", "title_zh": "GLM-5：面向复杂系统工程与长程智能体任务", "url": "https://z.ai/blog/glm-5", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Z.ai published a post on GLM-5, describing the model as targeting complex systems engineering and long-horizon agentic tasks.", "keywords": [{"text": "GLM-5", "domain": "ai-knowledge"}, {"text": "foundation models", "domain": "ai-knowledge"}, {"text": "long-horizon agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai/blog"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

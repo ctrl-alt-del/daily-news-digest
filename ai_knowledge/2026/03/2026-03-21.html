@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-03-21</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">12 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">12/12 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">10</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">medical literature retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">citation accuracy</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">Graph RAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">text-to-Cypher</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">verbatim memorization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark generation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning topology</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent ensembles</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-call authorization</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">foundational ontology</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">personal knowledge base</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">uncertainty quantification</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="Graph RAG labeled property graphs text-to-Cypher semi-structured data">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.22340</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Graphs RAG at Scale: Beyond Retrieval-Augmented Generation With Labeled Property Graphs and Resource Description Framework for Complex and Unknown Search Spaces<div class="title-zh">规模化 Graph RAG：用标记属性图与 RDF 应对复杂未知搜索空间</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">Graph RAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">labeled property graphs</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">text-to-Cypher</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">semi-structured data</span></div>
+  <div class="item-summary">The paper introduces an end-to-end Graph RAG framework that combines Labeled Property Graphs and RDF, supports dynamic document retrieval without pre-specifying document counts and avoids reranking. It presents a text-to-Cypher method reported at over 90% accuracy and finds Graph RAG outperforms embedding-based RAG on complex, semi-structured tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.22340v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="literature retrieval citation accuracy reference validity LLM platforms">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2603.22344</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Errors in AI-Assisted Retrieval of Medical Literature: A Comparative Study<div class="title-zh">AI 辅助医学文献检索中的错误：一项比较研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">literature retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">citation accuracy</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">reference validity</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM platforms</span></div>
+  <div class="item-summary">The study evaluated 2,000 references retrieved by five LLM platforms for 40 original articles from BMJ, JAMA and NEJM. Platforms completely failed to retrieve correct reference data 47.8% of the time; the average score ratio was 0.29, with Grok highest at 0.57 and Gemini lowest at 0.11, and NEJM articles showed lower accuracy than BMJ.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.22344v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="verbatim memorization fine-tuning copyright parametric memory safety alignment">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2603.20957</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Alignment Whack-a-Mole : Finetuning Activates Verbatim Recall of Copyrighted Books in Large Language Models<div class="title-zh">对齐打地鼠：微调激活大语言模型对受版权书籍的逐字记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">verbatim memorization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">fine-tuning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">copyright</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">parametric memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">safety alignment</span></div>
+  <div class="item-summary">The authors show that fine-tuning models to expand plot summaries into full text causes GPT-4o, Gemini-2.5-Pro and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books, with single verbatim spans exceeding 460 words. Fine-tuning on one author's novels also unlocks recall of more than 30 unrelated authors, and three models from different providers memorize the same books in the same regions (r >= 0.90).</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20957v6" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[10]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="Graph RAG labeled property graphs text-to-Cypher semi-structured data">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.22340</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Graphs RAG at Scale: Beyond Retrieval-Augmented Generation With Labeled Property Graphs and Resource Description Framework for Complex and Unknown Search Spaces<div class="title-zh">规模化 Graph RAG：用标记属性图与 RDF 应对复杂未知搜索空间</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">Graph RAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">labeled property graphs</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">text-to-Cypher</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">semi-structured data</span></div>
+  <div class="item-summary">The paper introduces an end-to-end Graph RAG framework that combines Labeled Property Graphs and RDF, supports dynamic document retrieval without pre-specifying document counts and avoids reranking. It presents a text-to-Cypher method reported at over 90% accuracy and finds Graph RAG outperforms embedding-based RAG on complex, semi-structured tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.22340v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="literature retrieval citation accuracy reference validity LLM platforms">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2603.22344</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Errors in AI-Assisted Retrieval of Medical Literature: A Comparative Study<div class="title-zh">AI 辅助医学文献检索中的错误：一项比较研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">literature retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">citation accuracy</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">reference validity</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM platforms</span></div>
+  <div class="item-summary">The study evaluated 2,000 references retrieved by five LLM platforms for 40 original articles from BMJ, JAMA and NEJM. Platforms completely failed to retrieve correct reference data 47.8% of the time; the average score ratio was 0.29, with Grok highest at 0.57 and Gemini lowest at 0.11, and NEJM articles showed lower accuracy than BMJ.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.22344v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="verbatim memorization fine-tuning copyright parametric memory safety alignment">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2603.20957</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Alignment Whack-a-Mole : Finetuning Activates Verbatim Recall of Copyrighted Books in Large Language Models<div class="title-zh">对齐打地鼠：微调激活大语言模型对受版权书籍的逐字记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">verbatim memorization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">fine-tuning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">copyright</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">parametric memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">safety alignment</span></div>
+  <div class="item-summary">The authors show that fine-tuning models to expand plot summaries into full text causes GPT-4o, Gemini-2.5-Pro and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books, with single verbatim spans exceeding 460 words. Fine-tuning on one author's novels also unlocks recall of more than 30 unrelated authors, and three models from different providers memorize the same books in the same regions (r >= 0.90).</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20957v6" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning topology network-of-thought graph-structured reasoning multi-hop QA">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.20730</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Reasoning Topology Matters: Network-of-Thought for Complex Reasoning Tasks<div class="title-zh">推理拓扑很重要：面向复杂推理任务的思维网络</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning topology</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">network-of-thought</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph-structured reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multi-hop QA</span></div>
+  <div class="item-summary">The paper proposes Network-of-Thought, which models reasoning as a directed graph with typed nodes and edges guided by a heuristic controller policy. Across GSM8K, Game of 24, HotpotQA and ProofWriter, NoT beats Tree-of-Thought on multi-hop reasoning (91.0% vs 88.0% on HotpotQA with LLM-as-judge) while CoT remains effective for sequential tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20730v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="benchmark generation LLM judges contamination psychometric diagnostics">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.20807</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BenchBench: Benchmarking Automated Benchmark Generation<div class="title-zh">BenchBench：评测自动化基准生成能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark generation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM judges</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">contamination</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">psychometric diagnostics</span></div>
+  <div class="item-summary">BenchBench is a three-stage pipeline and dataset for evaluating automated benchmark generation: extracting domain cards from seed benchmarks, prompting designer LLMs to build quota-controlled suites, and validating items with a multi-model answerer panel. Across nine variants it generated 16.7K items and about 152K graded responses, finding benchmark-design ability only moderately correlates with answer-time strength (Spearman rho ~0.37).</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20807v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="human-AI teams adversarial intent interaction traces prompt injection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.20976</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Detection of adversarial intent in Human-AI teams using LLMs<div class="title-zh">利用大语言模型检测人机团队中的对抗意图</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">human-AI teams</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">adversarial intent</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">interaction traces</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span></div>
+  <div class="item-summary">Using a dataset of multi-party conversations and decisions from a real human-AI team over a 25-round horizon, the authors formulate malicious behavior detection from interaction traces. They find LLMs can identify malicious behavior in real time without task-specific information, suggesting task-agnostic defenses that simple heuristics do not provide.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20976v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="regulatory knowledge base retrieval-augmented generation ReAct traceable decision support">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.20815</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GMPilot: An Expert AI Agent For FDA cGMP Compliance<div class="title-zh">GMPilot：面向 FDA cGMP 合规的专家 AI 智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">regulatory knowledge base</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">ReAct</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">traceable decision support</span></div>
+  <div class="item-summary">GMPilot is a domain-specific agent built on a curated knowledge base of FDA cGMP regulations and historical inspection observations, using RAG and ReAct to give quality professionals real-time, traceable decision support. In a simulated inspection the authors report improved responsiveness and professionalism, while noting limits in regulatory scope and interpretability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20815v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="uncertainty quantification agent ensembles disagreement features confidence calibration">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.20975</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DiscoUQ: Structured Disagreement Analysis for Uncertainty Quantification in LLM Agent Ensembles<div class="title-zh">DiscoUQ：面向 LLM 智能体集成的结构化分歧不确定性量化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">uncertainty quantification</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent ensembles</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">disagreement features</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">confidence calibration</span></div>
+  <div class="item-summary">DiscoUQ derives linguistic and embedding-geometry features from disagreement among agents to produce calibrated confidence estimates for multi-agent LLM systems. Its DiscoUQ-LLM variant reached an average AUROC of 0.802 on four benchmarks with better calibration than the best baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20975v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool-call authorization policy enforcement audit records agent security">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.20953</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Before the Tool Call: Deterministic Pre-Action Authorization for Autonomous AI Agents<div class="title-zh">工具调用之前：面向自主 AI 智能体的确定性事前授权</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-call authorization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">policy enforcement</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">audit records</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent security</span></div>
+  <div class="item-summary">The paper presents the Open Agent Passport, an open specification and reference implementation that intercepts agent tool calls before execution, checks them against a declarative policy and emits a cryptographically signed audit record. In an adversarial testbed, social engineering succeeded 74.6% of the time under a permissive policy but 0% under a restrictive OAP policy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20953v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="foundational ontology OWL 2 DL semantic web ontology standardization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.20948</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">gUFO: A Gentle Foundational Ontology for Semantic Web Knowledge Graphs<div class="title-zh">gUFO：面向语义网知识图谱的轻量级基础本体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">foundational ontology</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">OWL 2 DL</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">semantic web</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">ontology standardization</span></div>
+  <div class="item-summary">gUFO offers a lightweight version of the Unified Foundational Ontology for OWL 2 DL and Semantic Web knowledge graphs, presenting its categories, relations and constraints. The paper describes community adoption, compares it with BFO and DOLCE implementations and notes that UFO is being standardized as ISO/IEC CD 21838-5.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.20948v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="personal knowledge base semantic linking self-hosted">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: Atomic – Self-hosted, semantically-connected personal knowledge base<div class="title-zh">Show HN：Atomic——自托管、语义关联的个人知识库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">personal knowledge base</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">semantic linking</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">self-hosted</span></div>
+  <div class="item-summary">Atomic is a self-hosted personal knowledge base that links notes semantically, published on GitHub by kenforthewin.</div>
+  <a class="item-link" href="https://github.com/kenforthewin/atomic" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="graph database embedded database ISO GQL">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Grafeo – A fast, lean, embeddable graph database built in Rust<div class="title-zh">Grafeo：用 Rust 构建的快速、轻量、可嵌入图数据库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph database</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">embedded database</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ISO GQL</span></div>
+  <div class="item-summary">Grafeo is an embeddable graph database whose core is written in Rust with no C dependencies, offering bindings for Python, Node.js, Go, C, C#, Dart and WebAssembly and support for the ISO GQL query language.</div>
+  <a class="item-link" href="https://grafeo.dev/" target="_blank" rel="noopener">&rarr; grafeo.dev</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-03-21", "stats": {"total_items": 12, "unique_items": 12, "sources_count": 2, "links_verified_count": 12, "links_failed_count": 0, "section_counts": {"research_papers": 10, "blogs_insights": 2}}, "daily_keywords": [{"text": "medical literature retrieval", "domain": "rag-retrieval"}, {"text": "citation accuracy", "domain": "evaluation-benchmark"}, {"text": "Graph RAG", "domain": "knowledge-graph"}, {"text": "text-to-Cypher", "domain": "rag-retrieval"}, {"text": "verbatim memorization", "domain": "ai-knowledge"}, {"text": "benchmark generation", "domain": "evaluation-benchmark"}, {"text": "reasoning topology", "domain": "cognition-reasoning"}, {"text": "agent ensembles", "domain": "agent-architecture"}, {"text": "tool-call authorization", "domain": "agent-architecture"}, {"text": "foundational ontology", "domain": "knowledge-graph"}, {"text": "personal knowledge base", "domain": "knowledge-lifecycle"}, {"text": "uncertainty quantification", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Graphs RAG at Scale: Beyond Retrieval-Augmented Generation With Labeled Property Graphs and Resource Description Framework for Complex and Unknown Search Spaces", "title_zh": "规模化 Graph RAG：用标记属性图与 RDF 应对复杂未知搜索空间", "url": "http://arxiv.org/abs/2603.22340v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.22340", "summary": "The paper introduces an end-to-end Graph RAG framework that combines Labeled Property Graphs and RDF, supports dynamic document retrieval without pre-specifying document counts and avoids reranking. It presents a text-to-Cypher method reported at over 90% accuracy and finds Graph RAG outperforms embedding-based RAG on complex, semi-structured tasks.", "keywords": [{"text": "Graph RAG", "domain": "knowledge-graph"}, {"text": "labeled property graphs", "domain": "knowledge-graph"}, {"text": "text-to-Cypher", "domain": "rag-retrieval"}, {"text": "semi-structured data", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Errors in AI-Assisted Retrieval of Medical Literature: A Comparative Study", "title_zh": "AI 辅助医学文献检索中的错误：一项比较研究", "url": "http://arxiv.org/abs/2603.22344v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2603.22344", "summary": "The study evaluated 2,000 references retrieved by five LLM platforms for 40 original articles from BMJ, JAMA and NEJM. Platforms completely failed to retrieve correct reference data 47.8% of the time; the average score ratio was 0.29, with Grok highest at 0.57 and Gemini lowest at 0.11, and NEJM articles showed lower accuracy than BMJ.", "keywords": [{"text": "literature retrieval", "domain": "rag-retrieval"}, {"text": "citation accuracy", "domain": "evaluation-benchmark"}, {"text": "reference validity", "domain": "rag-retrieval"}, {"text": "LLM platforms", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Alignment Whack-a-Mole : Finetuning Activates Verbatim Recall of Copyrighted Books in Large Language Models", "title_zh": "对齐打地鼠：微调激活大语言模型对受版权书籍的逐字记忆", "url": "http://arxiv.org/abs/2603.20957v6", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2603.20957", "summary": "The authors show that fine-tuning models to expand plot summaries into full text causes GPT-4o, Gemini-2.5-Pro and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books, with single verbatim spans exceeding 460 words. Fine-tuning on one author's novels also unlocks recall of more than 30 unrelated authors, and three models from different providers memorize the same books in the same regions (r >= 0.90).", "keywords": [{"text": "verbatim memorization", "domain": "ai-knowledge"}, {"text": "fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "copyright", "domain": "ai-knowledge"}, {"text": "parametric memory", "domain": "agent-memory"}, {"text": "safety alignment", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Graphs RAG at Scale: Beyond Retrieval-Augmented Generation With Labeled Property Graphs and Resource Description Framework for Complex and Unknown Search Spaces", "title_zh": "规模化 Graph RAG：用标记属性图与 RDF 应对复杂未知搜索空间", "url": "http://arxiv.org/abs/2603.22340v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.22340", "summary": "The paper introduces an end-to-end Graph RAG framework that combines Labeled Property Graphs and RDF, supports dynamic document retrieval without pre-specifying document counts and avoids reranking. It presents a text-to-Cypher method reported at over 90% accuracy and finds Graph RAG outperforms embedding-based RAG on complex, semi-structured tasks.", "keywords": [{"text": "Graph RAG", "domain": "knowledge-graph"}, {"text": "labeled property graphs", "domain": "knowledge-graph"}, {"text": "text-to-Cypher", "domain": "rag-retrieval"}, {"text": "semi-structured data", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Errors in AI-Assisted Retrieval of Medical Literature: A Comparative Study", "title_zh": "AI 辅助医学文献检索中的错误：一项比较研究", "url": "http://arxiv.org/abs/2603.22344v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2603.22344", "summary": "The study evaluated 2,000 references retrieved by five LLM platforms for 40 original articles from BMJ, JAMA and NEJM. Platforms completely failed to retrieve correct reference data 47.8% of the time; the average score ratio was 0.29, with Grok highest at 0.57 and Gemini lowest at 0.11, and NEJM articles showed lower accuracy than BMJ.", "keywords": [{"text": "literature retrieval", "domain": "rag-retrieval"}, {"text": "citation accuracy", "domain": "evaluation-benchmark"}, {"text": "reference validity", "domain": "rag-retrieval"}, {"text": "LLM platforms", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Alignment Whack-a-Mole : Finetuning Activates Verbatim Recall of Copyrighted Books in Large Language Models", "title_zh": "对齐打地鼠：微调激活大语言模型对受版权书籍的逐字记忆", "url": "http://arxiv.org/abs/2603.20957v6", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2603.20957", "summary": "The authors show that fine-tuning models to expand plot summaries into full text causes GPT-4o, Gemini-2.5-Pro and DeepSeek-V3.1 to reproduce up to 85-90% of held-out copyrighted books, with single verbatim spans exceeding 460 words. Fine-tuning on one author's novels also unlocks recall of more than 30 unrelated authors, and three models from different providers memorize the same books in the same regions (r >= 0.90).", "keywords": [{"text": "verbatim memorization", "domain": "ai-knowledge"}, {"text": "fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "copyright", "domain": "ai-knowledge"}, {"text": "parametric memory", "domain": "agent-memory"}, {"text": "safety alignment", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Reasoning Topology Matters: Network-of-Thought for Complex Reasoning Tasks", "title_zh": "推理拓扑很重要：面向复杂推理任务的思维网络", "url": "http://arxiv.org/abs/2603.20730v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.20730", "summary": "The paper proposes Network-of-Thought, which models reasoning as a directed graph with typed nodes and edges guided by a heuristic controller policy. Across GSM8K, Game of 24, HotpotQA and ProofWriter, NoT beats Tree-of-Thought on multi-hop reasoning (91.0% vs 88.0% on HotpotQA with LLM-as-judge) while CoT remains effective for sequential tasks.", "keywords": [{"text": "reasoning topology", "domain": "cognition-reasoning"}, {"text": "network-of-thought", "domain": "context-prompting"}, {"text": "graph-structured reasoning", "domain": "knowledge-graph"}, {"text": "multi-hop QA", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "BenchBench: Benchmarking Automated Benchmark Generation", "title_zh": "BenchBench：评测自动化基准生成能力", "url": "http://arxiv.org/abs/2603.20807v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.20807", "summary": "BenchBench is a three-stage pipeline and dataset for evaluating automated benchmark generation: extracting domain cards from seed benchmarks, prompting designer LLMs to build quota-controlled suites, and validating items with a multi-model answerer panel. Across nine variants it generated 16.7K items and about 152K graded responses, finding benchmark-design ability only moderately correlates with answer-time strength (Spearman rho ~0.37).", "keywords": [{"text": "benchmark generation", "domain": "evaluation-benchmark"}, {"text": "LLM judges", "domain": "evaluation-benchmark"}, {"text": "contamination", "domain": "knowledge-lifecycle"}, {"text": "psychometric diagnostics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Detection of adversarial intent in Human-AI teams using LLMs", "title_zh": "利用大语言模型检测人机团队中的对抗意图", "url": "http://arxiv.org/abs/2603.20976v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.20976", "summary": "Using a dataset of multi-party conversations and decisions from a real human-AI team over a 25-round horizon, the authors formulate malicious behavior detection from interaction traces. They find LLMs can identify malicious behavior in real time without task-specific information, suggesting task-agnostic defenses that simple heuristics do not provide.", "keywords": [{"text": "human-AI teams", "domain": "agent-architecture"}, {"text": "adversarial intent", "domain": "cognition-reasoning"}, {"text": "interaction traces", "domain": "agent-memory"}, {"text": "prompt injection", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "GMPilot: An Expert AI Agent For FDA cGMP Compliance", "title_zh": "GMPilot：面向 FDA cGMP 合规的专家 AI 智能体", "url": "http://arxiv.org/abs/2603.20815v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.20815", "summary": "GMPilot is a domain-specific agent built on a curated knowledge base of FDA cGMP regulations and historical inspection observations, using RAG and ReAct to give quality professionals real-time, traceable decision support. In a simulated inspection the authors report improved responsiveness and professionalism, while noting limits in regulatory scope and interpretability.", "keywords": [{"text": "regulatory knowledge base", "domain": "knowledge-lifecycle"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "ReAct", "domain": "agent-architecture"}, {"text": "traceable decision support", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "DiscoUQ: Structured Disagreement Analysis for Uncertainty Quantification in LLM Agent Ensembles", "title_zh": "DiscoUQ：面向 LLM 智能体集成的结构化分歧不确定性量化", "url": "http://arxiv.org/abs/2603.20975v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.20975", "summary": "DiscoUQ derives linguistic and embedding-geometry features from disagreement among agents to produce calibrated confidence estimates for multi-agent LLM systems. Its DiscoUQ-LLM variant reached an average AUROC of 0.802 on four benchmarks with better calibration than the best baseline.", "keywords": [{"text": "uncertainty quantification", "domain": "evaluation-benchmark"}, {"text": "agent ensembles", "domain": "agent-architecture"}, {"text": "disagreement features", "domain": "embeddings-vectors"}, {"text": "confidence calibration", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Before the Tool Call: Deterministic Pre-Action Authorization for Autonomous AI Agents", "title_zh": "工具调用之前：面向自主 AI 智能体的确定性事前授权", "url": "http://arxiv.org/abs/2603.20953v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.20953", "summary": "The paper presents the Open Agent Passport, an open specification and reference implementation that intercepts agent tool calls before execution, checks them against a declarative policy and emits a cryptographically signed audit record. In an adversarial testbed, social engineering succeeded 74.6% of the time under a permissive policy but 0% under a restrictive OAP policy.", "keywords": [{"text": "tool-call authorization", "domain": "agent-architecture"}, {"text": "policy enforcement", "domain": "agent-architecture"}, {"text": "audit records", "domain": "ai-knowledge"}, {"text": "agent security", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "gUFO: A Gentle Foundational Ontology for Semantic Web Knowledge Graphs", "title_zh": "gUFO：面向语义网知识图谱的轻量级基础本体", "url": "http://arxiv.org/abs/2603.20948v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.20948", "summary": "gUFO offers a lightweight version of the Unified Foundational Ontology for OWL 2 DL and Semantic Web knowledge graphs, presenting its categories, relations and constraints. The paper describes community adoption, compares it with BFO and DOLCE implementations and notes that UFO is being standardized as ISO/IEC CD 21838-5.", "keywords": [{"text": "foundational ontology", "domain": "knowledge-graph"}, {"text": "OWL 2 DL", "domain": "knowledge-graph"}, {"text": "semantic web", "domain": "ai-knowledge"}, {"text": "ontology standardization", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Show HN: Atomic – Self-hosted, semantically-connected personal knowledge base", "title_zh": "Show HN：Atomic——自托管、语义关联的个人知识库", "url": "https://github.com/kenforthewin/atomic", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Atomic is a self-hosted personal knowledge base that links notes semantically, published on GitHub by kenforthewin.", "keywords": [{"text": "personal knowledge base", "domain": "knowledge-lifecycle"}, {"text": "semantic linking", "domain": "embeddings-vectors"}, {"text": "self-hosted", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Grafeo – A fast, lean, embeddable graph database built in Rust", "title_zh": "Grafeo：用 Rust 构建的快速、轻量、可嵌入图数据库", "url": "https://grafeo.dev/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Grafeo is an embeddable graph database whose core is written in Rust with no C dependencies, offering bindings for Python, Node.js, Go, C, C#, Dart and WebAssembly and support for the ISO GQL query language.", "keywords": [{"text": "graph database", "domain": "knowledge-graph"}, {"text": "embedded database", "domain": "ai-knowledge"}, {"text": "ISO GQL", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

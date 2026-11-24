@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-02-01</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic map-reduce</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">wide search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experiential memory</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">medical knowledge graph</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology construction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parametric knowledge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">counterfactual QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought compression</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-hosted agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent dashboard</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="wide search agentic map-reduce task decomposition experiential memory multi-agent systems">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2602.01331</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A-MapReduce: Executing Wide Search via Agentic MapReduce<div class="title-zh">A-MapReduce：通过智能体式 MapReduce 执行宽搜索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">wide search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic map-reduce</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task decomposition</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experiential memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span></div>
+  <div class="item-summary">A-MapReduce recasts wide search as a horizontally structured retrieval problem, using task-adaptive decomposition, parallel processing of massive retrieval targets and experiential memory that evolves query-conditioned task allocation. On five agentic benchmarks it reports state-of-the-art results on WideSearch and DeepWideSearch, 5.11%–17.50% average Item F1 gains over strong o3/Gemini 2.5 Pro baselines and 45.8% lower running time, with code released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01331v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent system software engineering role specialization SWE-bench sandboxing">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.01465</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agyn: A Multi-Agent System for Team-Based Autonomous Software Engineering<div class="title-zh">Agyn：面向团队式自主软件工程的多智能体系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">software engineering</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">role specialization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SWE-bench</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandboxing</span></div>
+  <div class="item-summary">Agyn models software engineering as an organizational process, assigning specialized agents to coordination, research, implementation and review roles with isolated sandboxes and structured communication. Built for production rather than tuned on SWE-bench, it resolved 72.2% of tasks in a post hoc SWE-bench 500 evaluation, beating single-agent baselines with comparable models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01465v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="wide search agentic map-reduce task decomposition experiential memory multi-agent systems">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2602.01331</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A-MapReduce: Executing Wide Search via Agentic MapReduce<div class="title-zh">A-MapReduce：通过智能体式 MapReduce 执行宽搜索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">wide search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic map-reduce</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task decomposition</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experiential memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span></div>
+  <div class="item-summary">A-MapReduce recasts wide search as a horizontally structured retrieval problem, using task-adaptive decomposition, parallel processing of massive retrieval targets and experiential memory that evolves query-conditioned task allocation. On five agentic benchmarks it reports state-of-the-art results on WideSearch and DeepWideSearch, 5.11%–17.50% average Item F1 gains over strong o3/Gemini 2.5 Pro baselines and 45.8% lower running time, with code released.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01331v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent system software engineering role specialization SWE-bench sandboxing">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.01465</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agyn: A Multi-Agent System for Team-Based Autonomous Software Engineering<div class="title-zh">Agyn：面向团队式自主软件工程的多智能体系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">software engineering</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">role specialization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SWE-bench</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandboxing</span></div>
+  <div class="item-summary">Agyn models software engineering as an organizational process, assigning specialized agents to coordination, research, implementation and review roles with isolated sandboxes and structured communication. Built for production rather than tuned on SWE-bench, it resolved 72.2% of tasks in a post hoc SWE-bench 500 evaluation, beating single-agent baselines with comparable models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01465v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="medical knowledge graph multi-expert collaboration clinical diagnosis generation-verification-revision EMR reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.01297</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RE-MCDF: Closed-Loop Multi-Expert LLM Reasoning for Knowledge-Grounded Clinical Diagnosis<div class="title-zh">RE-MCDF：面向知识驱动临床诊断的闭环多专家大模型推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">medical knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-expert collaboration</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical diagnosis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">generation-verification-revision</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">EMR reasoning</span></div>
+  <div class="item-summary">RE-MCDF combines a primary diagnosis expert, a laboratory expert that reweights heterogeneous clinical indicators, and a multi-relation evaluation expert group guided by a medical knowledge graph. The generation–verification–revision loop enforces inter-disease constraints such as mutual exclusivity and pathological compatibility, and reports consistent gains over state-of-the-art baselines on neurology EMR benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01297v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="chain-of-thought self-compression contextual pressure reasoning efficiency self-supervised fine-tuning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.01472</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ConPress: Learning Efficient Reasoning from Multi-Question Contextual Pressure<div class="title-zh">ConPress：从多问题上下文压力中学习高效推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-compression</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">contextual pressure</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning efficiency</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-supervised fine-tuning</span></div>
+  <div class="item-summary">The authors identify a reproducible Self-Compression effect in which models produce shorter reasoning traces when several independent questions share one prompt, and turn it into a self-supervised fine-tuning method. With 8k examples, ConPress cuts reasoning tokens by 59% on MATH500 and 33% on AIME25 while keeping competitive accuracy, without external teachers, manual pruning or reinforcement learning.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01472v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="ontology construction enterprise knowledge graph RDF LLM pipeline knowledge extraction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.01276</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LLM-Driven Ontology Construction for Enterprise Knowledge Graphs<div class="title-zh">LLM 驱动的企业知识图谱本体构建</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology construction</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">enterprise knowledge graph</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">RDF</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM pipeline</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge extraction</span></div>
+  <div class="item-summary">OntoEKG is an LLM-driven pipeline that splits enterprise ontology construction into an extraction module for core classes and properties and an entailment module that structures them into a hierarchy before serializing RDF. On a new evaluation dataset spanning Data, Finance and Logistics documents it reaches 0.724 fuzzy-match F1 in the Data domain, while exposing limitations in scope definition and hierarchical reasoning.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01276v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="counterfactual QA parametric knowledge contextual knowledge low-resource languages chain-of-thought">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.01451</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Understanding QA generation: Extracting Parametric and Contextual Knowledge with CQA for Low Resource Bangla Language<div class="title-zh">理解问答生成：用 CQA 提取低资源孟加拉语中的参数化与上下文知识</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">counterfactual QA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parametric knowledge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contextual knowledge</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-resource languages</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span></div>
+  <div class="item-summary">The authors release BanglaCQA, described as the first counterfactual QA dataset for Bangla, with counterfactual passages and answerability annotations, and compare fine-tuned and prompting pipelines on factual and counterfactual settings. They report that chain-of-thought prompting is uniquely effective for extracting parametric knowledge in counterfactual scenarios, especially for decoder-only LLMs.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01451v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="LoRA adapters vector database similarity retrieval adapter merging">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.21222</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Task-Aware LoRA Adapter Composition via Similarity Retrieval in Vector Databases<div class="title-zh">基于向量数据库相似度检索的任务感知 LoRA 适配器组合</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LoRA adapters</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector database</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">similarity retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">adapter merging</span></div>
+  <div class="item-summary">The framework dynamically composes LoRA adapters by retrieving similar training examples from a vector database built from 22 datasets and merging adapters with retrieval-weighted fusion. Linear merging reaches 70.95% on PIQA and 77.62% on RTE, and the approach needs no retriever training and operates with frozen embeddings.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.21222v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="test-time scaling reward modeling guided search compute allocation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.01485</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Predicting and improving test-time scaling laws via reward tail-guided search<div class="title-zh">通过奖励尾部引导搜索预测并改进测试时扩展规律</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">test-time scaling</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reward modeling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">guided search</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">compute allocation</span></div>
+  <div class="item-summary">The paper estimates the tail distribution of rewards to predict LLM test-time scaling laws without exhaustive evaluation, then introduces Scaling-Law Guided Search, which allocates compute to intermediate states with the highest predicted potential. The authors prove vanishing regret against perfect-information oracles and report higher reward yields than Best-of-N at identical compute budgets.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.01485v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="personal AI agent agent memory MCP self-hosted multi-agent workflows">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">HKUDS/nanobot<div class="title-zh">HKUDS/nanobot：超轻量自托管个人 AI 智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">personal AI agent</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-hosted</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent workflows</span></div>
+  <div class="item-summary">Nanobot is an ultra-lightweight, open-source, self-hosted personal AI agent framework written in Python, with a WebUI, tools, memory, MCP support, multi-agent workflows, automation and chat app integrations.</div>
+  <a class="item-link" href="https://github.com/HKUDS/nanobot" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent orchestration multi-agent collaboration dashboard OpenClaw">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">abhi1693/openclaw-mission-control<div class="title-zh">openclaw-mission-control：AI 智能体编排仪表盘</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent collaboration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">dashboard</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">OpenClaw</span></div>
+  <div class="item-summary">OpenClaw Mission Control is a TypeScript dashboard for orchestrating AI agents, covering agent management, task assignment and multi-agent collaboration through the OpenClaw Gateway.</div>
+  <a class="item-link" href="https://github.com/abhi1693/openclaw-mission-control" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-02-01", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 2, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 2}}, "daily_keywords": [{"text": "agentic map-reduce", "domain": "agent-architecture"}, {"text": "wide search", "domain": "rag-retrieval"}, {"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "experiential memory", "domain": "agent-memory"}, {"text": "medical knowledge graph", "domain": "knowledge-graph"}, {"text": "ontology construction", "domain": "knowledge-graph"}, {"text": "parametric knowledge", "domain": "ai-knowledge"}, {"text": "counterfactual QA", "domain": "evaluation-benchmark"}, {"text": "chain-of-thought compression", "domain": "cognition-reasoning"}, {"text": "vector retrieval", "domain": "embeddings-vectors"}, {"text": "self-hosted agent", "domain": "agent-architecture"}, {"text": "agent dashboard", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "A-MapReduce: Executing Wide Search via Agentic MapReduce", "title_zh": "A-MapReduce：通过智能体式 MapReduce 执行宽搜索", "url": "http://arxiv.org/abs/2602.01331v2", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2602.01331", "summary": "A-MapReduce recasts wide search as a horizontally structured retrieval problem, using task-adaptive decomposition, parallel processing of massive retrieval targets and experiential memory that evolves query-conditioned task allocation. On five agentic benchmarks it reports state-of-the-art results on WideSearch and DeepWideSearch, 5.11%–17.50% average Item F1 gains over strong o3/Gemini 2.5 Pro baselines and 45.8% lower running time, with code released.", "keywords": [{"text": "wide search", "domain": "rag-retrieval"}, {"text": "agentic map-reduce", "domain": "agent-architecture"}, {"text": "task decomposition", "domain": "agent-architecture"}, {"text": "experiential memory", "domain": "agent-memory"}, {"text": "multi-agent systems", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Agyn: A Multi-Agent System for Team-Based Autonomous Software Engineering", "title_zh": "Agyn：面向团队式自主软件工程的多智能体系统", "url": "http://arxiv.org/abs/2602.01465v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.01465", "summary": "Agyn models software engineering as an organizational process, assigning specialized agents to coordination, research, implementation and review roles with isolated sandboxes and structured communication. Built for production rather than tuned on SWE-bench, it resolved 72.2% of tasks in a post hoc SWE-bench 500 evaluation, beating single-agent baselines with comparable models.", "keywords": [{"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "software engineering", "domain": "agent-architecture"}, {"text": "role specialization", "domain": "agent-architecture"}, {"text": "SWE-bench", "domain": "evaluation-benchmark"}, {"text": "sandboxing", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "A-MapReduce: Executing Wide Search via Agentic MapReduce", "title_zh": "A-MapReduce：通过智能体式 MapReduce 执行宽搜索", "url": "http://arxiv.org/abs/2602.01331v2", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2602.01331", "summary": "A-MapReduce recasts wide search as a horizontally structured retrieval problem, using task-adaptive decomposition, parallel processing of massive retrieval targets and experiential memory that evolves query-conditioned task allocation. On five agentic benchmarks it reports state-of-the-art results on WideSearch and DeepWideSearch, 5.11%–17.50% average Item F1 gains over strong o3/Gemini 2.5 Pro baselines and 45.8% lower running time, with code released.", "keywords": [{"text": "wide search", "domain": "rag-retrieval"}, {"text": "agentic map-reduce", "domain": "agent-architecture"}, {"text": "task decomposition", "domain": "agent-architecture"}, {"text": "experiential memory", "domain": "agent-memory"}, {"text": "multi-agent systems", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Agyn: A Multi-Agent System for Team-Based Autonomous Software Engineering", "title_zh": "Agyn：面向团队式自主软件工程的多智能体系统", "url": "http://arxiv.org/abs/2602.01465v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.01465", "summary": "Agyn models software engineering as an organizational process, assigning specialized agents to coordination, research, implementation and review roles with isolated sandboxes and structured communication. Built for production rather than tuned on SWE-bench, it resolved 72.2% of tasks in a post hoc SWE-bench 500 evaluation, beating single-agent baselines with comparable models.", "keywords": [{"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "software engineering", "domain": "agent-architecture"}, {"text": "role specialization", "domain": "agent-architecture"}, {"text": "SWE-bench", "domain": "evaluation-benchmark"}, {"text": "sandboxing", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "RE-MCDF: Closed-Loop Multi-Expert LLM Reasoning for Knowledge-Grounded Clinical Diagnosis", "title_zh": "RE-MCDF：面向知识驱动临床诊断的闭环多专家大模型推理", "url": "http://arxiv.org/abs/2602.01297v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.01297", "summary": "RE-MCDF combines a primary diagnosis expert, a laboratory expert that reweights heterogeneous clinical indicators, and a multi-relation evaluation expert group guided by a medical knowledge graph. The generation–verification–revision loop enforces inter-disease constraints such as mutual exclusivity and pathological compatibility, and reports consistent gains over state-of-the-art baselines on neurology EMR benchmarks.", "keywords": [{"text": "medical knowledge graph", "domain": "knowledge-graph"}, {"text": "multi-expert collaboration", "domain": "agent-architecture"}, {"text": "clinical diagnosis", "domain": "ai-knowledge"}, {"text": "generation-verification-revision", "domain": "cognition-reasoning"}, {"text": "EMR reasoning", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "ConPress: Learning Efficient Reasoning from Multi-Question Contextual Pressure", "title_zh": "ConPress：从多问题上下文压力中学习高效推理", "url": "http://arxiv.org/abs/2602.01472v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.01472", "summary": "The authors identify a reproducible Self-Compression effect in which models produce shorter reasoning traces when several independent questions share one prompt, and turn it into a self-supervised fine-tuning method. With 8k examples, ConPress cuts reasoning tokens by 59% on MATH500 and 33% on AIME25 while keeping competitive accuracy, without external teachers, manual pruning or reinforcement learning.", "keywords": [{"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "self-compression", "domain": "cognition-reasoning"}, {"text": "contextual pressure", "domain": "context-prompting"}, {"text": "reasoning efficiency", "domain": "evaluation-benchmark"}, {"text": "self-supervised fine-tuning", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "LLM-Driven Ontology Construction for Enterprise Knowledge Graphs", "title_zh": "LLM 驱动的企业知识图谱本体构建", "url": "http://arxiv.org/abs/2602.01276v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.01276", "summary": "OntoEKG is an LLM-driven pipeline that splits enterprise ontology construction into an extraction module for core classes and properties and an entailment module that structures them into a hierarchy before serializing RDF. On a new evaluation dataset spanning Data, Finance and Logistics documents it reaches 0.724 fuzzy-match F1 in the Data domain, while exposing limitations in scope definition and hierarchical reasoning.", "keywords": [{"text": "ontology construction", "domain": "knowledge-graph"}, {"text": "enterprise knowledge graph", "domain": "knowledge-graph"}, {"text": "RDF", "domain": "knowledge-graph"}, {"text": "LLM pipeline", "domain": "ai-knowledge"}, {"text": "knowledge extraction", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Understanding QA generation: Extracting Parametric and Contextual Knowledge with CQA for Low Resource Bangla Language", "title_zh": "理解问答生成：用 CQA 提取低资源孟加拉语中的参数化与上下文知识", "url": "http://arxiv.org/abs/2602.01451v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.01451", "summary": "The authors release BanglaCQA, described as the first counterfactual QA dataset for Bangla, with counterfactual passages and answerability annotations, and compare fine-tuned and prompting pipelines on factual and counterfactual settings. They report that chain-of-thought prompting is uniquely effective for extracting parametric knowledge in counterfactual scenarios, especially for decoder-only LLMs.", "keywords": [{"text": "counterfactual QA", "domain": "evaluation-benchmark"}, {"text": "parametric knowledge", "domain": "ai-knowledge"}, {"text": "contextual knowledge", "domain": "rag-retrieval"}, {"text": "low-resource languages", "domain": "ai-knowledge"}, {"text": "chain-of-thought", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Task-Aware LoRA Adapter Composition via Similarity Retrieval in Vector Databases", "title_zh": "基于向量数据库相似度检索的任务感知 LoRA 适配器组合", "url": "http://arxiv.org/abs/2602.21222v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.21222", "summary": "The framework dynamically composes LoRA adapters by retrieving similar training examples from a vector database built from 22 datasets and merging adapters with retrieval-weighted fusion. Linear merging reaches 70.95% on PIQA and 77.62% on RTE, and the approach needs no retriever training and operates with frozen embeddings.", "keywords": [{"text": "LoRA adapters", "domain": "ai-knowledge"}, {"text": "vector database", "domain": "embeddings-vectors"}, {"text": "similarity retrieval", "domain": "rag-retrieval"}, {"text": "adapter merging", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Predicting and improving test-time scaling laws via reward tail-guided search", "title_zh": "通过奖励尾部引导搜索预测并改进测试时扩展规律", "url": "http://arxiv.org/abs/2602.01485v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.01485", "summary": "The paper estimates the tail distribution of rewards to predict LLM test-time scaling laws without exhaustive evaluation, then introduces Scaling-Law Guided Search, which allocates compute to intermediate states with the highest predicted potential. The authors prove vanishing regret against perfect-information oracles and report higher reward yields than Best-of-N at identical compute budgets.", "keywords": [{"text": "test-time scaling", "domain": "cognition-reasoning"}, {"text": "reward modeling", "domain": "cognition-reasoning"}, {"text": "guided search", "domain": "agent-architecture"}, {"text": "compute allocation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "HKUDS/nanobot", "title_zh": "HKUDS/nanobot：超轻量自托管个人 AI 智能体框架", "url": "https://github.com/HKUDS/nanobot", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Nanobot is an ultra-lightweight, open-source, self-hosted personal AI agent framework written in Python, with a WebUI, tools, memory, MCP support, multi-agent workflows, automation and chat app integrations.", "keywords": [{"text": "personal AI agent", "domain": "agent-architecture"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "MCP", "domain": "agent-architecture"}, {"text": "self-hosted", "domain": "agent-architecture"}, {"text": "multi-agent workflows", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "abhi1693/openclaw-mission-control", "title_zh": "openclaw-mission-control：AI 智能体编排仪表盘", "url": "https://github.com/abhi1693/openclaw-mission-control", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "OpenClaw Mission Control is a TypeScript dashboard for orchestrating AI agents, covering agent management, task assignment and multi-agent collaboration through the OpenClaw Gateway.", "keywords": [{"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "multi-agent collaboration", "domain": "agent-architecture"}, {"text": "dashboard", "domain": "agent-architecture"}, {"text": "OpenClaw", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

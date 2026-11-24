@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-01-07</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">5</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:40%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent drift</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">behavioral stability</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory consolidation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contextual faithfulness</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">activation steering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge conflict</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph exploration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agentic rubrics</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">structured generation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP server</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent drift multi-agent systems episodic memory consolidation behavioral stability AI safety">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04170</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Drift: Quantifying Behavioral Degradation in Multi-Agent LLM Systems Over Extended Interactions<div class="title-zh">智能体漂移：量化多智能体 LLM 系统在长期交互中的行为退化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent drift</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory consolidation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">behavioral stability</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI safety</span></div>
+  <div class="item-summary">The paper defines agent drift as progressive degradation of agent behavior, decision quality and inter-agent coherence over extended interaction sequences, distinguishing semantic, coordination and behavioral drift. It proposes the Agent Stability Index across twelve dimensions, and theoretical analysis suggests that episodic memory consolidation, drift-aware routing protocols and adaptive behavioral anchoring can reduce drift-related errors.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04170v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="contextual faithfulness activation steering knowledge conflict ConFiQA parametric knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04131</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ContextFocus: Activation Steering for Contextual Faithfulness in Large Language Models<div class="title-zh">ContextFocus：面向大语言模型上下文忠实度的激活引导</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contextual faithfulness</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">activation steering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge conflict</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ConFiQA</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">parametric knowledge</span></div>
+  <div class="item-summary">ContextFocus is a lightweight activation-steering method that improves faithfulness to retrieved context when it conflicts with parametric knowledge, without fine-tuning and with minimal inference overhead. On ConFiQA it reports significant gains over baselines including ContextDPO and COIECD, and the authors say it is complementary to prompting strategies and remains effective on larger models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04131v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context compression token reduction RAG chunks MCP server">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">headroomlabs-ai/headroom<div class="title-zh">headroomlabs-ai/headroom：为 LLM 压缩工具输出、日志与 RAG 片段</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">token reduction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG chunks</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP server</span></div>
+  <div class="item-summary">headroom compresses tool outputs, logs, files and RAG chunks before they reach an LLM, claiming 20% fewer tokens for coding agents and 60–95% fewer for JSON with the same answers. It ships as a library, proxy and MCP server.</div>
+  <a class="item-link" href="https://github.com/headroomlabs-ai/headroom" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent drift multi-agent systems episodic memory consolidation behavioral stability AI safety">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04170</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Drift: Quantifying Behavioral Degradation in Multi-Agent LLM Systems Over Extended Interactions<div class="title-zh">智能体漂移：量化多智能体 LLM 系统在长期交互中的行为退化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent drift</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory consolidation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">behavioral stability</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI safety</span></div>
+  <div class="item-summary">The paper defines agent drift as progressive degradation of agent behavior, decision quality and inter-agent coherence over extended interaction sequences, distinguishing semantic, coordination and behavioral drift. It proposes the Agent Stability Index across twelve dimensions, and theoretical analysis suggests that episodic memory consolidation, drift-aware routing protocols and adaptive behavioral anchoring can reduce drift-related errors.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04170v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="contextual faithfulness activation steering knowledge conflict ConFiQA parametric knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04131</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ContextFocus: Activation Steering for Contextual Faithfulness in Large Language Models<div class="title-zh">ContextFocus：面向大语言模型上下文忠实度的激活引导</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">contextual faithfulness</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">activation steering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge conflict</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ConFiQA</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">parametric knowledge</span></div>
+  <div class="item-summary">ContextFocus is a lightweight activation-steering method that improves faithfulness to retrieved context when it conflicts with parametric knowledge, without fine-tuning and with minimal inference overhead. On ConFiQA it reports significant gains over baselines including ContextDPO and COIECD, and the authors say it is complementary to prompting strategies and remains effective on larger models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04131v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph exploration hallucination mitigation code-guided reasoning knowledge distillation HIT@1">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04086</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">KDCM: Reducing Hallucination in LLMs through Explicit Reasoning Structures<div class="title-zh">KDCM：通过显式推理结构减少大语言模型幻觉</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph exploration</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">hallucination mitigation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">code-guided reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">HIT@1</span></div>
+  <div class="item-summary">KDCM extends chain-style knowledge distillation with a programmable module that guides knowledge graph exploration as executable code inside the reasoning prompt. On public benchmarks with GPT-4 and LLaMA-3.3 it reports HIT@1, HIT@3 and HIT@5 gains of 15.64%, 13.38% and 13.28% and reduced prompt-induced hallucination.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04086v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic rubrics SWE agents context grounding test-time scaling code verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04171</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Rubrics as Contextual Verifiers for SWE Agents<div class="title-zh">智能体评分细则：面向 SWE 智能体的上下文验证器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agentic rubrics</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">SWE agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context grounding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">test-time scaling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code verification</span></div>
+  <div class="item-summary">Agentic Rubrics has an expert agent interact with a repository to build a context-grounded checklist, then scores candidate patches against it without executing tests. On SWE-Bench Verified under parallel test-time scaling it reaches 54.2% with Qwen3-Coder-30B-A3B and 40.6% with Qwen3-32B, at least 3.5 percentage points above the strongest baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04171v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="structured generation grammar caching agentic LLM serving inference efficiency">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04426</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">XGrammar-2: Dynamic and Efficient Structured Generation Engine for Agentic LLMs<div class="title-zh">XGrammar-2：面向 Agentic LLM 的动态高效结构化生成引擎</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">structured generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">grammar caching</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic LLM serving</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">inference efficiency</span></div>
+  <div class="item-summary">XGrammar-2 is a structured generation engine for dynamic agentic workloads that introduces tag-triggered structure switching and cross-grammar cache reuse. It reports over 6x faster compilation than prior engines with near-zero end-to-end serving overhead.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04426v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="context compression token reduction RAG chunks MCP server">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">headroomlabs-ai/headroom<div class="title-zh">headroomlabs-ai/headroom：为 LLM 压缩工具输出、日志与 RAG 片段</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">token reduction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG chunks</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP server</span></div>
+  <div class="item-summary">headroom compresses tool outputs, logs, files and RAG chunks before they reach an LLM, claiming 20% fewer tokens for coding agents and 60–95% fewer for JSON with the same answers. It ships as a library, proxy and MCP server.</div>
+  <a class="item-link" href="https://github.com/headroomlabs-ai/headroom" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="autonomous loop coding agents PRD automation">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">snarktank/ralph<div class="title-zh">snarktank/ralph：循环运行直至 PRD 完成的自主智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous loop</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">PRD automation</span></div>
+  <div class="item-summary">Ralph is an autonomous AI agent loop that runs repeatedly until all items in a product requirements document are complete.</div>
+  <a class="item-link" href="https://github.com/snarktank/ralph" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="voice agents context reconstruction memory-driven personas GPT-5.1">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How Tolan builds voice-first AI with GPT-5.1<div class="title-zh">Tolan 如何用 GPT-5.1 构建语音优先的 AI</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">voice agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context reconstruction</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory-driven personas</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">GPT-5.1</span></div>
+  <div class="item-summary">OpenAI describes how Tolan built a voice-first AI companion on GPT-5.1, combining low-latency responses, real-time context reconstruction and memory-driven personalities for natural conversation.</div>
+  <a class="item-link" href="https://openai.com/index/tolan" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-01-07", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 3, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 5, "tools_frameworks": 2, "blogs_insights": 1}}, "daily_keywords": [{"text": "agent drift", "domain": "agent-architecture"}, {"text": "behavioral stability", "domain": "evaluation-benchmark"}, {"text": "episodic memory consolidation", "domain": "agent-memory"}, {"text": "contextual faithfulness", "domain": "rag-retrieval"}, {"text": "activation steering", "domain": "context-prompting"}, {"text": "knowledge conflict", "domain": "ai-knowledge"}, {"text": "knowledge graph exploration", "domain": "knowledge-graph"}, {"text": "agentic rubrics", "domain": "evaluation-benchmark"}, {"text": "structured generation", "domain": "context-prompting"}, {"text": "context compression", "domain": "context-prompting"}, {"text": "MCP server", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Agent Drift: Quantifying Behavioral Degradation in Multi-Agent LLM Systems Over Extended Interactions", "title_zh": "智能体漂移：量化多智能体 LLM 系统在长期交互中的行为退化", "url": "http://arxiv.org/abs/2601.04170v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.04170", "summary": "The paper defines agent drift as progressive degradation of agent behavior, decision quality and inter-agent coherence over extended interaction sequences, distinguishing semantic, coordination and behavioral drift. It proposes the Agent Stability Index across twelve dimensions, and theoretical analysis suggests that episodic memory consolidation, drift-aware routing protocols and adaptive behavioral anchoring can reduce drift-related errors.", "keywords": [{"text": "agent drift", "domain": "agent-architecture"}, {"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "episodic memory consolidation", "domain": "agent-memory"}, {"text": "behavioral stability", "domain": "evaluation-benchmark"}, {"text": "AI safety", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "ContextFocus: Activation Steering for Contextual Faithfulness in Large Language Models", "title_zh": "ContextFocus：面向大语言模型上下文忠实度的激活引导", "url": "http://arxiv.org/abs/2601.04131v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.04131", "summary": "ContextFocus is a lightweight activation-steering method that improves faithfulness to retrieved context when it conflicts with parametric knowledge, without fine-tuning and with minimal inference overhead. On ConFiQA it reports significant gains over baselines including ContextDPO and COIECD, and the authors say it is complementary to prompting strategies and remains effective on larger models.", "keywords": [{"text": "contextual faithfulness", "domain": "rag-retrieval"}, {"text": "activation steering", "domain": "context-prompting"}, {"text": "knowledge conflict", "domain": "ai-knowledge"}, {"text": "ConFiQA", "domain": "evaluation-benchmark"}, {"text": "parametric knowledge", "domain": "agent-memory"}], "link_verified": true, "is_highlight": true}, {"title": "headroomlabs-ai/headroom", "title_zh": "headroomlabs-ai/headroom：为 LLM 压缩工具输出、日志与 RAG 片段", "url": "https://github.com/headroomlabs-ai/headroom", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "headroom compresses tool outputs, logs, files and RAG chunks before they reach an LLM, claiming 20% fewer tokens for coding agents and 60–95% fewer for JSON with the same answers. It ships as a library, proxy and MCP server.", "keywords": [{"text": "context compression", "domain": "context-prompting"}, {"text": "token reduction", "domain": "ai-knowledge"}, {"text": "RAG chunks", "domain": "rag-retrieval"}, {"text": "MCP server", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Agent Drift: Quantifying Behavioral Degradation in Multi-Agent LLM Systems Over Extended Interactions", "title_zh": "智能体漂移：量化多智能体 LLM 系统在长期交互中的行为退化", "url": "http://arxiv.org/abs/2601.04170v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.04170", "summary": "The paper defines agent drift as progressive degradation of agent behavior, decision quality and inter-agent coherence over extended interaction sequences, distinguishing semantic, coordination and behavioral drift. It proposes the Agent Stability Index across twelve dimensions, and theoretical analysis suggests that episodic memory consolidation, drift-aware routing protocols and adaptive behavioral anchoring can reduce drift-related errors.", "keywords": [{"text": "agent drift", "domain": "agent-architecture"}, {"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "episodic memory consolidation", "domain": "agent-memory"}, {"text": "behavioral stability", "domain": "evaluation-benchmark"}, {"text": "AI safety", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "ContextFocus: Activation Steering for Contextual Faithfulness in Large Language Models", "title_zh": "ContextFocus：面向大语言模型上下文忠实度的激活引导", "url": "http://arxiv.org/abs/2601.04131v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.04131", "summary": "ContextFocus is a lightweight activation-steering method that improves faithfulness to retrieved context when it conflicts with parametric knowledge, without fine-tuning and with minimal inference overhead. On ConFiQA it reports significant gains over baselines including ContextDPO and COIECD, and the authors say it is complementary to prompting strategies and remains effective on larger models.", "keywords": [{"text": "contextual faithfulness", "domain": "rag-retrieval"}, {"text": "activation steering", "domain": "context-prompting"}, {"text": "knowledge conflict", "domain": "ai-knowledge"}, {"text": "ConFiQA", "domain": "evaluation-benchmark"}, {"text": "parametric knowledge", "domain": "agent-memory"}], "link_verified": true, "is_highlight": true}, {"title": "KDCM: Reducing Hallucination in LLMs through Explicit Reasoning Structures", "title_zh": "KDCM：通过显式推理结构减少大语言模型幻觉", "url": "http://arxiv.org/abs/2601.04086v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.04086", "summary": "KDCM extends chain-style knowledge distillation with a programmable module that guides knowledge graph exploration as executable code inside the reasoning prompt. On public benchmarks with GPT-4 and LLaMA-3.3 it reports HIT@1, HIT@3 and HIT@5 gains of 15.64%, 13.38% and 13.28% and reduced prompt-induced hallucination.", "keywords": [{"text": "knowledge graph exploration", "domain": "knowledge-graph"}, {"text": "hallucination mitigation", "domain": "cognition-reasoning"}, {"text": "code-guided reasoning", "domain": "context-prompting"}, {"text": "knowledge distillation", "domain": "knowledge-lifecycle"}, {"text": "HIT@1", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic Rubrics as Contextual Verifiers for SWE Agents", "title_zh": "智能体评分细则：面向 SWE 智能体的上下文验证器", "url": "http://arxiv.org/abs/2601.04171v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.04171", "summary": "Agentic Rubrics has an expert agent interact with a repository to build a context-grounded checklist, then scores candidate patches against it without executing tests. On SWE-Bench Verified under parallel test-time scaling it reaches 54.2% with Qwen3-Coder-30B-A3B and 40.6% with Qwen3-32B, at least 3.5 percentage points above the strongest baseline.", "keywords": [{"text": "agentic rubrics", "domain": "evaluation-benchmark"}, {"text": "SWE agents", "domain": "agent-architecture"}, {"text": "context grounding", "domain": "context-prompting"}, {"text": "test-time scaling", "domain": "cognition-reasoning"}, {"text": "code verification", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "XGrammar-2: Dynamic and Efficient Structured Generation Engine for Agentic LLMs", "title_zh": "XGrammar-2：面向 Agentic LLM 的动态高效结构化生成引擎", "url": "http://arxiv.org/abs/2601.04426v4", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.04426", "summary": "XGrammar-2 is a structured generation engine for dynamic agentic workloads that introduces tag-triggered structure switching and cross-grammar cache reuse. It reports over 6x faster compilation than prior engines with near-zero end-to-end serving overhead.", "keywords": [{"text": "structured generation", "domain": "context-prompting"}, {"text": "grammar caching", "domain": "ai-knowledge"}, {"text": "agentic LLM serving", "domain": "agent-architecture"}, {"text": "inference efficiency", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "headroomlabs-ai/headroom", "title_zh": "headroomlabs-ai/headroom：为 LLM 压缩工具输出、日志与 RAG 片段", "url": "https://github.com/headroomlabs-ai/headroom", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "headroom compresses tool outputs, logs, files and RAG chunks before they reach an LLM, claiming 20% fewer tokens for coding agents and 60–95% fewer for JSON with the same answers. It ships as a library, proxy and MCP server.", "keywords": [{"text": "context compression", "domain": "context-prompting"}, {"text": "token reduction", "domain": "ai-knowledge"}, {"text": "RAG chunks", "domain": "rag-retrieval"}, {"text": "MCP server", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "snarktank/ralph", "title_zh": "snarktank/ralph：循环运行直至 PRD 完成的自主智能体", "url": "https://github.com/snarktank/ralph", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Ralph is an autonomous AI agent loop that runs repeatedly until all items in a product requirements document are complete.", "keywords": [{"text": "autonomous loop", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "PRD automation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "How Tolan builds voice-first AI with GPT-5.1", "title_zh": "Tolan 如何用 GPT-5.1 构建语音优先的 AI", "url": "https://openai.com/index/tolan", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI describes how Tolan built a voice-first AI companion on GPT-5.1, combining low-latency responses, real-time context reconstruction and memory-driven personalities for natural conversation.", "keywords": [{"text": "voice agents", "domain": "agent-architecture"}, {"text": "context reconstruction", "domain": "agent-memory"}, {"text": "memory-driven personas", "domain": "agent-memory"}, {"text": "GPT-5.1", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

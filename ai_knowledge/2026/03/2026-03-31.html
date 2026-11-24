@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-03-31</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">persona simulation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">human behavior prediction</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">fault localization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code repair</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous research</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">experiment automation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">actor-critic</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-reflection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">claim detection</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">1-bit LLMs</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">local-first workspace</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="persona simulation social media reactions LLM benchmark human behavior prediction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.19787</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LLM Agents Predict Social Media Reactions but Do Not Outperform Text Classifiers: Benchmarking Simulation Accuracy Using 120K+ Personas of 1511 Humans<div class="title-zh">LLM 智能体可预测社交媒体反应，但未能超越文本分类器：基于 1511 名人类、12 万+ 人设的模拟准确性基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">persona simulation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">social media reactions</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">human behavior prediction</span></div>
+  <div class="item-summary">The study benchmarks LLM agents' ability to predict individual social-media reactions across 120,000+ agent-persona combinations built from 1,511 Serbian participants and 27 LLMs. Agents reach 70.7% overall accuracy and an MCC of 0.29 on a binary like/dislike task, but TF-IDF text classifiers score higher (MCC 0.36), suggesting the signal comes from semantic access rather than uniquely agentic reasoning.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.19787v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="autonomous research multi-agent experiment automation CUDA optimization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.08590</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AlphaLab: Autonomous Multi-Agent Research Across Optimization Domains with Frontier LLMs<div class="title-zh">AlphaLab：面向优化领域的自主多智能体研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous research</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">experiment automation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">CUDA optimization</span></div>
+  <div class="item-summary">AlphaLab is an autonomous research harness that, given a dataset and a natural-language objective, explores the data, builds and adversarially validates its own evaluation framework, then runs GPU experiments through a Strategist/Worker loop with a persistent playbook. With GPT-5.2 and Claude Opus 4.6 it produces CUDA kernels averaging 4.4x faster than torch.compile (up to 91x) and cuts LLM pretraining validation loss by 22% versus a single-shot baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.08590v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="1-bit LLMs ternary models edge inference tool use">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: 1-Bit Bonsai, the First Commercially Viable 1-Bit LLMs<div class="title-zh">Show HN：1-Bit Bonsai，首批可商业化的 1-bit 大模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">1-bit LLMs</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">ternary models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">edge inference</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span></div>
+  <div class="item-summary">PrismML builds 1-bit and ternary Bonsai models that it says pack advanced reasoning, tool use and multimodal AI into phones, laptops and data centers; the Show HN post describes them as the first commercially viable 1-bit LLMs.</div>
+  <a class="item-link" href="https://prismml.com/" target="_blank" rel="noopener">&rarr; prismml.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="persona simulation social media reactions LLM benchmark human behavior prediction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.19787</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LLM Agents Predict Social Media Reactions but Do Not Outperform Text Classifiers: Benchmarking Simulation Accuracy Using 120K+ Personas of 1511 Humans<div class="title-zh">LLM 智能体可预测社交媒体反应，但未能超越文本分类器：基于 1511 名人类、12 万+ 人设的模拟准确性基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">persona simulation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">social media reactions</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">human behavior prediction</span></div>
+  <div class="item-summary">The study benchmarks LLM agents' ability to predict individual social-media reactions across 120,000+ agent-persona combinations built from 1,511 Serbian participants and 27 LLMs. Agents reach 70.7% overall accuracy and an MCC of 0.29 on a binary like/dislike task, but TF-IDF text classifiers score higher (MCC 0.36), suggesting the signal comes from semantic access rather than uniquely agentic reasoning.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.19787v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="fault localization code repair SWE-Bench localization granularity">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.00167</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Study on the Impact of Fault localization Granularity for Repository-Scale Code Repair Tasks<div class="title-zh">故障定位粒度对仓库级代码修复任务的影响研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">fault localization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code repair</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SWE-Bench</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">localization granularity</span></div>
+  <div class="item-summary">The authors modify the localization phase of Agentless to supply ground-truth fault locations as prompt context, isolating localization granularity from accuracy in repository-scale repair. Across SWE-Bench-Mini, function-level localization yields the highest repair rate versus line- and file-level, though a deeper analysis suggests the ideal granularity may be task dependent.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.00167v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="autonomous research multi-agent experiment automation CUDA optimization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.08590</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AlphaLab: Autonomous Multi-Agent Research Across Optimization Domains with Frontier LLMs<div class="title-zh">AlphaLab：面向优化领域的自主多智能体研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous research</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">experiment automation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">CUDA optimization</span></div>
+  <div class="item-summary">AlphaLab is an autonomous research harness that, given a dataset and a natural-language objective, explores the data, builds and adversarially validates its own evaluation framework, then runs GPU experiments through a Strategist/Worker loop with a persistent playbook. With GPT-5.2 and Claude Opus 4.6 it produces CUDA kernels averaging 4.4x faster than torch.compile (up to 91x) and cuts LLM pretraining validation loss by 22% versus a single-shot baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.08590v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="actor-critic multi-turn agents runtime supervision small critics">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.00304</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Asymmetric Actor-Critic for Multi-turn LLM Agents<div class="title-zh">多轮 LLM 智能体的非对称演员-评论家框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">actor-critic</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-turn agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">runtime supervision</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">small critics</span></div>
+  <div class="item-summary">The framework pairs a proprietary LLM actor with a smaller open-source critic that monitors actions and intervenes within the same multi-turn trajectory, exploiting a generation-verification asymmetry. On τ-bench and UserBench it improves reliability and task success over strong single-agent baselines, and lightweight critics rival or surpass larger proprietary models in the critic role.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.00304v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-reflection medical QA chain-of-thought error correction">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.00261</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Can Large Language Models Self-Correct in Medical Question Answering? An Exploratory Study<div class="title-zh">大语言模型能在医学问答中自我纠错吗？一项探索性研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-reflection</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">medical QA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">error correction</span></div>
+  <div class="item-summary">The authors compare chain-of-thought prompting with an iterative self-reflection loop on MedQA, HeadQA and PubMedQA using GPT-4o and GPT-4o-mini. Self-reflection does not consistently improve accuracy, helping modestly on MedQA but giving limited or negative gains elsewhere, and increasing the number of reflection steps does not guarantee better performance.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.00261v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="claim detection retrieval augmentation fact-checking contextual summaries">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.30025</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ContextClaim: A Context-Driven Paradigm for Verifiable Claim Detection<div class="title-zh">ContextClaim：面向可验证声明检测的上下文驱动范式</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">claim detection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval augmentation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">fact-checking</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">contextual summaries</span></div>
+  <div class="item-summary">ContextClaim moves retrieval into the verifiable-claim detection stage: it identifies entity mentions, queries Wikipedia as a structured background source and uses an LLM to compress retrieved material into contextual summaries for a classifier. The added context improves detection across several configurations on CheckThat! 2022 and PoliClaim, and the same summaries raise verification F1 on FEVER.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.30025v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent critics federated learning fault diagnosis convergence guarantees">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.00319</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Collaborative AI Agents and Critics for Fault Detection and Cause Analysis in Network Telemetry<div class="title-zh">面向网络遥测故障检测与原因分析的协作式 AI 智能体与评审器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent critics</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">federated learning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">fault diagnosis</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">convergence guarantees</span></div>
+  <div class="item-summary">The paper develops algorithms for collaborative control of AI agents and critics in a federated multi-agent system, where critics evaluate agents' outputs and send feedback to improve them. It offers convergence guarantees and demonstrates the approach on fault detection, severity and cause analysis in network telemetry.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.00319v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="local-first coding agents desktop workspace skills marketplace">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">NanmiCoder/cc-haha<div class="title-zh">cc-haha：本地优先的 Claude Code 与 AI 智能体桌面工作台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">local-first</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">desktop workspace</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">skills marketplace</span></div>
+  <div class="item-summary">cc-haha is a local-first, cross-platform desktop workspace for Claude Code and AI agents, written in TypeScript, with multi-agent collaboration, Git worktrees, code diffs, a skills marketplace, multi-model support and Computer Use, plus remote access through messaging apps and H5.</div>
+  <a class="item-link" href="https://github.com/NanmiCoder/cc-haha" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="1-bit LLMs ternary models edge inference tool use">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: 1-Bit Bonsai, the First Commercially Viable 1-Bit LLMs<div class="title-zh">Show HN：1-Bit Bonsai，首批可商业化的 1-bit 大模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">1-bit LLMs</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">ternary models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">edge inference</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span></div>
+  <div class="item-summary">PrismML builds 1-bit and ternary Bonsai models that it says pack advanced reasoning, tool use and multimodal AI into phones, laptops and data centers; the Show HN post describes them as the first commercially viable 1-bit LLMs.</div>
+  <a class="item-link" href="https://prismml.com/" target="_blank" rel="noopener">&rarr; prismml.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-03-31", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 3, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 7, "tools_frameworks": 1, "models_embeddings": 1}}, "daily_keywords": [{"text": "persona simulation", "domain": "agent-architecture"}, {"text": "human behavior prediction", "domain": "cognition-reasoning"}, {"text": "fault localization", "domain": "context-prompting"}, {"text": "code repair", "domain": "agent-architecture"}, {"text": "autonomous research", "domain": "agent-architecture"}, {"text": "experiment automation", "domain": "ai-knowledge"}, {"text": "actor-critic", "domain": "agent-architecture"}, {"text": "self-reflection", "domain": "cognition-reasoning"}, {"text": "claim detection", "domain": "rag-retrieval"}, {"text": "1-bit LLMs", "domain": "ai-knowledge"}, {"text": "local-first workspace", "domain": "ai-knowledge"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "LLM Agents Predict Social Media Reactions but Do Not Outperform Text Classifiers: Benchmarking Simulation Accuracy Using 120K+ Personas of 1511 Humans", "title_zh": "LLM 智能体可预测社交媒体反应，但未能超越文本分类器：基于 1511 名人类、12 万+ 人设的模拟准确性基准", "url": "http://arxiv.org/abs/2604.19787v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.19787", "summary": "The study benchmarks LLM agents' ability to predict individual social-media reactions across 120,000+ agent-persona combinations built from 1,511 Serbian participants and 27 LLMs. Agents reach 70.7% overall accuracy and an MCC of 0.29 on a binary like/dislike task, but TF-IDF text classifiers score higher (MCC 0.36), suggesting the signal comes from semantic access rather than uniquely agentic reasoning.", "keywords": [{"text": "persona simulation", "domain": "agent-architecture"}, {"text": "social media reactions", "domain": "ai-knowledge"}, {"text": "LLM benchmark", "domain": "evaluation-benchmark"}, {"text": "human behavior prediction", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "AlphaLab: Autonomous Multi-Agent Research Across Optimization Domains with Frontier LLMs", "title_zh": "AlphaLab：面向优化领域的自主多智能体研究", "url": "http://arxiv.org/abs/2604.08590v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.08590", "summary": "AlphaLab is an autonomous research harness that, given a dataset and a natural-language objective, explores the data, builds and adversarially validates its own evaluation framework, then runs GPU experiments through a Strategist/Worker loop with a persistent playbook. With GPT-5.2 and Claude Opus 4.6 it produces CUDA kernels averaging 4.4x faster than torch.compile (up to 91x) and cuts LLM pretraining validation loss by 22% versus a single-shot baseline.", "keywords": [{"text": "autonomous research", "domain": "agent-architecture"}, {"text": "multi-agent", "domain": "agent-architecture"}, {"text": "experiment automation", "domain": "ai-knowledge"}, {"text": "CUDA optimization", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Show HN: 1-Bit Bonsai, the First Commercially Viable 1-Bit LLMs", "title_zh": "Show HN：1-Bit Bonsai，首批可商业化的 1-bit 大模型", "url": "https://prismml.com/", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "PrismML builds 1-bit and ternary Bonsai models that it says pack advanced reasoning, tool use and multimodal AI into phones, laptops and data centers; the Show HN post describes them as the first commercially viable 1-bit LLMs.", "keywords": [{"text": "1-bit LLMs", "domain": "ai-knowledge"}, {"text": "ternary models", "domain": "ai-knowledge"}, {"text": "edge inference", "domain": "ai-knowledge"}, {"text": "tool use", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "LLM Agents Predict Social Media Reactions but Do Not Outperform Text Classifiers: Benchmarking Simulation Accuracy Using 120K+ Personas of 1511 Humans", "title_zh": "LLM 智能体可预测社交媒体反应，但未能超越文本分类器：基于 1511 名人类、12 万+ 人设的模拟准确性基准", "url": "http://arxiv.org/abs/2604.19787v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.19787", "summary": "The study benchmarks LLM agents' ability to predict individual social-media reactions across 120,000+ agent-persona combinations built from 1,511 Serbian participants and 27 LLMs. Agents reach 70.7% overall accuracy and an MCC of 0.29 on a binary like/dislike task, but TF-IDF text classifiers score higher (MCC 0.36), suggesting the signal comes from semantic access rather than uniquely agentic reasoning.", "keywords": [{"text": "persona simulation", "domain": "agent-architecture"}, {"text": "social media reactions", "domain": "ai-knowledge"}, {"text": "LLM benchmark", "domain": "evaluation-benchmark"}, {"text": "human behavior prediction", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "A Study on the Impact of Fault localization Granularity for Repository-Scale Code Repair Tasks", "title_zh": "故障定位粒度对仓库级代码修复任务的影响研究", "url": "http://arxiv.org/abs/2604.00167v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.00167", "summary": "The authors modify the localization phase of Agentless to supply ground-truth fault locations as prompt context, isolating localization granularity from accuracy in repository-scale repair. Across SWE-Bench-Mini, function-level localization yields the highest repair rate versus line- and file-level, though a deeper analysis suggests the ideal granularity may be task dependent.", "keywords": [{"text": "fault localization", "domain": "context-prompting"}, {"text": "code repair", "domain": "agent-architecture"}, {"text": "SWE-Bench", "domain": "evaluation-benchmark"}, {"text": "localization granularity", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "AlphaLab: Autonomous Multi-Agent Research Across Optimization Domains with Frontier LLMs", "title_zh": "AlphaLab：面向优化领域的自主多智能体研究", "url": "http://arxiv.org/abs/2604.08590v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.08590", "summary": "AlphaLab is an autonomous research harness that, given a dataset and a natural-language objective, explores the data, builds and adversarially validates its own evaluation framework, then runs GPU experiments through a Strategist/Worker loop with a persistent playbook. With GPT-5.2 and Claude Opus 4.6 it produces CUDA kernels averaging 4.4x faster than torch.compile (up to 91x) and cuts LLM pretraining validation loss by 22% versus a single-shot baseline.", "keywords": [{"text": "autonomous research", "domain": "agent-architecture"}, {"text": "multi-agent", "domain": "agent-architecture"}, {"text": "experiment automation", "domain": "ai-knowledge"}, {"text": "CUDA optimization", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Asymmetric Actor-Critic for Multi-turn LLM Agents", "title_zh": "多轮 LLM 智能体的非对称演员-评论家框架", "url": "http://arxiv.org/abs/2604.00304v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.00304", "summary": "The framework pairs a proprietary LLM actor with a smaller open-source critic that monitors actions and intervenes within the same multi-turn trajectory, exploiting a generation-verification asymmetry. On τ-bench and UserBench it improves reliability and task success over strong single-agent baselines, and lightweight critics rival or surpass larger proprietary models in the critic role.", "keywords": [{"text": "actor-critic", "domain": "agent-architecture"}, {"text": "multi-turn agents", "domain": "agent-architecture"}, {"text": "runtime supervision", "domain": "evaluation-benchmark"}, {"text": "small critics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Can Large Language Models Self-Correct in Medical Question Answering? An Exploratory Study", "title_zh": "大语言模型能在医学问答中自我纠错吗？一项探索性研究", "url": "http://arxiv.org/abs/2604.00261v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.00261", "summary": "The authors compare chain-of-thought prompting with an iterative self-reflection loop on MedQA, HeadQA and PubMedQA using GPT-4o and GPT-4o-mini. Self-reflection does not consistently improve accuracy, helping modestly on MedQA but giving limited or negative gains elsewhere, and increasing the number of reflection steps does not guarantee better performance.", "keywords": [{"text": "self-reflection", "domain": "cognition-reasoning"}, {"text": "medical QA", "domain": "evaluation-benchmark"}, {"text": "chain-of-thought", "domain": "context-prompting"}, {"text": "error correction", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "ContextClaim: A Context-Driven Paradigm for Verifiable Claim Detection", "title_zh": "ContextClaim：面向可验证声明检测的上下文驱动范式", "url": "http://arxiv.org/abs/2603.30025v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.30025", "summary": "ContextClaim moves retrieval into the verifiable-claim detection stage: it identifies entity mentions, queries Wikipedia as a structured background source and uses an LLM to compress retrieved material into contextual summaries for a classifier. The added context improves detection across several configurations on CheckThat! 2022 and PoliClaim, and the same summaries raise verification F1 on FEVER.", "keywords": [{"text": "claim detection", "domain": "rag-retrieval"}, {"text": "retrieval augmentation", "domain": "rag-retrieval"}, {"text": "fact-checking", "domain": "ai-knowledge"}, {"text": "contextual summaries", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Collaborative AI Agents and Critics for Fault Detection and Cause Analysis in Network Telemetry", "title_zh": "面向网络遥测故障检测与原因分析的协作式 AI 智能体与评审器", "url": "http://arxiv.org/abs/2604.00319v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.00319", "summary": "The paper develops algorithms for collaborative control of AI agents and critics in a federated multi-agent system, where critics evaluate agents' outputs and send feedback to improve them. It offers convergence guarantees and demonstrates the approach on fault detection, severity and cause analysis in network telemetry.", "keywords": [{"text": "multi-agent critics", "domain": "agent-architecture"}, {"text": "federated learning", "domain": "agent-architecture"}, {"text": "fault diagnosis", "domain": "ai-knowledge"}, {"text": "convergence guarantees", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "NanmiCoder/cc-haha", "title_zh": "cc-haha：本地优先的 Claude Code 与 AI 智能体桌面工作台", "url": "https://github.com/NanmiCoder/cc-haha", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "cc-haha is a local-first, cross-platform desktop workspace for Claude Code and AI agents, written in TypeScript, with multi-agent collaboration, Git worktrees, code diffs, a skills marketplace, multi-model support and Computer Use, plus remote access through messaging apps and H5.", "keywords": [{"text": "local-first", "domain": "ai-knowledge"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "desktop workspace", "domain": "agent-architecture"}, {"text": "skills marketplace", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Show HN: 1-Bit Bonsai, the First Commercially Viable 1-Bit LLMs", "title_zh": "Show HN：1-Bit Bonsai，首批可商业化的 1-bit 大模型", "url": "https://prismml.com/", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "PrismML builds 1-bit and ternary Bonsai models that it says pack advanced reasoning, tool use and multimodal AI into phones, laptops and data centers; the Show HN post describes them as the first commercially viable 1-bit LLMs.", "keywords": [{"text": "1-bit LLMs", "domain": "ai-knowledge"}, {"text": "ternary models", "domain": "ai-knowledge"}, {"text": "edge inference", "domain": "ai-knowledge"}, {"text": "tool use", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

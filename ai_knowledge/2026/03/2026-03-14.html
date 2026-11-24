@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-03-14</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:28%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph completion</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-hop reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tool retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding geometry</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">symbolic abstraction</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">domain-specific models</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination control</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial context</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="GraphRAG knowledge graph similarity expansion query routing noisy graphs">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14006</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs<div class="title-zh">超越显式边：在噪声与稀疏知识图谱上的鲁棒推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">similarity expansion</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">query routing</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">noisy graphs</span></div>
+  <div class="item-summary">INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14006v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="GraphRAG multi-hop QA context compression SPARQL prompting reasoning bottleneck">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14045</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Reasoning Bottleneck in Graph-RAG: Structured Prompting and Context Compression for Multi-Hop QA<div class="title-zh">Graph-RAG 中的推理瓶颈：面向多跳问答的结构化提示与上下文压缩</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">SPARQL prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning bottleneck</span></div>
+  <div class="item-summary">Evaluating KET-RAG on three multi-hop QA benchmarks, the authors find that 77% to 91% of questions have the gold answer in the retrieved context yet accuracy is only 35% to 78%, with 73% to 84% of errors traced to reasoning failures. SPARQL chain-of-thought prompting and graph-walk compression improve accuracy, and with question-type routing an augmented Llama-8B matches or exceeds an unaugmented Llama-70B at roughly 12x lower cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14045v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool retrieval embedding geometry adversarial attack retrieval saturation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.13950</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ToolFlood: Beyond Selection -- Hiding Valid Tools from LLM Agents via Semantic Covering<div class="title-zh">ToolFlood：通过语义覆盖向 LLM agent 隐藏有效工具</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tool retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding geometry</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">adversarial attack</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval saturation</span></div>
+  <div class="item-summary">ToolFlood attacks the tool-retrieval layer of LLM agents by injecting a few tools whose metadata is positioned to span many user queries in embedding space, pushing benign tools out of the agent's context. On the ToolBench catalog it reports up to 95% attack success at roughly a 1% injection rate.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.13950v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="domain-specific superintelligence symbolic abstractions ontology orchestration agents sustainable AI">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14147</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Alternative Trajectory for Generative AI<div class="title-zh">生成式 AI 的另一条发展轨迹</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">domain-specific superintelligence</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">symbolic abstractions</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">sustainable AI</span></div>
+  <div class="item-summary">The position paper argues that scaling monolithic models is colliding with energy, water and data constraints, and proposes domain-specific superintelligence built by first constructing explicit symbolic abstractions such as knowledge graphs, ontologies and formal logic. It envisions societies of small domain models routed by orchestration agents, moving capability from data centers to on-device experts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14147v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="GraphRAG knowledge graph similarity expansion query routing noisy graphs">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14006</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs<div class="title-zh">超越显式边：在噪声与稀疏知识图谱上的鲁棒推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">similarity expansion</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">query routing</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">noisy graphs</span></div>
+  <div class="item-summary">INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14006v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="GraphRAG multi-hop QA context compression SPARQL prompting reasoning bottleneck">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14045</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Reasoning Bottleneck in Graph-RAG: Structured Prompting and Context Compression for Multi-Hop QA<div class="title-zh">Graph-RAG 中的推理瓶颈：面向多跳问答的结构化提示与上下文压缩</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">SPARQL prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning bottleneck</span></div>
+  <div class="item-summary">Evaluating KET-RAG on three multi-hop QA benchmarks, the authors find that 77% to 91% of questions have the gold answer in the retrieved context yet accuracy is only 35% to 78%, with 73% to 84% of errors traced to reasoning failures. SPARQL chain-of-thought prompting and graph-walk compression improve accuracy, and with question-type routing an augmented Llama-8B matches or exceeds an unaugmented Llama-70B at roughly 12x lower cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14045v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool retrieval embedding geometry adversarial attack retrieval saturation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.13950</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ToolFlood: Beyond Selection -- Hiding Valid Tools from LLM Agents via Semantic Covering<div class="title-zh">ToolFlood：通过语义覆盖向 LLM agent 隐藏有效工具</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tool retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding geometry</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">adversarial attack</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval saturation</span></div>
+  <div class="item-summary">ToolFlood attacks the tool-retrieval layer of LLM agents by injecting a few tools whose metadata is positioned to span many user queries in embedding space, pushing benign tools out of the agent's context. On the ToolBench catalog it reports up to 95% attack success at roughly a 1% injection rate.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.13950v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="domain-specific superintelligence symbolic abstractions ontology orchestration agents sustainable AI">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14147</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Alternative Trajectory for Generative AI<div class="title-zh">生成式 AI 的另一条发展轨迹</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">domain-specific superintelligence</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">symbolic abstractions</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">sustainable AI</span></div>
+  <div class="item-summary">The position paper argues that scaling monolithic models is colliding with energy, water and data constraints, and proposes domain-specific superintelligence built by first constructing explicit symbolic abstractions such as knowledge graphs, ontologies and formal logic. It envisions societies of small domain models routed by orchestration agents, moving capability from data centers to on-device experts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14147v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="clinical reasoning context influence adversarial context AI safety">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14158</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Clinician input steers AI toward accurate and harmful recommendations<div class="title-zh">临床医生的输入会引导 AI 给出准确但也有害的建议</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">clinical reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context influence</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial context</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI safety</span></div>
+  <div class="item-summary">Using 61 NEJM Case Records and 21 reasoning variants from eight models, the study finds that clinician context raises LLM-clinician concordance and improves correct final-diagnosis inclusion by a mean 20.4 points, while adversarial context degrades performance in 14 models. Inference-time scaling reduces harmful echoing of clinician-introduced recommendations across WHO harm-severity tiers.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14158v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="named entity recognition legislative text ontology dataset">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14130</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The GELATO Dataset for Legislative NER<div class="title-zh">GELATO：面向立法文本命名实体识别的数据集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">named entity recognition</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">legislative text</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">dataset</span></div>
+  <div class="item-summary">GELATO is a dataset of U.S. House and Senate bills from the 118th Congress annotated with a two-level named-entity-recognition ontology. The authors fine-tune BERT and RoBERTa for first-level prediction and use prompted LLMs for the second level.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14130v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent system long-video reasoning cross-review VideoQA">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14052</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Multi-Agent Perception-Action Alliance for Efficient Long Video Reasoning<div class="title-zh">面向高效长视频推理的多智能体感知-行动联盟</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-video reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">cross-review</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">VideoQA</span></div>
+  <div class="item-summary">A4VL runs a multi-round perception-action exploration loop with a team of VLM agents that extract query-specific clues from sampled frames, align them to relevant video blocks, and cross-review one another before deciding whether to continue or answer. It reports gains over 18 VLMs and 11 long-video methods on five VideoQA benchmarks with lower inference latency.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14052v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-agent simulation knowledge graph local deployment">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">nikmcfly/MiroFish-Offline<div class="title-zh">MiroFish-Offline：离线多智能体模拟引擎</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent simulation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">local deployment</span></div>
+  <div class="item-summary">An English fork of MiroFish that provides an offline multi-agent simulation and prediction engine built on a local Neo4j graph database and Ollama stack.</div>
+  <a class="item-link" href="https://github.com/nikmcfly/MiroFish-Offline" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent tooling browser automation CLI">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">jackwener/OpenCLI<div class="title-zh">OpenCLI：把任意网站变成 CLI</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent tooling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">browser automation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">CLI</span></div>
+  <div class="item-summary">OpenCLI is a JavaScript project that turns any website into a command-line interface and lets an AI agent use the browser session the user is already logged into.</div>
+  <a class="item-link" href="https://github.com/jackwener/OpenCLI" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal LLM scientific retrieval grounded annotation agriculture benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.16934</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding<div class="title-zh">AgriChat：面向农业图像理解的多模态大语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal LLM</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">scientific retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">grounded annotation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agriculture</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">AgriChat is a specialized multimodal LLM trained on AgriMM, a benchmark built by a Vision-to-Verified-Knowledge pipeline that combines visual captioning with web-augmented scientific retrieval to ground annotations in phytopathological literature. AgriMM contains more than 3,000 agricultural classes and over 607k visual question-answer pairs, and AgriChat is reported to outperform other open-source models on internal and external benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.16934v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-03-14", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 2, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 7, "tools_frameworks": 2, "industry_applications": 1}}, "daily_keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "knowledge graph completion", "domain": "knowledge-graph"}, {"text": "multi-hop reasoning", "domain": "cognition-reasoning"}, {"text": "context compression", "domain": "context-prompting"}, {"text": "tool retrieval", "domain": "rag-retrieval"}, {"text": "embedding geometry", "domain": "embeddings-vectors"}, {"text": "symbolic abstraction", "domain": "ai-knowledge"}, {"text": "domain-specific models", "domain": "agent-architecture"}, {"text": "hallucination control", "domain": "evaluation-benchmark"}, {"text": "adversarial context", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs", "title_zh": "超越显式边：在噪声与稀疏知识图谱上的鲁棒推理", "url": "http://arxiv.org/abs/2603.14006v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14006", "summary": "INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "similarity expansion", "domain": "embeddings-vectors"}, {"text": "query routing", "domain": "agent-architecture"}, {"text": "noisy graphs", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true}, {"title": "The Reasoning Bottleneck in Graph-RAG: Structured Prompting and Context Compression for Multi-Hop QA", "title_zh": "Graph-RAG 中的推理瓶颈：面向多跳问答的结构化提示与上下文压缩", "url": "http://arxiv.org/abs/2603.14045v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14045", "summary": "Evaluating KET-RAG on three multi-hop QA benchmarks, the authors find that 77% to 91% of questions have the gold answer in the retrieved context yet accuracy is only 35% to 78%, with 73% to 84% of errors traced to reasoning failures. SPARQL chain-of-thought prompting and graph-walk compression improve accuracy, and with question-type routing an augmented Llama-8B matches or exceeds an unaugmented Llama-70B at roughly 12x lower cost.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "cognition-reasoning"}, {"text": "context compression", "domain": "context-prompting"}, {"text": "SPARQL prompting", "domain": "knowledge-graph"}, {"text": "reasoning bottleneck", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "ToolFlood: Beyond Selection -- Hiding Valid Tools from LLM Agents via Semantic Covering", "title_zh": "ToolFlood：通过语义覆盖向 LLM agent 隐藏有效工具", "url": "http://arxiv.org/abs/2603.13950v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.13950", "summary": "ToolFlood attacks the tool-retrieval layer of LLM agents by injecting a few tools whose metadata is positioned to span many user queries in embedding space, pushing benign tools out of the agent's context. On the ToolBench catalog it reports up to 95% attack success at roughly a 1% injection rate.", "keywords": [{"text": "tool retrieval", "domain": "rag-retrieval"}, {"text": "embedding geometry", "domain": "embeddings-vectors"}, {"text": "adversarial attack", "domain": "agent-architecture"}, {"text": "retrieval saturation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "An Alternative Trajectory for Generative AI", "title_zh": "生成式 AI 的另一条发展轨迹", "url": "http://arxiv.org/abs/2603.14147v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14147", "summary": "The position paper argues that scaling monolithic models is colliding with energy, water and data constraints, and proposes domain-specific superintelligence built by first constructing explicit symbolic abstractions such as knowledge graphs, ontologies and formal logic. It envisions societies of small domain models routed by orchestration agents, moving capability from data centers to on-device experts.", "keywords": [{"text": "domain-specific superintelligence", "domain": "ai-knowledge"}, {"text": "symbolic abstractions", "domain": "knowledge-graph"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "orchestration agents", "domain": "agent-architecture"}, {"text": "sustainable AI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs", "title_zh": "超越显式边：在噪声与稀疏知识图谱上的鲁棒推理", "url": "http://arxiv.org/abs/2603.14006v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14006", "summary": "INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "similarity expansion", "domain": "embeddings-vectors"}, {"text": "query routing", "domain": "agent-architecture"}, {"text": "noisy graphs", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true}, {"title": "The Reasoning Bottleneck in Graph-RAG: Structured Prompting and Context Compression for Multi-Hop QA", "title_zh": "Graph-RAG 中的推理瓶颈：面向多跳问答的结构化提示与上下文压缩", "url": "http://arxiv.org/abs/2603.14045v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14045", "summary": "Evaluating KET-RAG on three multi-hop QA benchmarks, the authors find that 77% to 91% of questions have the gold answer in the retrieved context yet accuracy is only 35% to 78%, with 73% to 84% of errors traced to reasoning failures. SPARQL chain-of-thought prompting and graph-walk compression improve accuracy, and with question-type routing an augmented Llama-8B matches or exceeds an unaugmented Llama-70B at roughly 12x lower cost.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "cognition-reasoning"}, {"text": "context compression", "domain": "context-prompting"}, {"text": "SPARQL prompting", "domain": "knowledge-graph"}, {"text": "reasoning bottleneck", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "ToolFlood: Beyond Selection -- Hiding Valid Tools from LLM Agents via Semantic Covering", "title_zh": "ToolFlood：通过语义覆盖向 LLM agent 隐藏有效工具", "url": "http://arxiv.org/abs/2603.13950v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.13950", "summary": "ToolFlood attacks the tool-retrieval layer of LLM agents by injecting a few tools whose metadata is positioned to span many user queries in embedding space, pushing benign tools out of the agent's context. On the ToolBench catalog it reports up to 95% attack success at roughly a 1% injection rate.", "keywords": [{"text": "tool retrieval", "domain": "rag-retrieval"}, {"text": "embedding geometry", "domain": "embeddings-vectors"}, {"text": "adversarial attack", "domain": "agent-architecture"}, {"text": "retrieval saturation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "An Alternative Trajectory for Generative AI", "title_zh": "生成式 AI 的另一条发展轨迹", "url": "http://arxiv.org/abs/2603.14147v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14147", "summary": "The position paper argues that scaling monolithic models is colliding with energy, water and data constraints, and proposes domain-specific superintelligence built by first constructing explicit symbolic abstractions such as knowledge graphs, ontologies and formal logic. It envisions societies of small domain models routed by orchestration agents, moving capability from data centers to on-device experts.", "keywords": [{"text": "domain-specific superintelligence", "domain": "ai-knowledge"}, {"text": "symbolic abstractions", "domain": "knowledge-graph"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "orchestration agents", "domain": "agent-architecture"}, {"text": "sustainable AI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Clinician input steers AI toward accurate and harmful recommendations", "title_zh": "临床医生的输入会引导 AI 给出准确但也有害的建议", "url": "http://arxiv.org/abs/2603.14158v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14158", "summary": "Using 61 NEJM Case Records and 21 reasoning variants from eight models, the study finds that clinician context raises LLM-clinician concordance and improves correct final-diagnosis inclusion by a mean 20.4 points, while adversarial context degrades performance in 14 models. Inference-time scaling reduces harmful echoing of clinician-introduced recommendations across WHO harm-severity tiers.", "keywords": [{"text": "clinical reasoning", "domain": "cognition-reasoning"}, {"text": "context influence", "domain": "context-prompting"}, {"text": "adversarial context", "domain": "evaluation-benchmark"}, {"text": "AI safety", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "The GELATO Dataset for Legislative NER", "title_zh": "GELATO：面向立法文本命名实体识别的数据集", "url": "http://arxiv.org/abs/2603.14130v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14130", "summary": "GELATO is a dataset of U.S. House and Senate bills from the 118th Congress annotated with a two-level named-entity-recognition ontology. The authors fine-tune BERT and RoBERTa for first-level prediction and use prompted LLMs for the second level.", "keywords": [{"text": "named entity recognition", "domain": "ai-knowledge"}, {"text": "legislative text", "domain": "ai-knowledge"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "dataset", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "A Multi-Agent Perception-Action Alliance for Efficient Long Video Reasoning", "title_zh": "面向高效长视频推理的多智能体感知-行动联盟", "url": "http://arxiv.org/abs/2603.14052v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14052", "summary": "A4VL runs a multi-round perception-action exploration loop with a team of VLM agents that extract query-specific clues from sampled frames, align them to relevant video blocks, and cross-review one another before deciding whether to continue or answer. It reports gains over 18 VLMs and 11 long-video methods on five VideoQA benchmarks with lower inference latency.", "keywords": [{"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "long-video reasoning", "domain": "cognition-reasoning"}, {"text": "cross-review", "domain": "agent-architecture"}, {"text": "VideoQA", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "nikmcfly/MiroFish-Offline", "title_zh": "MiroFish-Offline：离线多智能体模拟引擎", "url": "https://github.com/nikmcfly/MiroFish-Offline", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "An English fork of MiroFish that provides an offline multi-agent simulation and prediction engine built on a local Neo4j graph database and Ollama stack.", "keywords": [{"text": "multi-agent simulation", "domain": "agent-architecture"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "local deployment", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "jackwener/OpenCLI", "title_zh": "OpenCLI：把任意网站变成 CLI", "url": "https://github.com/jackwener/OpenCLI", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "OpenCLI is a JavaScript project that turns any website into a command-line interface and lets an AI agent use the browser session the user is already logged into.", "keywords": [{"text": "agent tooling", "domain": "agent-architecture"}, {"text": "browser automation", "domain": "agent-architecture"}, {"text": "CLI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "AgriChat: A Multimodal Large Language Model for Agriculture Image Understanding", "title_zh": "AgriChat：面向农业图像理解的多模态大语言模型", "url": "http://arxiv.org/abs/2603.16934v1", "source": "arXiv", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "2603.16934", "summary": "AgriChat is a specialized multimodal LLM trained on AgriMM, a benchmark built by a Vision-to-Verified-Knowledge pipeline that combines visual captioning with web-augmented scientific retrieval to ground annotations in phytopathological literature. AgriMM contains more than 3,000 agricultural classes and over 607k visual question-answer pairs, and AgriChat is reported to outperform other open-source models on internal and external benchmarks.", "keywords": [{"text": "multimodal LLM", "domain": "ai-knowledge"}, {"text": "scientific retrieval", "domain": "rag-retrieval"}, {"text": "grounded annotation", "domain": "knowledge-lifecycle"}, {"text": "agriculture", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
