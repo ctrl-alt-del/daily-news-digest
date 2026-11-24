@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-11-19</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent incident replication</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent audit</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph synthesis</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">coherence validation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">self-improvement evaluation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">three-tier memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill-guided post-training</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">embodied benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">normative-descriptive calibration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP integration</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="incident replication agent audit hazard warnings prompt injection">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.26553</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Replication of Agentic Security Events: Audit and Investigation (ROGUE-AI)<div class="title-zh">智能体安全事件复现：审计与调查（ROGUE-AI）</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">incident replication</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent audit</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">hazard warnings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">prompt injection</span></div>
+  <div class="item-summary">ROGUE-AI is a multi-agent framework that rebuilds each reported agent incident offline together with a matched control that lacks only the blamed cause, then runs agents on both to test whether the cause reproduces the harm. It reproduced the reported harm in 89% of 108 attempted replications; five current models made the blamed mistake in 18-33% of runs versus at most 1% without the cause, and a warning after each tool output that names the hazard and its consequence lowered harm for all five.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26553v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph synthesis STIX 2.1 coherence validation generation by simulation threat intelligence">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26717</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Coherence by Construction: Synthesizing CTI Knowledge Graphs and the Formal Limits of Coherence Validation<div class="title-zh">构造即一致：合成 CTI 知识图谱与一致性验证的形式极限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph synthesis</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">STIX 2.1</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">coherence validation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">generation by simulation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">threat intelligence</span></div>
+  <div class="item-summary">The paper generates cyber-threat-intelligence knowledge graphs in STIX 2.1 by simulating a process in which language-model agents propose intent and a deterministic referee resolves outcomes against an explicit world model, so a relation is emitted only when the event it represents occurs. It proves referential closure, causal grounding and identifier stability, and proves that validators a structure-matched random graph can reproduce are uninformative about coherence for such generators, realizing the failure four ways with Erdős-Rényi controls.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26717v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-improvement episodic memory evidence grounding embodied agents benchmark design">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26910</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress<div class="title-zh">AstronautBench：从知识、证据与进展三个视角衡量智能体的跨回合自我改进</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-improvement</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">embodied agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span></div>
+  <div class="item-summary">AstronautBench measures a single agent's self-improvement in the game Outer Wilds through three views on the same run: what it knows, whether its own cited evidence supports that knowledge, and how far it progresses in a 22-minute resetting loop. With GPT-6.1 Sol and Gemini 4 Argon planners the three views did not move together; the GPT-6.1 Sol agent's correct answers rose from 14.6% to 26.8%, but at episode 8 only 59-68% were supported by its cited evidence.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26910v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="incident replication agent audit hazard warnings prompt injection">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.26553</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Replication of Agentic Security Events: Audit and Investigation (ROGUE-AI)<div class="title-zh">智能体安全事件复现：审计与调查（ROGUE-AI）</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">incident replication</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent audit</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">hazard warnings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">prompt injection</span></div>
+  <div class="item-summary">ROGUE-AI is a multi-agent framework that rebuilds each reported agent incident offline together with a matched control that lacks only the blamed cause, then runs agents on both to test whether the cause reproduces the harm. It reproduced the reported harm in 89% of 108 attempted replications; five current models made the blamed mistake in 18-33% of runs versus at most 1% without the cause, and a warning after each tool output that names the hazard and its consequence lowered harm for all five.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26553v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph synthesis STIX 2.1 coherence validation generation by simulation threat intelligence">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26717</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Coherence by Construction: Synthesizing CTI Knowledge Graphs and the Formal Limits of Coherence Validation<div class="title-zh">构造即一致：合成 CTI 知识图谱与一致性验证的形式极限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph synthesis</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">STIX 2.1</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">coherence validation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">generation by simulation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">threat intelligence</span></div>
+  <div class="item-summary">The paper generates cyber-threat-intelligence knowledge graphs in STIX 2.1 by simulating a process in which language-model agents propose intent and a deterministic referee resolves outcomes against an explicit world model, so a relation is emitted only when the event it represents occurs. It proves referential closure, causal grounding and identifier stability, and proves that validators a structure-matched random graph can reproduce are uninformative about coherence for such generators, realizing the failure four ways with Erdős-Rényi controls.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26717v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-improvement episodic memory evidence grounding embodied agents benchmark design">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26910</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress<div class="title-zh">AstronautBench：从知识、证据与进展三个视角衡量智能体的跨回合自我改进</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-improvement</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">embodied agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span></div>
+  <div class="item-summary">AstronautBench measures a single agent's self-improvement in the game Outer Wilds through three views on the same run: what it knows, whether its own cited evidence supports that knowledge, and how far it progresses in a 22-minute resetting loop. With GPT-6.1 Sol and Gemini 4 Argon planners the three views did not move together; the GPT-6.1 Sol agent's correct answers rose from 14.6% to 26.8%, but at episode 8 only 59-68% were supported by its cited evidence.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26910v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-evolution execution traces three-tier memory EDA scripting anti-leakage retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26912</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Self-Evolving Beyond Human-Crafted Experience for EDA Scripting<div class="title-zh">超越人工经验的自演化：面向 EDA 脚本编写的执行锚定智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolution</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">execution traces</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">three-tier memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">EDA scripting</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">anti-leakage retrieval</span></div>
+  <div class="item-summary">ZhuLong-SE is an execution-grounded LLM agent for EDA scripting that adds API retrieval, documentation responses, isolated sandbox execution and static checking to a task harness, then distills past traces into a three-tier memory store governed by ground-truth anchoring, disconfirmation filtering, held-out rollback and anti-leakage retrieval. The full task-level harness with self-evolution disabled reaches 92.4% pass@1 on the 158-task EDA-Eval-PyAether benchmark, and self-evolution from a bare configuration beats a human-crafted-experience baseline by 2.5 points (80.0% vs. 77.5%).</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26912v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="autonomous post-training skill-guided fine-tuning teacher trajectories behavioral shaping">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26510</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AutoMaster: Autonomous Post-Training by Making the Same Model a Better Teacher<div class="title-zh">AutoMaster：让同一模型成为更好的教师，实现自主后训练</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">autonomous post-training</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">skill-guided fine-tuning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">teacher trajectories</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">behavioral shaping</span></div>
+  <div class="item-summary">AutoMaster is an autonomous post-training system in which an LLM agent designs natural-language skill interventions from trajectory analysis, data selection and rollout feedback, then fine-tunes a student on the resulting teacher trajectories. Across Terminal, Search and software-engineering tasks with 4B and 9B students it improves mean performance over vanilla SFT by 1.42-8.99 percentage points with the teacher and data held fixed, and retaining skill instructions during SFT performs better in all six settings.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26510v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="embodied benchmark mind-action composition robotic manipulation diagnostic evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26444</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Mind2Act World: A Diagnostic Benchmark for Embodied Mind, Physical Action, and Mind-Action Composition in Robotic Manipulation<div class="title-zh">Mind2Act World：机器人操作中具身思维、物理行动与思维—行动组合的诊断基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">embodied benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mind-action composition</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">robotic manipulation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">diagnostic evaluation</span></div>
+  <div class="item-summary">Mind2Act World is a 30-task, 180-configuration benchmark that separates reasoning, physical execution and their composition in robotic manipulation. The strongest agent scores 52.7% on Mind, 39.0% on Act and only 12.0% on Mind2Act.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26444v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="action-level critique intent grounding robot control failure-mode analysis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26613</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentRoboCritic: Understanding the Capability of Frontier Agents on Direct Robot Control<div class="title-zh">AgentRoboCritic：理解前沿智能体直接控制机器人能力的意图锚定批评框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">action-level critique</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">intent grounding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">robot control</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">failure-mode analysis</span></div>
+  <div class="item-summary">AgentRoboCritic is an intent-grounded critique framework in which a policy agent states a local intent alongside each action and a critic evaluates the action's outcome and failure mode against that intent, applied across 12 manipulation benchmarks. The authors release 12,844 annotated actions and a fine-tuned open-source critic, Muse-Glimmer-30B, whose failure-mode accuracy rises from 32.58% to 74.24% on a 400-action human-annotated benchmark.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26613v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="normative reasoning benchmark calibration prompt framing fairness evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26870</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Demographic Discrimination: Benchmarking Normative-Descriptive Calibration in LLMs<div class="title-zh">超越人口统计歧视：评估 LLM 的规范性—描述性校准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">normative reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark calibration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt framing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">fairness evaluation</span></div>
+  <div class="item-summary">The paper introduces normative-descriptive calibration, measuring whether a model treats matched candidates differently when asked to predict an outcome versus decide one, through 697 matched-pair scenarios across six domains and three metrics. Normative-descriptive separation distinguishes 13 of 15 model pairs, Claude Sonnet 4.6 and Opus 4.6 show the strongest separation, and all six models favor whichever candidate is listed first when forced to choose between identical candidates.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26870v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="structured decision-making chain-of-thought training intervention">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.26282</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">What If Chain-of-Thought Is Not Enough?<div class="title-zh">如果思维链不够用？用 QOC 结构化决策训练 LLM</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">structured decision-making</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">training intervention</span></div>
+  <div class="item-summary">The paper trains language models to follow Question-Option-Criteria decision processes instead of relying on chain-of-thought, reporting better answer quality and larger gains as models become large enough to execute QOC reliably.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.26282v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="MCP integration multi-agent workflows 3D scene control">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">bookwjitchieni1986/blender-ai-mcp-addon<div class="title-zh">Blender AI MCP 插件：用对话控制 3D 场景</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP integration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">3D scene control</span></div>
+  <div class="item-summary">The Blender AI MCP add-on provides visual chat, scene tools and multi-agent workflows, and works with ChatGPT, Claude, Gemini, Ollama and OpenCode.</div>
+  <a class="item-link" href="https://github.com/bookwjitchieni1986/blender-ai-mcp-addon" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-11-19", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 2, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 9, "tools_frameworks": 1}}, "daily_keywords": [{"text": "agent incident replication", "domain": "agent-architecture"}, {"text": "agent audit", "domain": "evaluation-benchmark"}, {"text": "knowledge graph synthesis", "domain": "knowledge-graph"}, {"text": "coherence validation", "domain": "evaluation-benchmark"}, {"text": "self-improvement evaluation", "domain": "evaluation-benchmark"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "self-evolving memory", "domain": "knowledge-lifecycle"}, {"text": "three-tier memory", "domain": "agent-memory"}, {"text": "skill-guided post-training", "domain": "knowledge-lifecycle"}, {"text": "embodied benchmark", "domain": "evaluation-benchmark"}, {"text": "normative-descriptive calibration", "domain": "cognition-reasoning"}, {"text": "MCP integration", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Replication of Agentic Security Events: Audit and Investigation (ROGUE-AI)", "title_zh": "智能体安全事件复现：审计与调查（ROGUE-AI）", "url": "http://arxiv.org/abs/2611.26553v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.26553", "summary": "ROGUE-AI is a multi-agent framework that rebuilds each reported agent incident offline together with a matched control that lacks only the blamed cause, then runs agents on both to test whether the cause reproduces the harm. It reproduced the reported harm in 89% of 108 attempted replications; five current models made the blamed mistake in 18-33% of runs versus at most 1% without the cause, and a warning after each tool output that names the hazard and its consequence lowered harm for all five.", "keywords": [{"text": "incident replication", "domain": "agent-architecture"}, {"text": "agent audit", "domain": "evaluation-benchmark"}, {"text": "hazard warnings", "domain": "context-prompting"}, {"text": "prompt injection", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Coherence by Construction: Synthesizing CTI Knowledge Graphs and the Formal Limits of Coherence Validation", "title_zh": "构造即一致：合成 CTI 知识图谱与一致性验证的形式极限", "url": "http://arxiv.org/abs/2611.26717v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26717", "summary": "The paper generates cyber-threat-intelligence knowledge graphs in STIX 2.1 by simulating a process in which language-model agents propose intent and a deterministic referee resolves outcomes against an explicit world model, so a relation is emitted only when the event it represents occurs. It proves referential closure, causal grounding and identifier stability, and proves that validators a structure-matched random graph can reproduce are uninformative about coherence for such generators, realizing the failure four ways with Erdős-Rényi controls.", "keywords": [{"text": "knowledge graph synthesis", "domain": "knowledge-graph"}, {"text": "STIX 2.1", "domain": "knowledge-graph"}, {"text": "coherence validation", "domain": "evaluation-benchmark"}, {"text": "generation by simulation", "domain": "knowledge-lifecycle"}, {"text": "threat intelligence", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress", "title_zh": "AstronautBench：从知识、证据与进展三个视角衡量智能体的跨回合自我改进", "url": "http://arxiv.org/abs/2611.26910v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26910", "summary": "AstronautBench measures a single agent's self-improvement in the game Outer Wilds through three views on the same run: what it knows, whether its own cited evidence supports that knowledge, and how far it progresses in a 22-minute resetting loop. With GPT-6.1 Sol and Gemini 4 Argon planners the three views did not move together; the GPT-6.1 Sol agent's correct answers rose from 14.6% to 26.8%, but at episode 8 only 59-68% were supported by its cited evidence.", "keywords": [{"text": "self-improvement", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "evidence grounding", "domain": "evaluation-benchmark"}, {"text": "embodied agents", "domain": "agent-architecture"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Replication of Agentic Security Events: Audit and Investigation (ROGUE-AI)", "title_zh": "智能体安全事件复现：审计与调查（ROGUE-AI）", "url": "http://arxiv.org/abs/2611.26553v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.26553", "summary": "ROGUE-AI is a multi-agent framework that rebuilds each reported agent incident offline together with a matched control that lacks only the blamed cause, then runs agents on both to test whether the cause reproduces the harm. It reproduced the reported harm in 89% of 108 attempted replications; five current models made the blamed mistake in 18-33% of runs versus at most 1% without the cause, and a warning after each tool output that names the hazard and its consequence lowered harm for all five.", "keywords": [{"text": "incident replication", "domain": "agent-architecture"}, {"text": "agent audit", "domain": "evaluation-benchmark"}, {"text": "hazard warnings", "domain": "context-prompting"}, {"text": "prompt injection", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Coherence by Construction: Synthesizing CTI Knowledge Graphs and the Formal Limits of Coherence Validation", "title_zh": "构造即一致：合成 CTI 知识图谱与一致性验证的形式极限", "url": "http://arxiv.org/abs/2611.26717v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26717", "summary": "The paper generates cyber-threat-intelligence knowledge graphs in STIX 2.1 by simulating a process in which language-model agents propose intent and a deterministic referee resolves outcomes against an explicit world model, so a relation is emitted only when the event it represents occurs. It proves referential closure, causal grounding and identifier stability, and proves that validators a structure-matched random graph can reproduce are uninformative about coherence for such generators, realizing the failure four ways with Erdős-Rényi controls.", "keywords": [{"text": "knowledge graph synthesis", "domain": "knowledge-graph"}, {"text": "STIX 2.1", "domain": "knowledge-graph"}, {"text": "coherence validation", "domain": "evaluation-benchmark"}, {"text": "generation by simulation", "domain": "knowledge-lifecycle"}, {"text": "threat intelligence", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "AstronautBench: Measuring Agent Self-Improvement Across Episodes Through Knowledge, Evidence, and Progress", "title_zh": "AstronautBench：从知识、证据与进展三个视角衡量智能体的跨回合自我改进", "url": "http://arxiv.org/abs/2611.26910v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26910", "summary": "AstronautBench measures a single agent's self-improvement in the game Outer Wilds through three views on the same run: what it knows, whether its own cited evidence supports that knowledge, and how far it progresses in a 22-minute resetting loop. With GPT-6.1 Sol and Gemini 4 Argon planners the three views did not move together; the GPT-6.1 Sol agent's correct answers rose from 14.6% to 26.8%, but at episode 8 only 59-68% were supported by its cited evidence.", "keywords": [{"text": "self-improvement", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "evidence grounding", "domain": "evaluation-benchmark"}, {"text": "embodied agents", "domain": "agent-architecture"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Self-Evolving Beyond Human-Crafted Experience for EDA Scripting", "title_zh": "超越人工经验的自演化：面向 EDA 脚本编写的执行锚定智能体", "url": "http://arxiv.org/abs/2611.26912v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26912", "summary": "ZhuLong-SE is an execution-grounded LLM agent for EDA scripting that adds API retrieval, documentation responses, isolated sandbox execution and static checking to a task harness, then distills past traces into a three-tier memory store governed by ground-truth anchoring, disconfirmation filtering, held-out rollback and anti-leakage retrieval. The full task-level harness with self-evolution disabled reaches 92.4% pass@1 on the 158-task EDA-Eval-PyAether benchmark, and self-evolution from a bare configuration beats a human-crafted-experience baseline by 2.5 points (80.0% vs. 77.5%).", "keywords": [{"text": "self-evolution", "domain": "knowledge-lifecycle"}, {"text": "execution traces", "domain": "agent-memory"}, {"text": "three-tier memory", "domain": "agent-memory"}, {"text": "EDA scripting", "domain": "ai-knowledge"}, {"text": "anti-leakage retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "AutoMaster: Autonomous Post-Training by Making the Same Model a Better Teacher", "title_zh": "AutoMaster：让同一模型成为更好的教师，实现自主后训练", "url": "http://arxiv.org/abs/2611.26510v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26510", "summary": "AutoMaster is an autonomous post-training system in which an LLM agent designs natural-language skill interventions from trajectory analysis, data selection and rollout feedback, then fine-tunes a student on the resulting teacher trajectories. Across Terminal, Search and software-engineering tasks with 4B and 9B students it improves mean performance over vanilla SFT by 1.42-8.99 percentage points with the teacher and data held fixed, and retaining skill instructions during SFT performs better in all six settings.", "keywords": [{"text": "autonomous post-training", "domain": "knowledge-lifecycle"}, {"text": "skill-guided fine-tuning", "domain": "agent-architecture"}, {"text": "teacher trajectories", "domain": "knowledge-lifecycle"}, {"text": "behavioral shaping", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Mind2Act World: A Diagnostic Benchmark for Embodied Mind, Physical Action, and Mind-Action Composition in Robotic Manipulation", "title_zh": "Mind2Act World：机器人操作中具身思维、物理行动与思维—行动组合的诊断基准", "url": "http://arxiv.org/abs/2611.26444v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26444", "summary": "Mind2Act World is a 30-task, 180-configuration benchmark that separates reasoning, physical execution and their composition in robotic manipulation. The strongest agent scores 52.7% on Mind, 39.0% on Act and only 12.0% on Mind2Act.", "keywords": [{"text": "embodied benchmark", "domain": "evaluation-benchmark"}, {"text": "mind-action composition", "domain": "cognition-reasoning"}, {"text": "robotic manipulation", "domain": "agent-architecture"}, {"text": "diagnostic evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "AgentRoboCritic: Understanding the Capability of Frontier Agents on Direct Robot Control", "title_zh": "AgentRoboCritic：理解前沿智能体直接控制机器人能力的意图锚定批评框架", "url": "http://arxiv.org/abs/2611.26613v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26613", "summary": "AgentRoboCritic is an intent-grounded critique framework in which a policy agent states a local intent alongside each action and a critic evaluates the action's outcome and failure mode against that intent, applied across 12 manipulation benchmarks. The authors release 12,844 annotated actions and a fine-tuned open-source critic, Muse-Glimmer-30B, whose failure-mode accuracy rises from 32.58% to 74.24% on a 400-action human-annotated benchmark.", "keywords": [{"text": "action-level critique", "domain": "agent-architecture"}, {"text": "intent grounding", "domain": "cognition-reasoning"}, {"text": "robot control", "domain": "agent-architecture"}, {"text": "failure-mode analysis", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Beyond Demographic Discrimination: Benchmarking Normative-Descriptive Calibration in LLMs", "title_zh": "超越人口统计歧视：评估 LLM 的规范性—描述性校准", "url": "http://arxiv.org/abs/2611.26870v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26870", "summary": "The paper introduces normative-descriptive calibration, measuring whether a model treats matched candidates differently when asked to predict an outcome versus decide one, through 697 matched-pair scenarios across six domains and three metrics. Normative-descriptive separation distinguishes 13 of 15 model pairs, Claude Sonnet 4.6 and Opus 4.6 show the strongest separation, and all six models favor whichever candidate is listed first when forced to choose between identical candidates.", "keywords": [{"text": "normative reasoning", "domain": "cognition-reasoning"}, {"text": "benchmark calibration", "domain": "evaluation-benchmark"}, {"text": "prompt framing", "domain": "context-prompting"}, {"text": "fairness evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "What If Chain-of-Thought Is Not Enough?", "title_zh": "如果思维链不够用？用 QOC 结构化决策训练 LLM", "url": "http://arxiv.org/abs/2611.26282v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.26282", "summary": "The paper trains language models to follow Question-Option-Criteria decision processes instead of relying on chain-of-thought, reporting better answer quality and larger gains as models become large enough to execute QOC reliably.", "keywords": [{"text": "structured decision-making", "domain": "cognition-reasoning"}, {"text": "chain-of-thought", "domain": "context-prompting"}, {"text": "training intervention", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "bookwjitchieni1986/blender-ai-mcp-addon", "title_zh": "Blender AI MCP 插件：用对话控制 3D 场景", "url": "https://github.com/bookwjitchieni1986/blender-ai-mcp-addon", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "The Blender AI MCP add-on provides visual chat, scene tools and multi-agent workflows, and works with ChatGPT, Claude, Gemini, Ollama and OpenCode.", "keywords": [{"text": "MCP integration", "domain": "agent-architecture"}, {"text": "multi-agent workflows", "domain": "agent-architecture"}, {"text": "3D scene control", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

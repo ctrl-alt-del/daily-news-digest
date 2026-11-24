@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-11-13</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry & Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>4 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:33%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">incremental visual embedding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">visual memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark creation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">label-free quality anchors</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">weight-space programming</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">executable reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">hierarchical code context</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent ethics</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt optimization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">safety evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic payments</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="benchmark creation coding agents quality anchors label-free validation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.18890</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Benchmark Factory: Agentic Benchmark Creation via Dataset Curation and Label-Free Quality Anchors<div class="title-zh">Benchmark Factory：通过数据集整理与无标签质量锚点创建智能体基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark creation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">quality anchors</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">label-free validation</span></div>
+  <div class="item-summary">Benchmark Factory is an autonomous meta-agent loop with human checkpoints that writes sourcing queries over production code changes, runs models of known relative strength, diagnoses failures, and repairs candidate benchmarks until they clear label-free quality anchors. On configurations never used to build them, its benchmarks ranked Claude Opus 4.7 at high over low reasoning effort (60.6% vs 54.4%) and GPT-5.5 over GPT-5.4 (65.8% vs 60.5%), with 9 of 10 per-cohort comparisons agreeing.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18890v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="incremental embedding visual memory screenshot retrieval KV cache reuse">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.18516</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">StreamEmbed: Real-Time Indexing from Pixels for Screenshot Retrieval<div class="title-zh">StreamEmbed：从像素进行实时索引的截图检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">incremental embedding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">visual memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">screenshot retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">KV cache reuse</span></div>
+  <div class="item-summary">StreamEmbed incrementally embeds screenshots by using pixel differences to prune repeated spatial tokens and reuse cached keys and values across frames, with a small learned adapter preserving fidelity to full-screenshot embeddings. On ScreenMemEval it encodes up to 3.7x faster than full encoding at no accuracy loss, beats OCR-based indexing by up to 6.3 Recall@10 points at matched latency, and stores a simulated year of screenshots in 0.13 GB of RAM.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18516v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="weight-space programming benchmark model internals agentic evaluation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.18553</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">WeightBench: Evaluating Language Models as Weight-Space Programmers<div class="title-zh">WeightBench：评估语言模型作为权重空间程序员</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">weight-space programming</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">model internals</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic evaluation</span></div>
+  <div class="item-summary">WeightBench evaluates LLMs on 42 weight-space programming tasks across reading, fixing and writing weights, recognizing impossible edits, and data-free compression, with networks from 2K-parameter control policies to 7B language models. Frontier agents can read small networks and write working control policies without running them, but cannot yet patch or compress language models or distinguish impossible edits; Claude Opus 5.5 reaches a 0.535 macro score.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18553v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="code summarization hierarchical context documentation LLM evaluation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.18964</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Context Matters: Improving LLM-Based Code Summarization with Hierarchical Information<div class="title-zh">上下文很重要：用层级信息改进基于 LLM 的代码摘要</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">code summarization</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">hierarchical context</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">documentation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM evaluation</span></div>
+  <div class="item-summary">The study varies the function-, class- and module-level context visible to several LLMs when generating code-level documentation and compares the results with existing documentation as a proxy for developer intent. Documentation-aware prompts with class or module context consistently produce summaries closest to the original docs, with statistically significant gains over the baseline whose effect sizes range from negligible for DeepSeek to medium for Gemini.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18964v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="executable reasoning tool use small language models reinforcement learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.18494</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ARCHER: From Rationale Imitation to Executable Reasoning in Small Language Models<div class="title-zh">ARCHER：从小模型的有理据模仿到可执行推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">executable reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">small language models</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">reinforcement learning</span></div>
+  <div class="item-summary">ARCHER is a two-stage framework that first compiles free-form chain-of-thought rationales into typed action traces with calculator calls, runtime observations and verification, then refines the policy with asymmetric hierarchical reinforcement learning. Across five sub-10B backbones it beats the strongest tool-augmented baseline by 5.51 points macro-average, including 8.95 points on MATH-500 and about 5.3 points on AIME-2024 and AIME-2025.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18494v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="benchmark creation coding agents quality anchors label-free validation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.18890</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Benchmark Factory: Agentic Benchmark Creation via Dataset Curation and Label-Free Quality Anchors<div class="title-zh">Benchmark Factory：通过数据集整理与无标签质量锚点创建智能体基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark creation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">quality anchors</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">label-free validation</span></div>
+  <div class="item-summary">Benchmark Factory is an autonomous meta-agent loop with human checkpoints that writes sourcing queries over production code changes, runs models of known relative strength, diagnoses failures, and repairs candidate benchmarks until they clear label-free quality anchors. On configurations never used to build them, its benchmarks ranked Claude Opus 4.7 at high over low reasoning effort (60.6% vs 54.4%) and GPT-5.5 over GPT-5.4 (65.8% vs 60.5%), with 9 of 10 per-cohort comparisons agreeing.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18890v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent ethics BDI logging harmful content alignment under pressure">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.18908</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MemeEconomy: Do LLM Agents Trade Ethics for Survival?<div class="title-zh">MemeEconomy：LLM 智能体会为生存而交易伦理吗？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent ethics</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">BDI logging</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">harmful content</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">alignment under pressure</span></div>
+  <div class="item-summary">MemeEconomy is a multimodal agentic market simulation in which LLM agents choose content from a five-tier harm taxonomy under low- and high-pressure environments, logging each decision in a Belief-Desire-Intention schema. Across ten models harmful selection rates rise by 15 percentage points on average under survival pressure, and a 2B verifier trained on the BDI logs reaches 97.5% accuracy on in-distribution Pass-versus-Block audits and 78% on Hateful Memes.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18908v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt optimization natural language optimization constrained search contract preservation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.18883</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SPLICE: Structured Prompt Local Iterative Combinatorial Evolution<div class="title-zh">SPLICE：结构化提示的局部迭代组合演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt optimization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">natural language optimization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">constrained search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">contract preservation</span></div>
+  <div class="item-summary">SPLICE treats natural-language optimization as constrained combinatorial search over an edit graph of block-structured, selectively mutable prompt states, with per-block mutability, elitist beam search and a length regularizer matched to three failure modes. Across seven public benchmarks under five reproduced protocols it wins on four and matches the strongest prior method on three, and it preserves contract clauses that unconstrained optimizers trade away on a contract stress test.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18883v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="weight-space programming benchmark model internals agentic evaluation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.18553</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">WeightBench: Evaluating Language Models as Weight-Space Programmers<div class="title-zh">WeightBench：评估语言模型作为权重空间程序员</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">weight-space programming</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">model internals</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic evaluation</span></div>
+  <div class="item-summary">WeightBench evaluates LLMs on 42 weight-space programming tasks across reading, fixing and writing weights, recognizing impossible edits, and data-free compression, with networks from 2K-parameter control policies to 7B language models. Frontier agents can read small networks and write working control policies without running them, but cannot yet patch or compress language models or distinguish impossible edits; Claude Opus 5.5 reaches a 0.535 macro score.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18553v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="incremental embedding visual memory screenshot retrieval KV cache reuse">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.18516</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">StreamEmbed: Real-Time Indexing from Pixels for Screenshot Retrieval<div class="title-zh">StreamEmbed：从像素进行实时索引的截图检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">incremental embedding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">visual memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">screenshot retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">KV cache reuse</span></div>
+  <div class="item-summary">StreamEmbed incrementally embeds screenshots by using pixel differences to prune repeated spatial tokens and reuse cached keys and values across frames, with a small learned adapter preserving fidelity to full-screenshot embeddings. On ScreenMemEval it encodes up to 3.7x faster than full encoding at no accuracy loss, beats OCR-based indexing by up to 6.3 Recall@10 points at matched latency, and stores a simulated year of screenshots in 0.13 GB of RAM.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.18516v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="safety evaluations evaluation reporting AI safety">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    
+    
+    <span class="item-source">Anthropic Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Building strong safety evaluations<div class="title-zh">构建强有力的安全评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">safety evaluations</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation reporting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI safety</span></div>
+  <div class="item-summary">Anthropic publishes recommendations for designing, running and reporting safety evaluations, drawing on its own experience.</div>
+  <a class="item-link" href="https://www.anthropic.com/research/building-strong-safety-evaluations" target="_blank" rel="noopener">&rarr; www.anthropic.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry & Applications
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="enterprise agents legacy systems workflow automation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Shield helps technicians hand off legacy portal work with OpenAI<div class="title-zh">Shield 借助 OpenAI 帮助技术人员交接遗留门户工作</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">enterprise agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">legacy systems</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">workflow automation</span></div>
+  <div class="item-summary">OpenAI's customer story describes Shield using its models so that Forge agents can navigate legacy portals and take over work that would otherwise occupy IT technicians, letting them focus on issues that need their judgment.</div>
+  <a class="item-link" href="https://openai.com/business/customer-stories/shield" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="agentic payments search API x402 protocol">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Brave Search API now accepts agentic payments via the x402 protocol<div class="title-zh">Brave Search API 通过 x402 协议支持智能体支付</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic payments</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">search API</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">x402 protocol</span></div>
+  <div class="item-summary">Brave's Search API now accepts agentic payments through the x402 protocol, according to the company's blog announcement.</div>
+  <a class="item-link" href="https://brave.com/blog/search-api-agentic-payments/" target="_blank" rel="noopener">&rarr; brave.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://www.anthropic.com/research" target="_blank" rel="noopener">Anthropic Research</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-11-13", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 4, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 6, "models_embeddings": 1, "blogs_insights": 1, "industry_applications": 2}}, "daily_keywords": [{"text": "incremental visual embedding", "domain": "embeddings-vectors"}, {"text": "visual memory", "domain": "agent-memory"}, {"text": "benchmark creation", "domain": "evaluation-benchmark"}, {"text": "label-free quality anchors", "domain": "evaluation-benchmark"}, {"text": "weight-space programming", "domain": "ai-knowledge"}, {"text": "executable reasoning", "domain": "cognition-reasoning"}, {"text": "hierarchical code context", "domain": "context-prompting"}, {"text": "agent ethics", "domain": "agent-architecture"}, {"text": "prompt optimization", "domain": "context-prompting"}, {"text": "safety evaluation", "domain": "evaluation-benchmark"}, {"text": "agentic payments", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Benchmark Factory: Agentic Benchmark Creation via Dataset Curation and Label-Free Quality Anchors", "title_zh": "Benchmark Factory：通过数据集整理与无标签质量锚点创建智能体基准", "url": "http://arxiv.org/abs/2611.18890v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.18890", "summary": "Benchmark Factory is an autonomous meta-agent loop with human checkpoints that writes sourcing queries over production code changes, runs models of known relative strength, diagnoses failures, and repairs candidate benchmarks until they clear label-free quality anchors. On configurations never used to build them, its benchmarks ranked Claude Opus 4.7 at high over low reasoning effort (60.6% vs 54.4%) and GPT-5.5 over GPT-5.4 (65.8% vs 60.5%), with 9 of 10 per-cohort comparisons agreeing.", "keywords": [{"text": "benchmark creation", "domain": "evaluation-benchmark"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "quality anchors", "domain": "evaluation-benchmark"}, {"text": "label-free validation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "StreamEmbed: Real-Time Indexing from Pixels for Screenshot Retrieval", "title_zh": "StreamEmbed：从像素进行实时索引的截图检索", "url": "http://arxiv.org/abs/2611.18516v1", "source": "arXiv", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "2611.18516", "summary": "StreamEmbed incrementally embeds screenshots by using pixel differences to prune repeated spatial tokens and reuse cached keys and values across frames, with a small learned adapter preserving fidelity to full-screenshot embeddings. On ScreenMemEval it encodes up to 3.7x faster than full encoding at no accuracy loss, beats OCR-based indexing by up to 6.3 Recall@10 points at matched latency, and stores a simulated year of screenshots in 0.13 GB of RAM.", "keywords": [{"text": "incremental embedding", "domain": "embeddings-vectors"}, {"text": "visual memory", "domain": "agent-memory"}, {"text": "screenshot retrieval", "domain": "rag-retrieval"}, {"text": "KV cache reuse", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "WeightBench: Evaluating Language Models as Weight-Space Programmers", "title_zh": "WeightBench：评估语言模型作为权重空间程序员", "url": "http://arxiv.org/abs/2611.18553v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.18553", "summary": "WeightBench evaluates LLMs on 42 weight-space programming tasks across reading, fixing and writing weights, recognizing impossible edits, and data-free compression, with networks from 2K-parameter control policies to 7B language models. Frontier agents can read small networks and write working control policies without running them, but cannot yet patch or compress language models or distinguish impossible edits; Claude Opus 5.5 reaches a 0.535 macro score.", "keywords": [{"text": "weight-space programming", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "model internals", "domain": "embeddings-vectors"}, {"text": "agentic evaluation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Context Matters: Improving LLM-Based Code Summarization with Hierarchical Information", "title_zh": "上下文很重要：用层级信息改进基于 LLM 的代码摘要", "url": "http://arxiv.org/abs/2611.18964v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.18964", "summary": "The study varies the function-, class- and module-level context visible to several LLMs when generating code-level documentation and compares the results with existing documentation as a proxy for developer intent. Documentation-aware prompts with class or module context consistently produce summaries closest to the original docs, with statistically significant gains over the baseline whose effect sizes range from negligible for DeepSeek to medium for Gemini.", "keywords": [{"text": "code summarization", "domain": "ai-knowledge"}, {"text": "hierarchical context", "domain": "context-prompting"}, {"text": "documentation", "domain": "knowledge-lifecycle"}, {"text": "LLM evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ARCHER: From Rationale Imitation to Executable Reasoning in Small Language Models", "title_zh": "ARCHER：从小模型的有理据模仿到可执行推理", "url": "http://arxiv.org/abs/2611.18494v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.18494", "summary": "ARCHER is a two-stage framework that first compiles free-form chain-of-thought rationales into typed action traces with calculator calls, runtime observations and verification, then refines the policy with asymmetric hierarchical reinforcement learning. Across five sub-10B backbones it beats the strongest tool-augmented baseline by 5.51 points macro-average, including 8.95 points on MATH-500 and about 5.3 points on AIME-2024 and AIME-2025.", "keywords": [{"text": "executable reasoning", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "small language models", "domain": "ai-knowledge"}, {"text": "reinforcement learning", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Benchmark Factory: Agentic Benchmark Creation via Dataset Curation and Label-Free Quality Anchors", "title_zh": "Benchmark Factory：通过数据集整理与无标签质量锚点创建智能体基准", "url": "http://arxiv.org/abs/2611.18890v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.18890", "summary": "Benchmark Factory is an autonomous meta-agent loop with human checkpoints that writes sourcing queries over production code changes, runs models of known relative strength, diagnoses failures, and repairs candidate benchmarks until they clear label-free quality anchors. On configurations never used to build them, its benchmarks ranked Claude Opus 4.7 at high over low reasoning effort (60.6% vs 54.4%) and GPT-5.5 over GPT-5.4 (65.8% vs 60.5%), with 9 of 10 per-cohort comparisons agreeing.", "keywords": [{"text": "benchmark creation", "domain": "evaluation-benchmark"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "quality anchors", "domain": "evaluation-benchmark"}, {"text": "label-free validation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "MemeEconomy: Do LLM Agents Trade Ethics for Survival?", "title_zh": "MemeEconomy：LLM 智能体会为生存而交易伦理吗？", "url": "http://arxiv.org/abs/2611.18908v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.18908", "summary": "MemeEconomy is a multimodal agentic market simulation in which LLM agents choose content from a five-tier harm taxonomy under low- and high-pressure environments, logging each decision in a Belief-Desire-Intention schema. Across ten models harmful selection rates rise by 15 percentage points on average under survival pressure, and a 2B verifier trained on the BDI logs reaches 97.5% accuracy on in-distribution Pass-versus-Block audits and 78% on Hateful Memes.", "keywords": [{"text": "agent ethics", "domain": "agent-architecture"}, {"text": "BDI logging", "domain": "agent-memory"}, {"text": "harmful content", "domain": "evaluation-benchmark"}, {"text": "alignment under pressure", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "SPLICE: Structured Prompt Local Iterative Combinatorial Evolution", "title_zh": "SPLICE：结构化提示的局部迭代组合演化", "url": "http://arxiv.org/abs/2611.18883v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.18883", "summary": "SPLICE treats natural-language optimization as constrained combinatorial search over an edit graph of block-structured, selectively mutable prompt states, with per-block mutability, elitist beam search and a length regularizer matched to three failure modes. Across seven public benchmarks under five reproduced protocols it wins on four and matches the strongest prior method on three, and it preserves contract clauses that unconstrained optimizers trade away on a contract stress test.", "keywords": [{"text": "prompt optimization", "domain": "context-prompting"}, {"text": "natural language optimization", "domain": "knowledge-lifecycle"}, {"text": "constrained search", "domain": "cognition-reasoning"}, {"text": "contract preservation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "WeightBench: Evaluating Language Models as Weight-Space Programmers", "title_zh": "WeightBench：评估语言模型作为权重空间程序员", "url": "http://arxiv.org/abs/2611.18553v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.18553", "summary": "WeightBench evaluates LLMs on 42 weight-space programming tasks across reading, fixing and writing weights, recognizing impossible edits, and data-free compression, with networks from 2K-parameter control policies to 7B language models. Frontier agents can read small networks and write working control policies without running them, but cannot yet patch or compress language models or distinguish impossible edits; Claude Opus 5.5 reaches a 0.535 macro score.", "keywords": [{"text": "weight-space programming", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "model internals", "domain": "embeddings-vectors"}, {"text": "agentic evaluation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "StreamEmbed: Real-Time Indexing from Pixels for Screenshot Retrieval", "title_zh": "StreamEmbed：从像素进行实时索引的截图检索", "url": "http://arxiv.org/abs/2611.18516v1", "source": "arXiv", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "2611.18516", "summary": "StreamEmbed incrementally embeds screenshots by using pixel differences to prune repeated spatial tokens and reuse cached keys and values across frames, with a small learned adapter preserving fidelity to full-screenshot embeddings. On ScreenMemEval it encodes up to 3.7x faster than full encoding at no accuracy loss, beats OCR-based indexing by up to 6.3 Recall@10 points at matched latency, and stores a simulated year of screenshots in 0.13 GB of RAM.", "keywords": [{"text": "incremental embedding", "domain": "embeddings-vectors"}, {"text": "visual memory", "domain": "agent-memory"}, {"text": "screenshot retrieval", "domain": "rag-retrieval"}, {"text": "KV cache reuse", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Building strong safety evaluations", "title_zh": "构建强有力的安全评估", "url": "https://www.anthropic.com/research/building-strong-safety-evaluations", "source": "Anthropic Research", "section": "blogs_insights", "organization": "Anthropic", "language": "en", "arxiv_id": "", "summary": "Anthropic publishes recommendations for designing, running and reporting safety evaluations, drawing on its own experience.", "keywords": [{"text": "safety evaluations", "domain": "evaluation-benchmark"}, {"text": "evaluation reporting", "domain": "evaluation-benchmark"}, {"text": "AI safety", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry & Applications", "items": [{"title": "Shield helps technicians hand off legacy portal work with OpenAI", "title_zh": "Shield 借助 OpenAI 帮助技术人员交接遗留门户工作", "url": "https://openai.com/business/customer-stories/shield", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI's customer story describes Shield using its models so that Forge agents can navigate legacy portals and take over work that would otherwise occupy IT technicians, letting them focus on issues that need their judgment.", "keywords": [{"text": "enterprise agents", "domain": "agent-architecture"}, {"text": "legacy systems", "domain": "ai-knowledge"}, {"text": "workflow automation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Brave Search API now accepts agentic payments via the x402 protocol", "title_zh": "Brave Search API 通过 x402 协议支持智能体支付", "url": "https://brave.com/blog/search-api-agentic-payments/", "source": "Hacker News", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "", "summary": "Brave's Search API now accepts agentic payments through the x402 protocol, according to the company's blog announcement.", "keywords": [{"text": "agentic payments", "domain": "agent-architecture"}, {"text": "search API", "domain": "rag-retrieval"}, {"text": "x402 protocol", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "Anthropic Research", "url": "https://www.anthropic.com/research"}, {"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-11-05</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">13 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>6 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">13/13 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">persistent behavioral memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">procedural knowledge</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">prompt evolution</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">user embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sparse autoencoders</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">spatiotemporal reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal fact-checking</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">formal verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source reasoning model</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document parsing</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="behavioral memory procedural knowledge memory injection agent compliance behavioral benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08644</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Decision Context: Persistent Behavioral Learning for AI Agents<div class="title-zh">决策上下文：面向 AI 智能体的持久行为学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">behavioral memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">procedural knowledge</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent compliance</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">behavioral benchmark</span></div>
+  <div class="item-summary">Forge Decision Context (forge_dc) captures behavioral signals from human corrections and self-assessed tool-call failures, compiles them into imperative rule directives, and injects them at the decision points where they apply. On the new DC-Bench, it reaches 95% compliance versus 55% with naive retrieval while injecting approximately 10 times fewer tokens per query.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08644v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="financial knowledge graph prompt evolution attributable optimization temporal knowledge graph SEC 10-K">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08643</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FinEvolveKG: Controlled and Attributable Prompt Evolution for Financial Knowledge Graph Construction<div class="title-zh">FinEvolveKG：面向金融知识图谱构建的可控且可归因的提示演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">financial knowledge graph</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">prompt evolution</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">attributable optimization</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">temporal knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">SEC 10-K</span></div>
+  <div class="item-summary">FinEvolveKG is a knowledge-graph construction harness that separates reusable general and persona-policy prompt blocks and confines a reflective optimizer to the persona block, keeping the approved general block byte-stable and every edit attributable. On ticker-disjoint SEC 10-K splits, the complete two-stage block-constrained workflow improves over a frozen prompt baseline by 19.4-30.9% and over an unconstrained full-prompt workflow by 2.2-6.4%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08643v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="cybersecurity agents vulnerability discovery aligned agents model release">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GPT‑6 Cyber: Advancing the frontier of aligned cybersecurity agents<div class="title-zh">GPT-6 Cyber：推进对齐的网络安全智能体前沿</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">cybersecurity agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">vulnerability discovery</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">aligned agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model release</span></div>
+  <div class="item-summary">OpenAI introduces GPT-6 Cyber, a cybersecurity model for finding exploitable vulnerabilities and developing fixes, trained to stay within authorized scope.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-gpt-6-cyber" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="embodied reasoning open-source model data engine benchmark gains">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">China Merchants' LionRock AI Lab Open-Sources Lion-ER-35B-A3B Embodied Reasoning Model<div class="title-zh">招商局 LionRock AI Lab 开源 Lion-ER-35B-A3B 具身推理模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">embodied reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source model</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data engine</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark gains</span></div>
+  <div class="item-summary">China Merchants' LionRock AI Lab has open-sourced Lion-ER-35B-A3B, a 3B-active-parameter embodied reasoning model built with a capability-driven data engine. The lab reports that it beat its base model on ten benchmarks.</div>
+  <a class="item-link" href="https://pandaily.com/china-merchants-lionrock-ai-lab-lion-er-35b-a3b-embodied-reasoning-model-open-source" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+<div class="item-card" data-keywords="repository migration agent benchmark cross-framework migration code agents">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2611.08472</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">XStack: A Benchmark for ML Repo Migration<div class="title-zh">XStack：面向机器学习代码仓库迁移的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">repository migration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cross-framework migration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code agents</span></div>
+  <div class="item-summary">XStack is a benchmark that evaluates agents on migrating ML repositories from PyTorch on NVIDIA GPUs to JAX on Google TPUs, grading results against the source repository's published outcome. Claude Opus 5 passes 75%, GPT-5.6-sol 45%, and every other agent at most 40%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08472v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="behavioral memory procedural knowledge memory injection agent compliance behavioral benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08644</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Decision Context: Persistent Behavioral Learning for AI Agents<div class="title-zh">决策上下文：面向 AI 智能体的持久行为学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">behavioral memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">procedural knowledge</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent compliance</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">behavioral benchmark</span></div>
+  <div class="item-summary">Forge Decision Context (forge_dc) captures behavioral signals from human corrections and self-assessed tool-call failures, compiles them into imperative rule directives, and injects them at the decision points where they apply. On the new DC-Bench, it reaches 95% compliance versus 55% with naive retrieval while injecting approximately 10 times fewer tokens per query.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08644v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="financial knowledge graph prompt evolution attributable optimization temporal knowledge graph SEC 10-K">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08643</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FinEvolveKG: Controlled and Attributable Prompt Evolution for Financial Knowledge Graph Construction<div class="title-zh">FinEvolveKG：面向金融知识图谱构建的可控且可归因的提示演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">financial knowledge graph</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">prompt evolution</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">attributable optimization</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">temporal knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">SEC 10-K</span></div>
+  <div class="item-summary">FinEvolveKG is a knowledge-graph construction harness that separates reusable general and persona-policy prompt blocks and confines a reflective optimizer to the persona block, keeping the approved general block byte-stable and every edit attributable. On ticker-disjoint SEC 10-K splits, the complete two-stage block-constrained workflow improves over a frozen prompt baseline by 19.4-30.9% and over an unconstrained full-prompt workflow by 2.2-6.4%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08643v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory multi-agent orchestration conversational recommendation semantic consistency long-term memory">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08718</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Memory-Aware Multi-Agent Architecture with LLM-based Orchestration for Conversational Recommendation<div class="title-zh">面向对话推荐的内存感知多智能体架构与基于 LLM 的编排</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">conversational recommendation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">semantic consistency</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span></div>
+  <div class="item-summary">The paper proposes a memory-aware multi-agent architecture for conversational recommendation in which LLMs orchestrate intent refinement, query construction and interaction flow, with long-term memory as a first-class component. On the Amazon Reviews dataset, memory-enabled interactions recover up to 63% of the gap toward explicit-query scenarios and supervisory orchestration raises user acceptance by 28.9 percentage points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08718v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="repository migration agent benchmark cross-framework migration code agents">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2611.08472</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">XStack: A Benchmark for ML Repo Migration<div class="title-zh">XStack：面向机器学习代码仓库迁移的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">repository migration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cross-framework migration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code agents</span></div>
+  <div class="item-summary">XStack is a benchmark that evaluates agents on migrating ML repositories from PyTorch on NVIDIA GPUs to JAX on Google TPUs, grading results against the source repository's published outcome. Claude Opus 5 passes 75%, GPT-5.6-sol 45%, and every other agent at most 40%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08472v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="on-policy distillation compute efficiency multi-teacher distillation GRPO">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.08453</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Unpacking the Compute Efficiency of Strong-to-Weak OPD against GRPO<div class="title-zh">解析强模型到弱模型的 OPD 相对 GRPO 的计算效率</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy distillation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">compute efficiency</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">multi-teacher distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">The paper compares on-policy distillation (OPD) with GRPO by measuring held-out accuracy against training FLOPs across task difficulty, model size and domain. It finds that OPD generally loses to GRPO in accuracy per training FLOP with an external post-trained teacher, but when the teacher is the student's own GRPO checkpoint, OPD recovers that checkpoint's math accuracy with 50 times fewer distillation FLOPs, and multi-teacher OPD reaches joint GRPO performance on a two-domain mix with 42.0% fewer total FLOPs.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08453v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="user embeddings sparse autoencoders behavioral modes interpretability zero-shot retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08487</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">User Embeddings are Superpositions of Interpretable Behavioral Modes<div class="title-zh">用户嵌入是可解释行为模式的叠加</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">user embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sparse autoencoders</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">behavioral modes</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">interpretability</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">zero-shot retrieval</span></div>
+  <div class="item-summary">The paper argues that user embeddings can be understood as sparse superpositions of interpretable behavioral modes, recoverable with sparse dictionary methods such as sparse autoencoders and nameable in natural language. It validates mode recovery on synthetic ground truth and applies the post-hoc, model-agnostic framework to classical and transformer-based embeddings from two real-world datasets, enabling zero-shot audience retrieval.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08487v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="spatiotemporal reasoning VLM benchmark sequential decision-making memory design prompting strategies">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08755</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AtariBench: Evaluating Spatiotemporal Reasoning of Vision-Language Models in Atari Gameplay<div class="title-zh">AtariBench：评估视觉语言模型在 Atari 游戏中的时空推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">spatiotemporal reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">VLM benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sequential decision-making</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory design</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompting strategies</span></div>
+  <div class="item-summary">AtariBench evaluates vision-language models across 20 Atari 2600 games that require sequential decisions from high-temporal-resolution gameplay, decoupling in-game dynamics from wall-clock inference speed. The authors report that state-of-the-art VLMs often fail to infer object motion and direction, make brittle decisions and over-rely on textual interaction history, and use the benchmark to study memory design and prompting strategies.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08755v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal fact-checking agentic verification low-resource languages evidence retrieval benchmark dataset">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.08651</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Turkish Multimodal Video Fact-Checking: A New Dataset and a Comparison of Zero-Shot Agentic and Fine-Tuned Systems<div class="title-zh">土耳其多模态视频事实核查：新数据集与零样本智能体及微调系统对比</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal fact-checking</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-resource languages</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark dataset</span></div>
+  <div class="item-summary">TeViD is presented as the first multimodal video fact-checking dataset for Turkish, compiled from Teyit.org articles and enriched with translated Snopes articles and synthetic examples. The authors compare an agentic 3MFact-TR pipeline using Qwen2.5-7B and Qwen2-VL-7B with a LoRA fine-tuned Qwen2.5-7B baseline and report accuracy, macro F1 and ablation results.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.08651v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="formal verification code-generation agents Verus specifications agent reliability">
+  <div class="item-meta">
+    <span class="item-org">Microsoft Research</span>
+    
+    
+    <span class="item-source">Microsoft Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Formally verifying agent-written full-stack web apps with PDD Kit<div class="title-zh">用 PDD Kit 形式化验证智能体编写的全栈 Web 应用</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">formal verification</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code-generation agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Verus specifications</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent reliability</span></div>
+  <div class="item-summary">PDD Kit turns developer intent into a Verus specification and tests agent-written full-stack web apps against it, targeting code generated at a scale that is hard for humans to review line by line.</div>
+  <a class="item-link" href="https://www.microsoft.com/en-us/research/blog/formally-verifying-agent-written-full-stack-web-apps-with-pdd-kit/" target="_blank" rel="noopener">&rarr; www.microsoft.com</a>
+</div>
+<div class="item-card" data-keywords="document parsing deployment data locality">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Nov 5, 2026 How to Flexibly Deploy LlamaParse Wherever Your Data Lives Read<div class="title-zh">如何在数据所在的任何位置灵活部署 LlamaParse</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document parsing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">deployment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data locality</span></div>
+  <div class="item-summary">LlamaIndex publishes guidance on deploying LlamaParse flexibly in the environments where a team's data lives.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/how-to-flexibly-deploy-llamaparse-wherever-your-data-lives" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="cybersecurity agents vulnerability discovery aligned agents model release">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GPT‑6 Cyber: Advancing the frontier of aligned cybersecurity agents<div class="title-zh">GPT-6 Cyber：推进对齐的网络安全智能体前沿</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">cybersecurity agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">vulnerability discovery</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">aligned agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model release</span></div>
+  <div class="item-summary">OpenAI introduces GPT-6 Cyber, a cybersecurity model for finding exploitable vulnerabilities and developing fixes, trained to stay within authorized scope.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-gpt-6-cyber" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="embodied reasoning open-source model data engine benchmark gains">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">China Merchants' LionRock AI Lab Open-Sources Lion-ER-35B-A3B Embodied Reasoning Model<div class="title-zh">招商局 LionRock AI Lab 开源 Lion-ER-35B-A3B 具身推理模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">embodied reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source model</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data engine</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark gains</span></div>
+  <div class="item-summary">China Merchants' LionRock AI Lab has open-sourced Lion-ER-35B-A3B, a 3B-active-parameter embodied reasoning model built with a capability-driven data engine. The lab reports that it beat its base model on ten benchmarks.</div>
+  <a class="item-link" href="https://pandaily.com/china-merchants-lionrock-ai-lab-lion-er-35b-a3b-embodied-reasoning-model-open-source" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="AI for science research workflows usage analysis scientific discovery">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    
+    
+    <span class="item-source">Anthropic Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AI for scientific discovery: How researchers use Claude<div class="title-zh">AI 助力科学发现：研究人员如何使用 Claude</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI for science</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">research workflows</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">usage analysis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">scientific discovery</span></div>
+  <div class="item-summary">Anthropic analyzed 207,000 research sessions to study how Claude is used in science, why some tasks get more use than others, and how AI could speed up discovery.</div>
+  <a class="item-link" href="https://www.anthropic.com/research/how-researchers-use-claude" target="_blank" rel="noopener">&rarr; www.anthropic.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/blog/" target="_blank" rel="noopener">Microsoft Research</a></li>
+<li><a href="https://www.anthropic.com/research" target="_blank" rel="noopener">Anthropic Research</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://www.llamaindex.ai/blog" target="_blank" rel="noopener">LlamaIndex Blog</a></li>
+<li><a href="https://pandaily.com" target="_blank" rel="noopener">Pandaily</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-11-05", "stats": {"total_items": 13, "unique_items": 13, "sources_count": 6, "links_verified_count": 13, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 2, "models_embeddings": 2, "blogs_insights": 1}}, "daily_keywords": [{"text": "persistent behavioral memory", "domain": "agent-memory"}, {"text": "procedural knowledge", "domain": "knowledge-lifecycle"}, {"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "prompt evolution", "domain": "knowledge-lifecycle"}, {"text": "user embeddings", "domain": "embeddings-vectors"}, {"text": "sparse autoencoders", "domain": "embeddings-vectors"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "spatiotemporal reasoning", "domain": "cognition-reasoning"}, {"text": "multimodal fact-checking", "domain": "rag-retrieval"}, {"text": "formal verification", "domain": "agent-architecture"}, {"text": "open-source reasoning model", "domain": "ai-knowledge"}, {"text": "document parsing", "domain": "rag-retrieval"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Decision Context: Persistent Behavioral Learning for AI Agents", "title_zh": "决策上下文：面向 AI 智能体的持久行为学习", "url": "http://arxiv.org/abs/2611.08644v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08644", "summary": "Forge Decision Context (forge_dc) captures behavioral signals from human corrections and self-assessed tool-call failures, compiles them into imperative rule directives, and injects them at the decision points where they apply. On the new DC-Bench, it reaches 95% compliance versus 55% with naive retrieval while injecting approximately 10 times fewer tokens per query.", "keywords": [{"text": "behavioral memory", "domain": "agent-memory"}, {"text": "procedural knowledge", "domain": "knowledge-lifecycle"}, {"text": "memory injection", "domain": "agent-memory"}, {"text": "agent compliance", "domain": "agent-architecture"}, {"text": "behavioral benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "FinEvolveKG: Controlled and Attributable Prompt Evolution for Financial Knowledge Graph Construction", "title_zh": "FinEvolveKG：面向金融知识图谱构建的可控且可归因的提示演化", "url": "http://arxiv.org/abs/2611.08643v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08643", "summary": "FinEvolveKG is a knowledge-graph construction harness that separates reusable general and persona-policy prompt blocks and confines a reflective optimizer to the persona block, keeping the approved general block byte-stable and every edit attributable. On ticker-disjoint SEC 10-K splits, the complete two-stage block-constrained workflow improves over a frozen prompt baseline by 19.4-30.9% and over an unconstrained full-prompt workflow by 2.2-6.4%.", "keywords": [{"text": "financial knowledge graph", "domain": "knowledge-graph"}, {"text": "prompt evolution", "domain": "knowledge-lifecycle"}, {"text": "attributable optimization", "domain": "knowledge-lifecycle"}, {"text": "temporal knowledge graph", "domain": "knowledge-graph"}, {"text": "SEC 10-K", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "GPT‑6 Cyber: Advancing the frontier of aligned cybersecurity agents", "title_zh": "GPT-6 Cyber：推进对齐的网络安全智能体前沿", "url": "https://openai.com/index/introducing-gpt-6-cyber", "source": "OpenAI", "section": "models_embeddings", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduces GPT-6 Cyber, a cybersecurity model for finding exploitable vulnerabilities and developing fixes, trained to stay within authorized scope.", "keywords": [{"text": "cybersecurity agents", "domain": "agent-architecture"}, {"text": "vulnerability discovery", "domain": "ai-knowledge"}, {"text": "aligned agents", "domain": "cognition-reasoning"}, {"text": "model release", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "China Merchants' LionRock AI Lab Open-Sources Lion-ER-35B-A3B Embodied Reasoning Model", "title_zh": "招商局 LionRock AI Lab 开源 Lion-ER-35B-A3B 具身推理模型", "url": "https://pandaily.com/china-merchants-lionrock-ai-lab-lion-er-35b-a3b-embodied-reasoning-model-open-source", "source": "Pandaily", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "China Merchants' LionRock AI Lab has open-sourced Lion-ER-35B-A3B, a 3B-active-parameter embodied reasoning model built with a capability-driven data engine. The lab reports that it beat its base model on ten benchmarks.", "keywords": [{"text": "embodied reasoning", "domain": "cognition-reasoning"}, {"text": "open-source model", "domain": "ai-knowledge"}, {"text": "data engine", "domain": "knowledge-lifecycle"}, {"text": "benchmark gains", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "XStack: A Benchmark for ML Repo Migration", "title_zh": "XStack：面向机器学习代码仓库迁移的基准", "url": "http://arxiv.org/abs/2611.08472v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2611.08472", "summary": "XStack is a benchmark that evaluates agents on migrating ML repositories from PyTorch on NVIDIA GPUs to JAX on Google TPUs, grading results against the source repository's published outcome. Claude Opus 5 passes 75%, GPT-5.6-sol 45%, and every other agent at most 40%.", "keywords": [{"text": "repository migration", "domain": "agent-architecture"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "cross-framework migration", "domain": "ai-knowledge"}, {"text": "code agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Decision Context: Persistent Behavioral Learning for AI Agents", "title_zh": "决策上下文：面向 AI 智能体的持久行为学习", "url": "http://arxiv.org/abs/2611.08644v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08644", "summary": "Forge Decision Context (forge_dc) captures behavioral signals from human corrections and self-assessed tool-call failures, compiles them into imperative rule directives, and injects them at the decision points where they apply. On the new DC-Bench, it reaches 95% compliance versus 55% with naive retrieval while injecting approximately 10 times fewer tokens per query.", "keywords": [{"text": "behavioral memory", "domain": "agent-memory"}, {"text": "procedural knowledge", "domain": "knowledge-lifecycle"}, {"text": "memory injection", "domain": "agent-memory"}, {"text": "agent compliance", "domain": "agent-architecture"}, {"text": "behavioral benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "FinEvolveKG: Controlled and Attributable Prompt Evolution for Financial Knowledge Graph Construction", "title_zh": "FinEvolveKG：面向金融知识图谱构建的可控且可归因的提示演化", "url": "http://arxiv.org/abs/2611.08643v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08643", "summary": "FinEvolveKG is a knowledge-graph construction harness that separates reusable general and persona-policy prompt blocks and confines a reflective optimizer to the persona block, keeping the approved general block byte-stable and every edit attributable. On ticker-disjoint SEC 10-K splits, the complete two-stage block-constrained workflow improves over a frozen prompt baseline by 19.4-30.9% and over an unconstrained full-prompt workflow by 2.2-6.4%.", "keywords": [{"text": "financial knowledge graph", "domain": "knowledge-graph"}, {"text": "prompt evolution", "domain": "knowledge-lifecycle"}, {"text": "attributable optimization", "domain": "knowledge-lifecycle"}, {"text": "temporal knowledge graph", "domain": "knowledge-graph"}, {"text": "SEC 10-K", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Memory-Aware Multi-Agent Architecture with LLM-based Orchestration for Conversational Recommendation", "title_zh": "面向对话推荐的内存感知多智能体架构与基于 LLM 的编排", "url": "http://arxiv.org/abs/2611.08718v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08718", "summary": "The paper proposes a memory-aware multi-agent architecture for conversational recommendation in which LLMs orchestrate intent refinement, query construction and interaction flow, with long-term memory as a first-class component. On the Amazon Reviews dataset, memory-enabled interactions recover up to 63% of the gap toward explicit-query scenarios and supervisory orchestration raises user acceptance by 28.9 percentage points.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "conversational recommendation", "domain": "ai-knowledge"}, {"text": "semantic consistency", "domain": "evaluation-benchmark"}, {"text": "long-term memory", "domain": "agent-memory"}], "link_verified": true, "is_highlight": false}, {"title": "XStack: A Benchmark for ML Repo Migration", "title_zh": "XStack：面向机器学习代码仓库迁移的基准", "url": "http://arxiv.org/abs/2611.08472v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2611.08472", "summary": "XStack is a benchmark that evaluates agents on migrating ML repositories from PyTorch on NVIDIA GPUs to JAX on Google TPUs, grading results against the source repository's published outcome. Claude Opus 5 passes 75%, GPT-5.6-sol 45%, and every other agent at most 40%.", "keywords": [{"text": "repository migration", "domain": "agent-architecture"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "cross-framework migration", "domain": "ai-knowledge"}, {"text": "code agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Unpacking the Compute Efficiency of Strong-to-Weak OPD against GRPO", "title_zh": "解析强模型到弱模型的 OPD 相对 GRPO 的计算效率", "url": "http://arxiv.org/abs/2611.08453v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.08453", "summary": "The paper compares on-policy distillation (OPD) with GRPO by measuring held-out accuracy against training FLOPs across task difficulty, model size and domain. It finds that OPD generally loses to GRPO in accuracy per training FLOP with an external post-trained teacher, but when the teacher is the student's own GRPO checkpoint, OPD recovers that checkpoint's math accuracy with 50 times fewer distillation FLOPs, and multi-teacher OPD reaches joint GRPO performance on a two-domain mix with 42.0% fewer total FLOPs.", "keywords": [{"text": "on-policy distillation", "domain": "knowledge-lifecycle"}, {"text": "compute efficiency", "domain": "evaluation-benchmark"}, {"text": "multi-teacher distillation", "domain": "knowledge-lifecycle"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "User Embeddings are Superpositions of Interpretable Behavioral Modes", "title_zh": "用户嵌入是可解释行为模式的叠加", "url": "http://arxiv.org/abs/2611.08487v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08487", "summary": "The paper argues that user embeddings can be understood as sparse superpositions of interpretable behavioral modes, recoverable with sparse dictionary methods such as sparse autoencoders and nameable in natural language. It validates mode recovery on synthetic ground truth and applies the post-hoc, model-agnostic framework to classical and transformer-based embeddings from two real-world datasets, enabling zero-shot audience retrieval.", "keywords": [{"text": "user embeddings", "domain": "embeddings-vectors"}, {"text": "sparse autoencoders", "domain": "embeddings-vectors"}, {"text": "behavioral modes", "domain": "ai-knowledge"}, {"text": "interpretability", "domain": "cognition-reasoning"}, {"text": "zero-shot retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "AtariBench: Evaluating Spatiotemporal Reasoning of Vision-Language Models in Atari Gameplay", "title_zh": "AtariBench：评估视觉语言模型在 Atari 游戏中的时空推理", "url": "http://arxiv.org/abs/2611.08755v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08755", "summary": "AtariBench evaluates vision-language models across 20 Atari 2600 games that require sequential decisions from high-temporal-resolution gameplay, decoupling in-game dynamics from wall-clock inference speed. The authors report that state-of-the-art VLMs often fail to infer object motion and direction, make brittle decisions and over-rely on textual interaction history, and use the benchmark to study memory design and prompting strategies.", "keywords": [{"text": "spatiotemporal reasoning", "domain": "cognition-reasoning"}, {"text": "VLM benchmark", "domain": "evaluation-benchmark"}, {"text": "sequential decision-making", "domain": "agent-architecture"}, {"text": "memory design", "domain": "agent-memory"}, {"text": "prompting strategies", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Turkish Multimodal Video Fact-Checking: A New Dataset and a Comparison of Zero-Shot Agentic and Fine-Tuned Systems", "title_zh": "土耳其多模态视频事实核查：新数据集与零样本智能体及微调系统对比", "url": "http://arxiv.org/abs/2611.08651v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.08651", "summary": "TeViD is presented as the first multimodal video fact-checking dataset for Turkish, compiled from Teyit.org articles and enriched with translated Snopes articles and synthetic examples. The authors compare an agentic 3MFact-TR pipeline using Qwen2.5-7B and Qwen2-VL-7B with a LoRA fine-tuned Qwen2.5-7B baseline and report accuracy, macro F1 and ablation results.", "keywords": [{"text": "multimodal fact-checking", "domain": "rag-retrieval"}, {"text": "agentic verification", "domain": "agent-architecture"}, {"text": "low-resource languages", "domain": "ai-knowledge"}, {"text": "evidence retrieval", "domain": "rag-retrieval"}, {"text": "benchmark dataset", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "Formally verifying agent-written full-stack web apps with PDD Kit", "title_zh": "用 PDD Kit 形式化验证智能体编写的全栈 Web 应用", "url": "https://www.microsoft.com/en-us/research/blog/formally-verifying-agent-written-full-stack-web-apps-with-pdd-kit/", "source": "Microsoft Research", "section": "tools_frameworks", "organization": "Microsoft Research", "language": "en", "arxiv_id": "", "summary": "PDD Kit turns developer intent into a Verus specification and tests agent-written full-stack web apps against it, targeting code generated at a scale that is hard for humans to review line by line.", "keywords": [{"text": "formal verification", "domain": "agent-architecture"}, {"text": "code-generation agents", "domain": "agent-architecture"}, {"text": "Verus specifications", "domain": "ai-knowledge"}, {"text": "agent reliability", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Nov 5, 2026 How to Flexibly Deploy LlamaParse Wherever Your Data Lives Read", "title_zh": "如何在数据所在的任何位置灵活部署 LlamaParse", "url": "https://www.llamaindex.ai/blog/how-to-flexibly-deploy-llamaparse-wherever-your-data-lives", "source": "LlamaIndex Blog", "section": "tools_frameworks", "organization": "LlamaIndex", "language": "en", "arxiv_id": "", "summary": "LlamaIndex publishes guidance on deploying LlamaParse flexibly in the environments where a team's data lives.", "keywords": [{"text": "document parsing", "domain": "rag-retrieval"}, {"text": "deployment", "domain": "ai-knowledge"}, {"text": "data locality", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "GPT‑6 Cyber: Advancing the frontier of aligned cybersecurity agents", "title_zh": "GPT-6 Cyber：推进对齐的网络安全智能体前沿", "url": "https://openai.com/index/introducing-gpt-6-cyber", "source": "OpenAI", "section": "models_embeddings", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduces GPT-6 Cyber, a cybersecurity model for finding exploitable vulnerabilities and developing fixes, trained to stay within authorized scope.", "keywords": [{"text": "cybersecurity agents", "domain": "agent-architecture"}, {"text": "vulnerability discovery", "domain": "ai-knowledge"}, {"text": "aligned agents", "domain": "cognition-reasoning"}, {"text": "model release", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "China Merchants' LionRock AI Lab Open-Sources Lion-ER-35B-A3B Embodied Reasoning Model", "title_zh": "招商局 LionRock AI Lab 开源 Lion-ER-35B-A3B 具身推理模型", "url": "https://pandaily.com/china-merchants-lionrock-ai-lab-lion-er-35b-a3b-embodied-reasoning-model-open-source", "source": "Pandaily", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "China Merchants' LionRock AI Lab has open-sourced Lion-ER-35B-A3B, a 3B-active-parameter embodied reasoning model built with a capability-driven data engine. The lab reports that it beat its base model on ten benchmarks.", "keywords": [{"text": "embodied reasoning", "domain": "cognition-reasoning"}, {"text": "open-source model", "domain": "ai-knowledge"}, {"text": "data engine", "domain": "knowledge-lifecycle"}, {"text": "benchmark gains", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "AI for scientific discovery: How researchers use Claude", "title_zh": "AI 助力科学发现：研究人员如何使用 Claude", "url": "https://www.anthropic.com/research/how-researchers-use-claude", "source": "Anthropic Research", "section": "blogs_insights", "organization": "Anthropic", "language": "en", "arxiv_id": "", "summary": "Anthropic analyzed 207,000 research sessions to study how Claude is used in science, why some tasks get more use than others, and how AI could speed up discovery.", "keywords": [{"text": "AI for science", "domain": "ai-knowledge"}, {"text": "research workflows", "domain": "ai-knowledge"}, {"text": "usage analysis", "domain": "evaluation-benchmark"}, {"text": "scientific discovery", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Microsoft Research", "url": "https://www.microsoft.com/en-us/research/blog/"}, {"name": "Anthropic Research", "url": "https://www.anthropic.com/research"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai/blog"}, {"name": "Pandaily", "url": "https://pandaily.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

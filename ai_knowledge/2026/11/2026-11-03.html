@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-11-03</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>4 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache sharing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent RL</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">weight memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory routing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge consolidation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">out-of-distribution generalization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">collaborative agent benchmark</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context recovery</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">speculative decoding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">research agent</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">tool creation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="KV cache sharing multi-agent RL long-horizon search context management benchmark accuracy">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.06956</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Octopus: One Brain, Many Branches for Latent-KV Multi-Agent Reinforcement Learning<div class="title-zh">Octopus：面向隐式 KV 多智能体强化学习的一脑多分支架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache sharing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent RL</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon search</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark accuracy</span></div>
+  <div class="item-summary">Octopus is a co-designed serving runtime, memory manager and RL framework that executes long-horizon agent episodes as a GPU-resident DAG over radix cursors, with fork, rewind, read_thread, wait and done primitives for sharing and mounting KV cache. Trained on Qwen3.5-4B, it raises BrowseComp-Plus accuracy under BM25 from 26.0% with 32K ReAct and 32.1% with 143K GRPO to 49.6%, and reports a 21x reduction in cache hijacking.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.06956v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="weight memory on-policy self-distillation memory routing long-term memory hallucination benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.05636</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Route to Remember: Adaptive Memory Selection for LLM Agents<div class="title-zh">Route to Remember：面向 LLM 智能体的自适应记忆选择</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">weight memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy self-distillation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory routing</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination benchmark</span></div>
+  <div class="item-summary">The paper applies on-policy self-distillation to train a context-free student from the same model conditioned on a user's memory, making weight memory competitive as a long-term factual store, and adds a verify-then-regenerate router that sends each query to weight or text memory. On HaluMem, it matches or surpasses strong text-memory baselines while reading fewer tokens per query.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.05636v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="collaborative work benchmark agentic search context recovery repository state abstention">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.05512</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SlackBench: Benchmarking Agents on Collaborative Projects Grounded in Real Code Repositories<div class="title-zh">SlackBench：在真实代码仓库协作项目中评估智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">collaborative work benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context recovery</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">repository state</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">abstention</span></div>
+  <div class="item-summary">SlackBench is a benchmark of 140 queries built from privacy-preserving reenactments of real academic research projects, requiring agents to search multi-party dialogue, inspect evolving GitHub repositories and Google Docs, reconcile stale or conflicting evidence, and abstain on unanswerable questions. Across 33 frontier models and agent harnesses, the best system scores around 80% and most agents fall below 66%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.05512v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="research agent tool creation scientific discovery protein design">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Tencent Hunyuan's Hyra 2.0 Research Agent Builds Its Own Tools for Proteins, Proofs and Chips<div class="title-zh">腾讯混元 Hyra 2.0 研究智能体为蛋白质、定理证明和芯片自建工具</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">research agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool creation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific discovery</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">protein design</span></div>
+  <div class="item-summary">Tencent Hunyuan's Hyra 2.0 research agent builds reusable tools, including a protein design model reported to be 57x faster, force fields, a new quantum code and mathematical results on Petty and Yau.</div>
+  <a class="item-link" href="https://pandaily.com/tencent-hunyuan-hyra-2-0-research-agent-builds-scientific-tools-hyinv-hyff-hyqec-open-results" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="KV cache sharing multi-agent RL long-horizon search context management benchmark accuracy">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2611.06956</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Octopus: One Brain, Many Branches for Latent-KV Multi-Agent Reinforcement Learning<div class="title-zh">Octopus：面向隐式 KV 多智能体强化学习的一脑多分支架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache sharing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent RL</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon search</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark accuracy</span></div>
+  <div class="item-summary">Octopus is a co-designed serving runtime, memory manager and RL framework that executes long-horizon agent episodes as a GPU-resident DAG over radix cursors, with fork, rewind, read_thread, wait and done primitives for sharing and mounting KV cache. Trained on Qwen3.5-4B, it raises BrowseComp-Plus accuracy under BM25 from 26.0% with 32K ReAct and 32.1% with 143K GRPO to 49.6%, and reports a 21x reduction in cache hijacking.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.06956v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="weight memory on-policy self-distillation memory routing long-term memory hallucination benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.05636</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Route to Remember: Adaptive Memory Selection for LLM Agents<div class="title-zh">Route to Remember：面向 LLM 智能体的自适应记忆选择</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">weight memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy self-distillation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory routing</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination benchmark</span></div>
+  <div class="item-summary">The paper applies on-policy self-distillation to train a context-free student from the same model conditioned on a user's memory, making weight memory competitive as a long-term factual store, and adds a verify-then-regenerate router that sends each query to weight or text memory. On HaluMem, it matches or surpasses strong text-memory baselines while reading fewer tokens per query.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.05636v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="on-policy distillation capability consolidation out-of-distribution generalization catastrophic forgetting post-RL training">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.05609</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">On the Generalization Limitation of On-Policy Distillation for Post-RL Consolidation<div class="title-zh">论策略内蒸馏在后强化学习能力巩固中的泛化局限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy distillation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">capability consolidation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">out-of-distribution generalization</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">post-RL training</span></div>
+  <div class="item-summary">The paper finds that on-policy distillation and multi-teacher on-policy distillation can reach 96.04-102.73% of teachers' in-distribution scores on extrapolative tasks while scoring 2.45-16.25% below the base model out of distribution, and that compositional OOD performance remains 18.19-24.34% below the best teachers. It examines teacher capability and data coverage as bottlenecks and proposes geometry-based patching and base-preserving replay.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.05609v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="collaborative work benchmark agentic search context recovery repository state abstention">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.05512</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SlackBench: Benchmarking Agents on Collaborative Projects Grounded in Real Code Repositories<div class="title-zh">SlackBench：在真实代码仓库协作项目中评估智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">collaborative work benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context recovery</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">repository state</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">abstention</span></div>
+  <div class="item-summary">SlackBench is a benchmark of 140 queries built from privacy-preserving reenactments of real academic research projects, requiring agents to search multi-party dialogue, inspect evolving GitHub repositories and Google Docs, reconcile stale or conflicting evidence, and abstain on unanswerable questions. Across 33 frontier models and agent harnesses, the best system scores around 80% and most agents fall below 66%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.05512v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="speculative decoding long-horizon reasoning context precision draft model agentic coding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.05345</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Adversarial Speculative Reasoning Improves Long Horizon Agents<div class="title-zh">对抗式投机推理提升长程智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">speculative decoding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-horizon reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context precision</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">draft model</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agentic coding</span></div>
+  <div class="item-summary">The authors argue that speculative decoding is not behavior-neutral for long-horizon agents, because numerical noise within verification windows can shift the output distribution after 30 steps. They train draft models to be rejected at critical reasoning points so those tokens are sampled from the target model, and report higher end-to-end success on agentic coding benchmarks by training 0.06-0.28% of hosted parameters without changing the target model.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.05345v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic data science iterative feedback LLM-as-judge self-evaluation multi-agent workflow">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2611.05548</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Iterated creation, grading, and revision of data science projects by language models<div class="title-zh">语言模型对数据科学项目的迭代创建、评分与修订</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic data science</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">iterative feedback</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent workflow</span></div>
+  <div class="item-summary">The study runs 147 initial data-science project submissions from seven models across five developers through three rounds of writer grading and revision; 107 run and render, and average scores rise from 59% to 76%. It finds that self-grading tends to be about 9 percentage points above peer scores and that weaker models generally do not improve stronger ones when acting as graders.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.05548v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="command-line agents background automation human-in-the-loop developer tooling">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">KKKKhazix/agent-autoloop<div class="title-zh">agent-autoloop：让命令行 Agent 在后台自主接活并跟进</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">command-line agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">background automation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">human-in-the-loop</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">developer tooling</span></div>
+  <div class="item-summary">agent-autoloop is a TypeScript tool that lets command-line agents pick up work in the background and follow through, interrupting the user with a card only when a decision is needed.</div>
+  <a class="item-link" href="https://github.com/KKKKhazix/agent-autoloop" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="research agent tool creation scientific discovery protein design">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Tencent Hunyuan's Hyra 2.0 Research Agent Builds Its Own Tools for Proteins, Proofs and Chips<div class="title-zh">腾讯混元 Hyra 2.0 研究智能体为蛋白质、定理证明和芯片自建工具</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">research agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool creation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific discovery</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">protein design</span></div>
+  <div class="item-summary">Tencent Hunyuan's Hyra 2.0 research agent builds reusable tools, including a protein design model reported to be 57x faster, force fields, a new quantum code and mathematical results on Petty and Yau.</div>
+  <a class="item-link" href="https://pandaily.com/tencent-hunyuan-hyra-2-0-research-agent-builds-scientific-tools-hyinv-hyff-hyqec-open-results" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills cheminformatics drug discovery workflow automation">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic cheminformatics with Google Antigravity<div class="title-zh">借助 Google Antigravity 的智能体化学信息学</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cheminformatics</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">drug discovery</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">workflow automation</span></div>
+  <div class="item-summary">Google DeepMind describes how Google Antigravity and its Cheminformatics Skills accelerate drug-discovery workflows, search compounds and propose novel rigidified macrocycles.</div>
+  <a class="item-link" href="https://deepmind.google/blog/agentic-cheminformatics-with-google-antigravity/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://pandaily.com" target="_blank" rel="noopener">Pandaily</a></li>
+<li><a href="https://deepmind.google" target="_blank" rel="noopener">Google DeepMind</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-11-03", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 4, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 6, "tools_frameworks": 1, "blogs_insights": 1, "industry_applications": 1}}, "daily_keywords": [{"text": "KV cache sharing", "domain": "agent-memory"}, {"text": "multi-agent RL", "domain": "agent-architecture"}, {"text": "weight memory", "domain": "agent-memory"}, {"text": "memory routing", "domain": "agent-memory"}, {"text": "knowledge consolidation", "domain": "knowledge-lifecycle"}, {"text": "out-of-distribution generalization", "domain": "cognition-reasoning"}, {"text": "collaborative agent benchmark", "domain": "evaluation-benchmark"}, {"text": "context recovery", "domain": "context-prompting"}, {"text": "speculative decoding", "domain": "agent-architecture"}, {"text": "research agent", "domain": "agent-architecture"}, {"text": "tool creation", "domain": "knowledge-lifecycle"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Octopus: One Brain, Many Branches for Latent-KV Multi-Agent Reinforcement Learning", "title_zh": "Octopus：面向隐式 KV 多智能体强化学习的一脑多分支架构", "url": "http://arxiv.org/abs/2611.06956v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.06956", "summary": "Octopus is a co-designed serving runtime, memory manager and RL framework that executes long-horizon agent episodes as a GPU-resident DAG over radix cursors, with fork, rewind, read_thread, wait and done primitives for sharing and mounting KV cache. Trained on Qwen3.5-4B, it raises BrowseComp-Plus accuracy under BM25 from 26.0% with 32K ReAct and 32.1% with 143K GRPO to 49.6%, and reports a 21x reduction in cache hijacking.", "keywords": [{"text": "KV cache sharing", "domain": "agent-memory"}, {"text": "multi-agent RL", "domain": "agent-architecture"}, {"text": "long-horizon search", "domain": "agent-architecture"}, {"text": "context management", "domain": "context-prompting"}, {"text": "benchmark accuracy", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Route to Remember: Adaptive Memory Selection for LLM Agents", "title_zh": "Route to Remember：面向 LLM 智能体的自适应记忆选择", "url": "http://arxiv.org/abs/2611.05636v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.05636", "summary": "The paper applies on-policy self-distillation to train a context-free student from the same model conditioned on a user's memory, making weight memory competitive as a long-term factual store, and adds a verify-then-regenerate router that sends each query to weight or text memory. On HaluMem, it matches or surpasses strong text-memory baselines while reading fewer tokens per query.", "keywords": [{"text": "weight memory", "domain": "agent-memory"}, {"text": "on-policy self-distillation", "domain": "knowledge-lifecycle"}, {"text": "memory routing", "domain": "agent-memory"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "hallucination benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "SlackBench: Benchmarking Agents on Collaborative Projects Grounded in Real Code Repositories", "title_zh": "SlackBench：在真实代码仓库协作项目中评估智能体", "url": "http://arxiv.org/abs/2611.05512v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.05512", "summary": "SlackBench is a benchmark of 140 queries built from privacy-preserving reenactments of real academic research projects, requiring agents to search multi-party dialogue, inspect evolving GitHub repositories and Google Docs, reconcile stale or conflicting evidence, and abstain on unanswerable questions. Across 33 frontier models and agent harnesses, the best system scores around 80% and most agents fall below 66%.", "keywords": [{"text": "collaborative work benchmark", "domain": "evaluation-benchmark"}, {"text": "agentic search", "domain": "rag-retrieval"}, {"text": "context recovery", "domain": "context-prompting"}, {"text": "repository state", "domain": "agent-architecture"}, {"text": "abstention", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Tencent Hunyuan's Hyra 2.0 Research Agent Builds Its Own Tools for Proteins, Proofs and Chips", "title_zh": "腾讯混元 Hyra 2.0 研究智能体为蛋白质、定理证明和芯片自建工具", "url": "https://pandaily.com/tencent-hunyuan-hyra-2-0-research-agent-builds-scientific-tools-hyinv-hyff-hyqec-open-results", "source": "Pandaily", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Tencent Hunyuan's Hyra 2.0 research agent builds reusable tools, including a protein design model reported to be 57x faster, force fields, a new quantum code and mathematical results on Petty and Yau.", "keywords": [{"text": "research agent", "domain": "agent-architecture"}, {"text": "tool creation", "domain": "agent-architecture"}, {"text": "scientific discovery", "domain": "ai-knowledge"}, {"text": "protein design", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Octopus: One Brain, Many Branches for Latent-KV Multi-Agent Reinforcement Learning", "title_zh": "Octopus：面向隐式 KV 多智能体强化学习的一脑多分支架构", "url": "http://arxiv.org/abs/2611.06956v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2611.06956", "summary": "Octopus is a co-designed serving runtime, memory manager and RL framework that executes long-horizon agent episodes as a GPU-resident DAG over radix cursors, with fork, rewind, read_thread, wait and done primitives for sharing and mounting KV cache. Trained on Qwen3.5-4B, it raises BrowseComp-Plus accuracy under BM25 from 26.0% with 32K ReAct and 32.1% with 143K GRPO to 49.6%, and reports a 21x reduction in cache hijacking.", "keywords": [{"text": "KV cache sharing", "domain": "agent-memory"}, {"text": "multi-agent RL", "domain": "agent-architecture"}, {"text": "long-horizon search", "domain": "agent-architecture"}, {"text": "context management", "domain": "context-prompting"}, {"text": "benchmark accuracy", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Route to Remember: Adaptive Memory Selection for LLM Agents", "title_zh": "Route to Remember：面向 LLM 智能体的自适应记忆选择", "url": "http://arxiv.org/abs/2611.05636v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.05636", "summary": "The paper applies on-policy self-distillation to train a context-free student from the same model conditioned on a user's memory, making weight memory competitive as a long-term factual store, and adds a verify-then-regenerate router that sends each query to weight or text memory. On HaluMem, it matches or surpasses strong text-memory baselines while reading fewer tokens per query.", "keywords": [{"text": "weight memory", "domain": "agent-memory"}, {"text": "on-policy self-distillation", "domain": "knowledge-lifecycle"}, {"text": "memory routing", "domain": "agent-memory"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "hallucination benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "On the Generalization Limitation of On-Policy Distillation for Post-RL Consolidation", "title_zh": "论策略内蒸馏在后强化学习能力巩固中的泛化局限", "url": "http://arxiv.org/abs/2611.05609v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.05609", "summary": "The paper finds that on-policy distillation and multi-teacher on-policy distillation can reach 96.04-102.73% of teachers' in-distribution scores on extrapolative tasks while scoring 2.45-16.25% below the base model out of distribution, and that compositional OOD performance remains 18.19-24.34% below the best teachers. It examines teacher capability and data coverage as bottlenecks and proposes geometry-based patching and base-preserving replay.", "keywords": [{"text": "on-policy distillation", "domain": "knowledge-lifecycle"}, {"text": "capability consolidation", "domain": "knowledge-lifecycle"}, {"text": "out-of-distribution generalization", "domain": "cognition-reasoning"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "post-RL training", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "SlackBench: Benchmarking Agents on Collaborative Projects Grounded in Real Code Repositories", "title_zh": "SlackBench：在真实代码仓库协作项目中评估智能体", "url": "http://arxiv.org/abs/2611.05512v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.05512", "summary": "SlackBench is a benchmark of 140 queries built from privacy-preserving reenactments of real academic research projects, requiring agents to search multi-party dialogue, inspect evolving GitHub repositories and Google Docs, reconcile stale or conflicting evidence, and abstain on unanswerable questions. Across 33 frontier models and agent harnesses, the best system scores around 80% and most agents fall below 66%.", "keywords": [{"text": "collaborative work benchmark", "domain": "evaluation-benchmark"}, {"text": "agentic search", "domain": "rag-retrieval"}, {"text": "context recovery", "domain": "context-prompting"}, {"text": "repository state", "domain": "agent-architecture"}, {"text": "abstention", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Adversarial Speculative Reasoning Improves Long Horizon Agents", "title_zh": "对抗式投机推理提升长程智能体", "url": "http://arxiv.org/abs/2611.05345v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.05345", "summary": "The authors argue that speculative decoding is not behavior-neutral for long-horizon agents, because numerical noise within verification windows can shift the output distribution after 30 steps. They train draft models to be rejected at critical reasoning points so those tokens are sampled from the target model, and report higher end-to-end success on agentic coding benchmarks by training 0.06-0.28% of hosted parameters without changing the target model.", "keywords": [{"text": "speculative decoding", "domain": "agent-architecture"}, {"text": "long-horizon reasoning", "domain": "cognition-reasoning"}, {"text": "context precision", "domain": "context-prompting"}, {"text": "draft model", "domain": "ai-knowledge"}, {"text": "agentic coding", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Iterated creation, grading, and revision of data science projects by language models", "title_zh": "语言模型对数据科学项目的迭代创建、评分与修订", "url": "http://arxiv.org/abs/2611.05548v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2611.05548", "summary": "The study runs 147 initial data-science project submissions from seven models across five developers through three rounds of writer grading and revision; 107 run and render, and average scores rise from 59% to 76%. It finds that self-grading tends to be about 9 percentage points above peer scores and that weaker models generally do not improve stronger ones when acting as graders.", "keywords": [{"text": "agentic data science", "domain": "agent-architecture"}, {"text": "iterative feedback", "domain": "knowledge-lifecycle"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "self-evaluation", "domain": "cognition-reasoning"}, {"text": "multi-agent workflow", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "KKKKhazix/agent-autoloop", "title_zh": "agent-autoloop：让命令行 Agent 在后台自主接活并跟进", "url": "https://github.com/KKKKhazix/agent-autoloop", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "agent-autoloop is a TypeScript tool that lets command-line agents pick up work in the background and follow through, interrupting the user with a card only when a decision is needed.", "keywords": [{"text": "command-line agents", "domain": "agent-architecture"}, {"text": "background automation", "domain": "agent-architecture"}, {"text": "human-in-the-loop", "domain": "agent-architecture"}, {"text": "developer tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Tencent Hunyuan's Hyra 2.0 Research Agent Builds Its Own Tools for Proteins, Proofs and Chips", "title_zh": "腾讯混元 Hyra 2.0 研究智能体为蛋白质、定理证明和芯片自建工具", "url": "https://pandaily.com/tencent-hunyuan-hyra-2-0-research-agent-builds-scientific-tools-hyinv-hyff-hyqec-open-results", "source": "Pandaily", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Tencent Hunyuan's Hyra 2.0 research agent builds reusable tools, including a protein design model reported to be 57x faster, force fields, a new quantum code and mathematical results on Petty and Yau.", "keywords": [{"text": "research agent", "domain": "agent-architecture"}, {"text": "tool creation", "domain": "agent-architecture"}, {"text": "scientific discovery", "domain": "ai-knowledge"}, {"text": "protein design", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Agentic cheminformatics with Google Antigravity", "title_zh": "借助 Google Antigravity 的智能体化学信息学", "url": "https://deepmind.google/blog/agentic-cheminformatics-with-google-antigravity/", "source": "Google DeepMind", "section": "industry_applications", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind describes how Google Antigravity and its Cheminformatics Skills accelerate drug-discovery workflows, search compounds and propose novel rigidified macrocycles.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "cheminformatics", "domain": "ai-knowledge"}, {"text": "drug discovery", "domain": "ai-knowledge"}, {"text": "workflow automation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Pandaily", "url": "https://pandaily.com"}, {"name": "Google DeepMind", "url": "https://deepmind.google"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-11-20</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:22%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">provenance-gated memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP tool receipts</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context folding</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill curation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">hub optimal transport</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark integrity</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation-grounded RAG</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">persistent project state</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">adversarial distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">policy generalization</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="context management agent memory skill curation self-evolving agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.28244</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Demystifying the Autoresearch Harness: How Context and Skills Shape Self-Evolving Agents<div class="title-zh">拆解自动研究框架：上下文与技能如何塑造自进化 Agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill curation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agents</span></div>
+  <div class="item-summary">The study isolates how context and skill management shape long-horizon autoresearch agents, finding that preserving individually accessible records of past attempts beats rolling summaries, with context folding improving over a recency-truncation baseline by up to 19.2%. Combining context folding with deletion of persistently unused lessons in MLEvolver reaches a 72.7% medal rate on MLE-Bench Lite and a 94% fast@1 score on KernelBench Level 3.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.28244v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory cross-session reuse knowledge distillation model tuning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.28356</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Engram: Multi-Stage Memory for Agentic Tuning of Heterogeneous Models<div class="title-zh">Engram：面向异构模型智能调优的多阶段记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">cross-session reuse</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model tuning</span></div>
+  <div class="item-summary">Engram is a multi-stage memory system that links past trial outcomes to the hypotheses and rationale behind them and assesses whether that evidence applies to the current model. An online agent supplies guidance, retrieves related sessions and reviews trial candidates, while an offline agent distills validated lessons; on two ads models it reaches a no-memory control's 32-trial result with 47% fewer trials.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.28356v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-context retrieval optimal transport attention sparsity needle-in-a-haystack">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2611.27951</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Topology Hub Optimal Transport: Eliminating Long Context Dilution at Flash Speed<div class="title-zh">Topology Hub 最优传输：以闪电速度消除长上下文稀释</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">optimal transport</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">attention sparsity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">needle-in-a-haystack</span></div>
+  <div class="item-summary">Topology Hub Optimal Transport replaces dense long-context attention with a linear-size hub-and-spoke transport graph and bounded-support gating to drive excess distractor mass to zero. On an NVIDIA L4, sparsemax THOT trained at 128 tokens reaches 97.40% zero-shot recall of fixed bindings at 262,144 tokens, and zero-shot WikiText-103 multi-needle retrieval reaches 100% versus 0.78% for short-trained RoPE FlashAttention.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.27951v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="benchmark integrity privilege separation coding agents adversarial evaluation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2611.27860</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Who Grades the Agent? Privilege Separation for Coding-Agent Benchmarks<div class="title-zh">谁来给 Agent 打分？面向编程 Agent 基准测试的权限分离</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark integrity</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">privilege separation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial evaluation</span></div>
+  <div class="item-summary">SplitBench is a privilege-separation framework that separates running a coding task's tests from judging their results, so an agent that takes over the whole test environment still cannot forge a pass because a trusted grader holds the expected answers. Porting Terminal-Bench and DeepSWE, 180 of 202 tasks converted with 98.7% agreement against native graders, and SplitBench blocked 75% of worst-case adversarial attempts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.27860v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="MCP tool receipts provenance-gated memory RAG deduplication tool-use verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.27095</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Epistemic Guard: Out-of-Process MCP Receipt Proxying, Post-Turn Prose Supervision, and Provenance-Gated Memory for Tool-Using Autonomous Agents<div class="title-zh">Epistemic Guard：面向工具型 Agent 的 MCP 凭证代理、回合后文本监督与来源门控记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP tool receipts</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">provenance-gated memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG deduplication</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">tool-use verification</span></div>
+  <div class="item-summary">Epistemic Guard is an open-source Python library and out-of-process MCP receipt proxy that checks post-turn prose against signed tool receipts, gates SQLite memory writes by provenance, and collapses syndicated RAG mirrors. It reports 93.2% accuracy at 17.9 ms median CPU latency and rejects all tampered receipts in its conformance suites.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.27095v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-context retrieval optimal transport attention sparsity needle-in-a-haystack">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2611.27951</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Topology Hub Optimal Transport: Eliminating Long Context Dilution at Flash Speed<div class="title-zh">Topology Hub 最优传输：以闪电速度消除长上下文稀释</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">optimal transport</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">attention sparsity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">needle-in-a-haystack</span></div>
+  <div class="item-summary">Topology Hub Optimal Transport replaces dense long-context attention with a linear-size hub-and-spoke transport graph and bounded-support gating to drive excess distractor mass to zero. On an NVIDIA L4, sparsemax THOT trained at 128 tokens reaches 97.40% zero-shot recall of fixed bindings at 262,144 tokens, and zero-shot WikiText-103 multi-needle retrieval reaches 100% versus 0.78% for short-trained RoPE FlashAttention.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.27951v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="benchmark integrity privilege separation coding agents adversarial evaluation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2611.27860</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Who Grades the Agent? Privilege Separation for Coding-Agent Benchmarks<div class="title-zh">谁来给 Agent 打分？面向编程 Agent 基准测试的权限分离</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark integrity</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">privilege separation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial evaluation</span></div>
+  <div class="item-summary">SplitBench is a privilege-separation framework that separates running a coding task's tests from judging their results, so an agent that takes over the whole test environment still cannot forge a pass because a trusted grader holds the expected answers. Porting Terminal-Bench and DeepSWE, 180 of 202 tasks converted with 98.7% agreement against native graders, and SplitBench blocked 75% of worst-case adversarial attempts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.27860v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context management agent memory skill curation self-evolving agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.28244</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Demystifying the Autoresearch Harness: How Context and Skills Shape Self-Evolving Agents<div class="title-zh">拆解自动研究框架：上下文与技能如何塑造自进化 Agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill curation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agents</span></div>
+  <div class="item-summary">The study isolates how context and skill management shape long-horizon autoresearch agents, finding that preserving individually accessible records of past attempts beats rolling summaries, with context folding improving over a recency-truncation baseline by up to 19.2%. Combining context folding with deletion of persistently unused lessons in MLEvolver reaches a 72.7% medal rate on MLE-Bench Lite and a 94% fast@1 score on KernelBench Level 3.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.28244v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory cross-session reuse knowledge distillation model tuning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.28356</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Engram: Multi-Stage Memory for Agentic Tuning of Heterogeneous Models<div class="title-zh">Engram：面向异构模型智能调优的多阶段记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">cross-session reuse</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model tuning</span></div>
+  <div class="item-summary">Engram is a multi-stage memory system that links past trial outcomes to the hypotheses and rationale behind them and assesses whether that evidence applies to the current model. An online agent supplies guidance, retrieves related sessions and reviews trial candidates, while an offline agent distills validated lessons; on two ads models it reaches a no-memory control's 32-trial result with 47% fewer trials.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.28356v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="project-state understanding enterprise knowledge memory-augmented retrieval benchmark design">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.28374</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Taking the PULSE of Enterprise Workflows: Evaluating Persistent Project-State Understanding<div class="title-zh">PULSE：评估企业工作流中的持续项目状态理解</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">project-state understanding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise knowledge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">memory-augmented retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span></div>
+  <div class="item-summary">PULSE is a benchmark of 1,573 questions over 30 enterprise project histories that tests understanding of open loops, project evolution and view gaps. The authors report substantial headroom for retrieval, graph- and memory-augmented retrieval and long-context systems, and find that supplying explicit project state on top of gold evidence yields further gains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.28374v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-query retrieval citation grounding listwise reranking claim verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.28233</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DM-Lab at TREC 2026 RAG: Multi-Query Retrieval, Ensemble Judging, and Claim-Pack Generation<div class="title-zh">DM-Lab 在 TREC 2026 RAG：多查询检索、集成评判与声明包生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-query retrieval</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation grounding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">listwise reranking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">claim verification</span></div>
+  <div class="item-summary">DM-Lab-RAG-2026 combines multi-query BM25, reciprocal rank fusion, ensemble relevance assessment, listwise reranking and adaptive retrieval depth over the 553-million-document ClimbMix-400B corpus, then generates claim-first cited answers with source verification. Across 22 development topics it reports mean nDCG@30 of 0.604, and in official evaluation a set precision of 0.455 with a manual nugget gain of 0.910.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.28233v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="policy generalization on-device agents safety alignment decision distillation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.27216</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Correct Precedents Induce Policy Violations in On-Device LLM Agents<div class="title-zh">正确先例反而诱发违规：端侧 LLM Agent 的策略失效</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">policy generalization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">on-device agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">safety alignment</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">decision distillation</span></div>
+  <div class="item-summary">The paper identifies correct-precedent generalization, in which an on-device agent that correctly releases an item whose restriction was lifted becomes more likely to release the next still-restricted item, and finds the failure in 13 open-weight models from nine developers. Paired Decision Distillation restores the safe rate to nearly 100% in every distilled model without extra prompts or model calls.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.27216v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent RL strategy logic formal specifications adversarial coordination">
+  <div class="item-meta">
+    <span class="item-org">Google Research</span>
+    <span class="arxiv-tag">arxiv:2611.27865</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SLICR: Strategy Logic-Guided Multi-Agent Reinforcement Learning<div class="title-zh">SLICR：策略逻辑引导的多智能体强化学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent RL</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">strategy logic</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">formal specifications</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">adversarial coordination</span></div>
+  <div class="item-summary">SLICR extends specification-guided reinforcement learning to adversarial, partially observable multi-agent settings by using Strategy Logic to quantify over agent strategies and linear temporal logic to encode objectives and constraints. It is evaluated on Predator-Prey, Google Research Football and a home-grown extension of SMAC-HARD.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.27865v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="adversarial distillation capability extraction model safeguards">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Combatting adversarial distillation<div class="title-zh">应对对抗性蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">adversarial distillation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">capability extraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model safeguards</span></div>
+  <div class="item-summary">OpenAI describes a layered approach to adversarial distillation that combines model training, safeguards, detection and enforcement to protect against capability extraction.</div>
+  <a class="item-link" href="https://openai.com/index/combatting-adversarial-distillation" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="financial research citation relevance source coverage model evaluation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Hebbia sees improvements in financial research with GPT-6 Astra<div class="title-zh">Hebbia 借助 GPT-6 Astra 在金融研究上取得提升</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">financial research</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">citation relevance</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">source coverage</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model evaluation</span></div>
+  <div class="item-summary">Hebbia tested GPT-6 Astra for financial research, and its prerelease evaluations found gains in source coverage, citation relevance and presentation quality.</div>
+  <a class="item-link" href="https://openai.com/business/customer-stories/hebbia" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-11-20", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 2, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 9, "blogs_insights": 2}}, "daily_keywords": [{"text": "provenance-gated memory", "domain": "agent-memory"}, {"text": "MCP tool receipts", "domain": "agent-architecture"}, {"text": "context folding", "domain": "context-prompting"}, {"text": "skill curation", "domain": "knowledge-lifecycle"}, {"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "hub optimal transport", "domain": "embeddings-vectors"}, {"text": "benchmark integrity", "domain": "evaluation-benchmark"}, {"text": "citation-grounded RAG", "domain": "rag-retrieval"}, {"text": "persistent project state", "domain": "agent-memory"}, {"text": "adversarial distillation", "domain": "knowledge-lifecycle"}, {"text": "policy generalization", "domain": "cognition-reasoning"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Demystifying the Autoresearch Harness: How Context and Skills Shape Self-Evolving Agents", "title_zh": "拆解自动研究框架：上下文与技能如何塑造自进化 Agent", "url": "http://arxiv.org/abs/2611.28244v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.28244", "summary": "The study isolates how context and skill management shape long-horizon autoresearch agents, finding that preserving individually accessible records of past attempts beats rolling summaries, with context folding improving over a recency-truncation baseline by up to 19.2%. Combining context folding with deletion of persistently unused lessons in MLEvolver reaches a 72.7% medal rate on MLE-Bench Lite and a 94% fast@1 score on KernelBench Level 3.", "keywords": [{"text": "context management", "domain": "context-prompting"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "skill curation", "domain": "knowledge-lifecycle"}, {"text": "self-evolving agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Engram: Multi-Stage Memory for Agentic Tuning of Heterogeneous Models", "title_zh": "Engram：面向异构模型智能调优的多阶段记忆", "url": "http://arxiv.org/abs/2611.28356v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.28356", "summary": "Engram is a multi-stage memory system that links past trial outcomes to the hypotheses and rationale behind them and assesses whether that evidence applies to the current model. An online agent supplies guidance, retrieves related sessions and reviews trial candidates, while an offline agent distills validated lessons; on two ads models it reaches a no-memory control's 32-trial result with 47% fewer trials.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "cross-session reuse", "domain": "agent-memory"}, {"text": "knowledge distillation", "domain": "knowledge-lifecycle"}, {"text": "model tuning", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Topology Hub Optimal Transport: Eliminating Long Context Dilution at Flash Speed", "title_zh": "Topology Hub 最优传输：以闪电速度消除长上下文稀释", "url": "http://arxiv.org/abs/2611.27951v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2611.27951", "summary": "Topology Hub Optimal Transport replaces dense long-context attention with a linear-size hub-and-spoke transport graph and bounded-support gating to drive excess distractor mass to zero. On an NVIDIA L4, sparsemax THOT trained at 128 tokens reaches 97.40% zero-shot recall of fixed bindings at 262,144 tokens, and zero-shot WikiText-103 multi-needle retrieval reaches 100% versus 0.78% for short-trained RoPE FlashAttention.", "keywords": [{"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "optimal transport", "domain": "embeddings-vectors"}, {"text": "attention sparsity", "domain": "context-prompting"}, {"text": "needle-in-a-haystack", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Who Grades the Agent? Privilege Separation for Coding-Agent Benchmarks", "title_zh": "谁来给 Agent 打分？面向编程 Agent 基准测试的权限分离", "url": "http://arxiv.org/abs/2611.27860v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2611.27860", "summary": "SplitBench is a privilege-separation framework that separates running a coding task's tests from judging their results, so an agent that takes over the whole test environment still cannot forge a pass because a trusted grader holds the expected answers. Porting Terminal-Bench and DeepSWE, 180 of 202 tasks converted with 98.7% agreement against native graders, and SplitBench blocked 75% of worst-case adversarial attempts.", "keywords": [{"text": "benchmark integrity", "domain": "evaluation-benchmark"}, {"text": "privilege separation", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "adversarial evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Epistemic Guard: Out-of-Process MCP Receipt Proxying, Post-Turn Prose Supervision, and Provenance-Gated Memory for Tool-Using Autonomous Agents", "title_zh": "Epistemic Guard：面向工具型 Agent 的 MCP 凭证代理、回合后文本监督与来源门控记忆", "url": "http://arxiv.org/abs/2611.27095v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.27095", "summary": "Epistemic Guard is an open-source Python library and out-of-process MCP receipt proxy that checks post-turn prose against signed tool receipts, gates SQLite memory writes by provenance, and collapses syndicated RAG mirrors. It reports 93.2% accuracy at 17.9 ms median CPU latency and rejects all tampered receipts in its conformance suites.", "keywords": [{"text": "MCP tool receipts", "domain": "agent-architecture"}, {"text": "provenance-gated memory", "domain": "agent-memory"}, {"text": "RAG deduplication", "domain": "rag-retrieval"}, {"text": "tool-use verification", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Topology Hub Optimal Transport: Eliminating Long Context Dilution at Flash Speed", "title_zh": "Topology Hub 最优传输：以闪电速度消除长上下文稀释", "url": "http://arxiv.org/abs/2611.27951v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2611.27951", "summary": "Topology Hub Optimal Transport replaces dense long-context attention with a linear-size hub-and-spoke transport graph and bounded-support gating to drive excess distractor mass to zero. On an NVIDIA L4, sparsemax THOT trained at 128 tokens reaches 97.40% zero-shot recall of fixed bindings at 262,144 tokens, and zero-shot WikiText-103 multi-needle retrieval reaches 100% versus 0.78% for short-trained RoPE FlashAttention.", "keywords": [{"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "optimal transport", "domain": "embeddings-vectors"}, {"text": "attention sparsity", "domain": "context-prompting"}, {"text": "needle-in-a-haystack", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Who Grades the Agent? Privilege Separation for Coding-Agent Benchmarks", "title_zh": "谁来给 Agent 打分？面向编程 Agent 基准测试的权限分离", "url": "http://arxiv.org/abs/2611.27860v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2611.27860", "summary": "SplitBench is a privilege-separation framework that separates running a coding task's tests from judging their results, so an agent that takes over the whole test environment still cannot forge a pass because a trusted grader holds the expected answers. Porting Terminal-Bench and DeepSWE, 180 of 202 tasks converted with 98.7% agreement against native graders, and SplitBench blocked 75% of worst-case adversarial attempts.", "keywords": [{"text": "benchmark integrity", "domain": "evaluation-benchmark"}, {"text": "privilege separation", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "adversarial evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Demystifying the Autoresearch Harness: How Context and Skills Shape Self-Evolving Agents", "title_zh": "拆解自动研究框架：上下文与技能如何塑造自进化 Agent", "url": "http://arxiv.org/abs/2611.28244v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.28244", "summary": "The study isolates how context and skill management shape long-horizon autoresearch agents, finding that preserving individually accessible records of past attempts beats rolling summaries, with context folding improving over a recency-truncation baseline by up to 19.2%. Combining context folding with deletion of persistently unused lessons in MLEvolver reaches a 72.7% medal rate on MLE-Bench Lite and a 94% fast@1 score on KernelBench Level 3.", "keywords": [{"text": "context management", "domain": "context-prompting"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "skill curation", "domain": "knowledge-lifecycle"}, {"text": "self-evolving agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Engram: Multi-Stage Memory for Agentic Tuning of Heterogeneous Models", "title_zh": "Engram：面向异构模型智能调优的多阶段记忆", "url": "http://arxiv.org/abs/2611.28356v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.28356", "summary": "Engram is a multi-stage memory system that links past trial outcomes to the hypotheses and rationale behind them and assesses whether that evidence applies to the current model. An online agent supplies guidance, retrieves related sessions and reviews trial candidates, while an offline agent distills validated lessons; on two ads models it reaches a no-memory control's 32-trial result with 47% fewer trials.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "cross-session reuse", "domain": "agent-memory"}, {"text": "knowledge distillation", "domain": "knowledge-lifecycle"}, {"text": "model tuning", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Taking the PULSE of Enterprise Workflows: Evaluating Persistent Project-State Understanding", "title_zh": "PULSE：评估企业工作流中的持续项目状态理解", "url": "http://arxiv.org/abs/2611.28374v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.28374", "summary": "PULSE is a benchmark of 1,573 questions over 30 enterprise project histories that tests understanding of open loops, project evolution and view gaps. The authors report substantial headroom for retrieval, graph- and memory-augmented retrieval and long-context systems, and find that supplying explicit project state on top of gold evidence yields further gains.", "keywords": [{"text": "project-state understanding", "domain": "agent-memory"}, {"text": "enterprise knowledge", "domain": "ai-knowledge"}, {"text": "memory-augmented retrieval", "domain": "rag-retrieval"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "DM-Lab at TREC 2026 RAG: Multi-Query Retrieval, Ensemble Judging, and Claim-Pack Generation", "title_zh": "DM-Lab 在 TREC 2026 RAG：多查询检索、集成评判与声明包生成", "url": "http://arxiv.org/abs/2611.28233v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.28233", "summary": "DM-Lab-RAG-2026 combines multi-query BM25, reciprocal rank fusion, ensemble relevance assessment, listwise reranking and adaptive retrieval depth over the 553-million-document ClimbMix-400B corpus, then generates claim-first cited answers with source verification. Across 22 development topics it reports mean nDCG@30 of 0.604, and in official evaluation a set precision of 0.455 with a manual nugget gain of 0.910.", "keywords": [{"text": "multi-query retrieval", "domain": "rag-retrieval"}, {"text": "citation grounding", "domain": "rag-retrieval"}, {"text": "listwise reranking", "domain": "rag-retrieval"}, {"text": "claim verification", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Correct Precedents Induce Policy Violations in On-Device LLM Agents", "title_zh": "正确先例反而诱发违规：端侧 LLM Agent 的策略失效", "url": "http://arxiv.org/abs/2611.27216v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.27216", "summary": "The paper identifies correct-precedent generalization, in which an on-device agent that correctly releases an item whose restriction was lifted becomes more likely to release the next still-restricted item, and finds the failure in 13 open-weight models from nine developers. Paired Decision Distillation restores the safe rate to nearly 100% in every distilled model without extra prompts or model calls.", "keywords": [{"text": "policy generalization", "domain": "cognition-reasoning"}, {"text": "on-device agents", "domain": "agent-architecture"}, {"text": "safety alignment", "domain": "ai-knowledge"}, {"text": "decision distillation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "SLICR: Strategy Logic-Guided Multi-Agent Reinforcement Learning", "title_zh": "SLICR：策略逻辑引导的多智能体强化学习", "url": "http://arxiv.org/abs/2611.27865v1", "source": "arXiv", "section": "research_papers", "organization": "Google Research", "language": "en", "arxiv_id": "2611.27865", "summary": "SLICR extends specification-guided reinforcement learning to adversarial, partially observable multi-agent settings by using Strategy Logic to quantify over agent strategies and linear temporal logic to encode objectives and constraints. It is evaluated on Predator-Prey, Google Research Football and a home-grown extension of SMAC-HARD.", "keywords": [{"text": "multi-agent RL", "domain": "agent-architecture"}, {"text": "strategy logic", "domain": "cognition-reasoning"}, {"text": "formal specifications", "domain": "agent-architecture"}, {"text": "adversarial coordination", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Combatting adversarial distillation", "title_zh": "应对对抗性蒸馏", "url": "https://openai.com/index/combatting-adversarial-distillation", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI describes a layered approach to adversarial distillation that combines model training, safeguards, detection and enforcement to protect against capability extraction.", "keywords": [{"text": "adversarial distillation", "domain": "knowledge-lifecycle"}, {"text": "capability extraction", "domain": "knowledge-lifecycle"}, {"text": "model safeguards", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Hebbia sees improvements in financial research with GPT-6 Astra", "title_zh": "Hebbia 借助 GPT-6 Astra 在金融研究上取得提升", "url": "https://openai.com/business/customer-stories/hebbia", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "Hebbia tested GPT-6 Astra for financial research, and its prerelease evaluations found gains in source coverage, citation relevance and presentation quality.", "keywords": [{"text": "financial research", "domain": "ai-knowledge"}, {"text": "citation relevance", "domain": "rag-retrieval"}, {"text": "source coverage", "domain": "rag-retrieval"}, {"text": "model evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "OpenAI", "url": "https://openai.com"}, {"name": "arXiv", "url": "https://arxiv.org"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

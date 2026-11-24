@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-11-16</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry & Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>4 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:33%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-rewriting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">recursive self-improvement</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">system prompt leakage</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">instruction hierarchy</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">overthinking</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning budgets</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">specialist memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience reuse</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">selective LLM invocation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">independent evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">computer-use agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code as policies</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="self-rewriting weight editing recursive self-improvement gradient-free adaptation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21885</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Language Models Can Rewrite Their Own Weights<div class="title-zh">语言模型能够重写自身权重</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-rewriting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">weight editing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">recursive self-improvement</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">gradient-free adaptation</span></div>
+  <div class="item-summary">The authors report that an open 27B language model can rewrite its own weights through reasoning alone, with no gradients and no training, after diagnosing its failures from its weights, graded answers and ability to run itself. The self-edit makes it 6.6 points more accurate on problems it never saw, improves over eight consecutive sessions, and restores a damaged copy to over 80% of the original accuracy on unseen image tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21885v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="system prompt leakage instruction hierarchy agentic red teaming language pivot">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21956</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Eight in Ten LLMs Leak System-Prompt Secrets: Nevan, an Agentic Capture-the-Flag Study<div class="title-zh">八成 LLM 泄露系统提示秘密：Nevan 智能体夺旗研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">system prompt leakage</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">instruction hierarchy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic red teaming</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">language pivot</span></div>
+  <div class="item-summary">The study audits instruction-hierarchy enforcement across 363 text-in/text-out models from the OpenRouter catalog, with an AI agent steered by a human researcher attempting to extract a 16-character secret placed in each system prompt. The flag was exfiltrated from 296 models plus four released after the catalog freeze, for 300 captures in total, 170 of which involved a non-English language pivot, most often French.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21956v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="coding agents experience reuse token efficiency session memory">
+  <div class="item-meta">
+    <span class="item-org">Microsoft Research</span>
+    
+    
+    <span class="item-source">Microsoft Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TokenEconomizer: Learning from Experience to Make AI Coding Agents More Efficient<div class="title-zh">TokenEconomizer：从经验中学习，让 AI 编程 Agent 更高效</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience reuse</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">token efficiency</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">session memory</span></div>
+  <div class="item-summary">TokenEconomizer is an open-source plugin that builds on past coding sessions so AI coding agents avoid relearning the same lessons, aiming to cut costs while maintaining task success. Microsoft Research describes it as a path toward coding agents that learn not only how to solve tasks but also how to work more efficiently.</div>
+  <a class="item-link" href="https://www.microsoft.com/en-us/research/blog/tokeneconomizer-learning-from-experience-to-make-ai-coding-agents-more-efficient/" target="_blank" rel="noopener">&rarr; www.microsoft.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="self-rewriting weight editing recursive self-improvement gradient-free adaptation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21885</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Language Models Can Rewrite Their Own Weights<div class="title-zh">语言模型能够重写自身权重</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-rewriting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">weight editing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">recursive self-improvement</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">gradient-free adaptation</span></div>
+  <div class="item-summary">The authors report that an open 27B language model can rewrite its own weights through reasoning alone, with no gradients and no training, after diagnosing its failures from its weights, graded answers and ability to run itself. The self-edit makes it 6.6 points more accurate on problems it never saw, improves over eight consecutive sessions, and restores a damaged copy to over 80% of the original accuracy on unseen image tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21885v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="system prompt leakage instruction hierarchy agentic red teaming language pivot">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21956</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Eight in Ten LLMs Leak System-Prompt Secrets: Nevan, an Agentic Capture-the-Flag Study<div class="title-zh">八成 LLM 泄露系统提示秘密：Nevan 智能体夺旗研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">system prompt leakage</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">instruction hierarchy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic red teaming</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">language pivot</span></div>
+  <div class="item-summary">The study audits instruction-hierarchy enforcement across 363 text-in/text-out models from the OpenRouter catalog, with an AI agent steered by a human researcher attempting to extract a 16-character secret placed in each system prompt. The flag was exfiltrated from 296 models plus four released after the catalog freeze, for 300 captures in total, 170 of which involved a non-English language pivot, most often French.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21956v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="overthinking reasoning budgets stopping rules chain-of-thought">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21946</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Conserved Verdicts, Drifting Commitments: Identifying Harmful Overthinking<div class="title-zh">结论守恒、承诺漂移：识别有害的过度思考</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">overthinking</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning budgets</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">stopping rules</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span></div>
+  <div class="item-summary">The paper separates a reasoning model's commitment—the probability that the answer it would give if stopped now is correct—from its verdict, the probability that the answer it will finish with is correct, and shows the commitment-verdict gap equals the expected remaining change in answer quality. On MATH-500, at all 379 points where DeepSeek-R1-Distill-Qwen-1.5B holds a correct answer, continuing loses 3.6 points on average, and an oracle stopping rule gains at most 1.8 and 2.5 points at 1.5B and 7B.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21946v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="clinical coding candidate generation selective LLM invocation hierarchical labels">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21891</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Call-Efficient ICD-10 Code Prediction via Supervised Candidate Generation and Selective LLM Invocation<div class="title-zh">通过监督式候选生成与选择性 LLM 调用实现低调用量的 ICD-10 编码预测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical coding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">candidate generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">selective LLM invocation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">hierarchical labels</span></div>
+  <div class="item-summary">The pipeline combines transformer embeddings, tree-based supervised candidate generation, candidate-level reranking and gated LLM assistance for assigning ICD-10 codes from short clinical diagnosis text. Its deployable Pre-LLM fusion system reaches 83.19% locked-test accuracy while invoking the LLM for 31.97% of cases, a 34.5% relative error reduction over the supervised parent-code baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21891v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="specialist memory catastrophic forgetting policy reuse continual reinforcement learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21598</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Mitigating Catastrophic Forgetting with Physics-Indexed Specialist Memory: the Evolutionary Neuroplastic Agent<div class="title-zh">以物理索引专家记忆缓解灾难性遗忘：进化神经可塑性 Agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">specialist memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">policy reuse</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual reinforcement learning</span></div>
+  <div class="item-summary">The Evolutionary Neuroplastic Agent evolves small neural networks without gradients, archives selected policies by detected dynamic regime and retrieves them through Bayesian policy reuse as a specialist memory. In a 30-replicate CartPole ablation the complete architecture reaches a mean success rate of 83.2% across five test environments, though it adapts more slowly than PPO on CartPole and achieves lower returns than SAC on HalfCheetah.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21598v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="heterogeneous teams multi-agent planning task discovery graph neural planner">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.21828</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Coordination of Heterogeneous Teams with Uncertain Task Requirements<div class="title-zh">任务需求不确定下的异构团队协同</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">heterogeneous teams</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent planning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">task discovery</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph neural planner</span></div>
+  <div class="item-summary">The paper introduces a hierarchical planner that uses a graph neural network policy to assign actions to heterogeneous agents and a shortest-path algorithm to route them, with the CAAT graph representing agents, tasks, capabilities and actions. The learned planner discovers task requirements and completes tasks faster than baselines that optimize discovery and engagement separately, and transfers zero-shot from an outdoor map to a larger indoor map.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.21828v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding agents experience reuse token efficiency session memory">
+  <div class="item-meta">
+    <span class="item-org">Microsoft Research</span>
+    
+    
+    <span class="item-source">Microsoft Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TokenEconomizer: Learning from Experience to Make AI Coding Agents More Efficient<div class="title-zh">TokenEconomizer：从经验中学习，让 AI 编程 Agent 更高效</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience reuse</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">token efficiency</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">session memory</span></div>
+  <div class="item-summary">TokenEconomizer is an open-source plugin that builds on past coding sessions so AI coding agents avoid relearning the same lessons, aiming to cut costs while maintaining task success. Microsoft Research describes it as a path toward coding agents that learn not only how to solve tasks but also how to work more efficiently.</div>
+  <a class="item-link" href="https://www.microsoft.com/en-us/research/blog/tokeneconomizer-learning-from-experience-to-make-ai-coding-agents-more-efficient/" target="_blank" rel="noopener">&rarr; www.microsoft.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="independent evaluation model alignment safeguards monitoring third-party auditing">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Our first phase of embedded assessments<div class="title-zh">我们的第一阶段嵌入式评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">independent evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model alignment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">safeguards monitoring</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">third-party auditing</span></div>
+  <div class="item-summary">OpenAI says it is beginning embedded assessments with Apollo Research, METR, Transluce and Goodfire to independently evaluate model alignment, safeguards and monitoring systems.</div>
+  <a class="item-link" href="https://openai.com/index/our-first-phase-of-embedded-assessments" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry & Applications
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="computer-use agents healthcare plugins clinical workflows">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">More ways to move care forward with ChatGPT for Healthcare<div class="title-zh">以更多方式推进 ChatGPT 医疗应用</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">computer-use agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">healthcare plugins</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical workflows</span></div>
+  <div class="item-summary">OpenAI introduced computer-use agents, improved clinical answers and new healthcare plugins that work across healthcare software, according to the announcement.</div>
+  <a class="item-link" href="https://openai.com/index/more-ways-to-move-care-forward-with-chatgpt-for-healthcare" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="code as policies reusable robot skills robot manipulation real-robot trials">
+  <div class="item-meta">
+    <span class="item-org">ACE Robotics</span>
+    
+    
+    <span class="item-source">Pandaily</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ACE Robotics' ACE-CaP-0 Has AI Agents Write Reusable Robot Code, Reporting 92.1% Success<div class="title-zh">ACE Robotics 的 ACE-CaP-0 让 AI Agent 编写可复用机器人代码，报告 92.1% 成功率</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code as policies</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">reusable robot skills</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">robot manipulation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">real-robot trials</span></div>
+  <div class="item-summary">ACE Robotics' ACE-CaP-0 has an AI agent write and freeze robot control code as reusable skills; the authors' own tests report 221 of 240 successful real-robot trials, or 92.1%.</div>
+  <a class="item-link" href="https://pandaily.com/ace-robotics-ace-cap-0-code-as-policies-reusable-robot-skills" target="_blank" rel="noopener">&rarr; pandaily.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://www.microsoft.com/en-us/research/" target="_blank" rel="noopener">Microsoft Research</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://pandaily.com" target="_blank" rel="noopener">Pandaily</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-11-16", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 4, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 6, "tools_frameworks": 1, "blogs_insights": 1, "industry_applications": 2}}, "daily_keywords": [{"text": "self-rewriting", "domain": "knowledge-lifecycle"}, {"text": "recursive self-improvement", "domain": "knowledge-lifecycle"}, {"text": "system prompt leakage", "domain": "context-prompting"}, {"text": "instruction hierarchy", "domain": "context-prompting"}, {"text": "overthinking", "domain": "cognition-reasoning"}, {"text": "reasoning budgets", "domain": "cognition-reasoning"}, {"text": "specialist memory", "domain": "agent-memory"}, {"text": "experience reuse", "domain": "agent-memory"}, {"text": "selective LLM invocation", "domain": "agent-architecture"}, {"text": "independent evaluation", "domain": "evaluation-benchmark"}, {"text": "computer-use agents", "domain": "agent-architecture"}, {"text": "code as policies", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Language Models Can Rewrite Their Own Weights", "title_zh": "语言模型能够重写自身权重", "url": "http://arxiv.org/abs/2611.21885v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21885", "summary": "The authors report that an open 27B language model can rewrite its own weights through reasoning alone, with no gradients and no training, after diagnosing its failures from its weights, graded answers and ability to run itself. The self-edit makes it 6.6 points more accurate on problems it never saw, improves over eight consecutive sessions, and restores a damaged copy to over 80% of the original accuracy on unseen image tasks.", "keywords": [{"text": "self-rewriting", "domain": "knowledge-lifecycle"}, {"text": "weight editing", "domain": "knowledge-lifecycle"}, {"text": "recursive self-improvement", "domain": "knowledge-lifecycle"}, {"text": "gradient-free adaptation", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Eight in Ten LLMs Leak System-Prompt Secrets: Nevan, an Agentic Capture-the-Flag Study", "title_zh": "八成 LLM 泄露系统提示秘密：Nevan 智能体夺旗研究", "url": "http://arxiv.org/abs/2611.21956v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21956", "summary": "The study audits instruction-hierarchy enforcement across 363 text-in/text-out models from the OpenRouter catalog, with an AI agent steered by a human researcher attempting to extract a 16-character secret placed in each system prompt. The flag was exfiltrated from 296 models plus four released after the catalog freeze, for 300 captures in total, 170 of which involved a non-English language pivot, most often French.", "keywords": [{"text": "system prompt leakage", "domain": "context-prompting"}, {"text": "instruction hierarchy", "domain": "context-prompting"}, {"text": "agentic red teaming", "domain": "agent-architecture"}, {"text": "language pivot", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "TokenEconomizer: Learning from Experience to Make AI Coding Agents More Efficient", "title_zh": "TokenEconomizer：从经验中学习，让 AI 编程 Agent 更高效", "url": "https://www.microsoft.com/en-us/research/blog/tokeneconomizer-learning-from-experience-to-make-ai-coding-agents-more-efficient/", "source": "Microsoft Research", "section": "tools_frameworks", "organization": "Microsoft Research", "language": "en", "arxiv_id": "", "summary": "TokenEconomizer is an open-source plugin that builds on past coding sessions so AI coding agents avoid relearning the same lessons, aiming to cut costs while maintaining task success. Microsoft Research describes it as a path toward coding agents that learn not only how to solve tasks but also how to work more efficiently.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "experience reuse", "domain": "agent-memory"}, {"text": "token efficiency", "domain": "context-prompting"}, {"text": "session memory", "domain": "agent-memory"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Language Models Can Rewrite Their Own Weights", "title_zh": "语言模型能够重写自身权重", "url": "http://arxiv.org/abs/2611.21885v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21885", "summary": "The authors report that an open 27B language model can rewrite its own weights through reasoning alone, with no gradients and no training, after diagnosing its failures from its weights, graded answers and ability to run itself. The self-edit makes it 6.6 points more accurate on problems it never saw, improves over eight consecutive sessions, and restores a damaged copy to over 80% of the original accuracy on unseen image tasks.", "keywords": [{"text": "self-rewriting", "domain": "knowledge-lifecycle"}, {"text": "weight editing", "domain": "knowledge-lifecycle"}, {"text": "recursive self-improvement", "domain": "knowledge-lifecycle"}, {"text": "gradient-free adaptation", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Eight in Ten LLMs Leak System-Prompt Secrets: Nevan, an Agentic Capture-the-Flag Study", "title_zh": "八成 LLM 泄露系统提示秘密：Nevan 智能体夺旗研究", "url": "http://arxiv.org/abs/2611.21956v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21956", "summary": "The study audits instruction-hierarchy enforcement across 363 text-in/text-out models from the OpenRouter catalog, with an AI agent steered by a human researcher attempting to extract a 16-character secret placed in each system prompt. The flag was exfiltrated from 296 models plus four released after the catalog freeze, for 300 captures in total, 170 of which involved a non-English language pivot, most often French.", "keywords": [{"text": "system prompt leakage", "domain": "context-prompting"}, {"text": "instruction hierarchy", "domain": "context-prompting"}, {"text": "agentic red teaming", "domain": "agent-architecture"}, {"text": "language pivot", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Conserved Verdicts, Drifting Commitments: Identifying Harmful Overthinking", "title_zh": "结论守恒、承诺漂移：识别有害的过度思考", "url": "http://arxiv.org/abs/2611.21946v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21946", "summary": "The paper separates a reasoning model's commitment—the probability that the answer it would give if stopped now is correct—from its verdict, the probability that the answer it will finish with is correct, and shows the commitment-verdict gap equals the expected remaining change in answer quality. On MATH-500, at all 379 points where DeepSeek-R1-Distill-Qwen-1.5B holds a correct answer, continuing loses 3.6 points on average, and an oracle stopping rule gains at most 1.8 and 2.5 points at 1.5B and 7B.", "keywords": [{"text": "overthinking", "domain": "cognition-reasoning"}, {"text": "reasoning budgets", "domain": "cognition-reasoning"}, {"text": "stopping rules", "domain": "evaluation-benchmark"}, {"text": "chain-of-thought", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Call-Efficient ICD-10 Code Prediction via Supervised Candidate Generation and Selective LLM Invocation", "title_zh": "通过监督式候选生成与选择性 LLM 调用实现低调用量的 ICD-10 编码预测", "url": "http://arxiv.org/abs/2611.21891v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21891", "summary": "The pipeline combines transformer embeddings, tree-based supervised candidate generation, candidate-level reranking and gated LLM assistance for assigning ICD-10 codes from short clinical diagnosis text. Its deployable Pre-LLM fusion system reaches 83.19% locked-test accuracy while invoking the LLM for 31.97% of cases, a 34.5% relative error reduction over the supervised parent-code baseline.", "keywords": [{"text": "clinical coding", "domain": "ai-knowledge"}, {"text": "candidate generation", "domain": "rag-retrieval"}, {"text": "selective LLM invocation", "domain": "agent-architecture"}, {"text": "hierarchical labels", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": false}, {"title": "Mitigating Catastrophic Forgetting with Physics-Indexed Specialist Memory: the Evolutionary Neuroplastic Agent", "title_zh": "以物理索引专家记忆缓解灾难性遗忘：进化神经可塑性 Agent", "url": "http://arxiv.org/abs/2611.21598v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21598", "summary": "The Evolutionary Neuroplastic Agent evolves small neural networks without gradients, archives selected policies by detected dynamic regime and retrieves them through Bayesian policy reuse as a specialist memory. In a 30-replicate CartPole ablation the complete architecture reaches a mean success rate of 83.2% across five test environments, though it adapts more slowly than PPO on CartPole and achieves lower returns than SAC on HalfCheetah.", "keywords": [{"text": "specialist memory", "domain": "agent-memory"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "policy reuse", "domain": "agent-memory"}, {"text": "continual reinforcement learning", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Coordination of Heterogeneous Teams with Uncertain Task Requirements", "title_zh": "任务需求不确定下的异构团队协同", "url": "http://arxiv.org/abs/2611.21828v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2611.21828", "summary": "The paper introduces a hierarchical planner that uses a graph neural network policy to assign actions to heterogeneous agents and a shortest-path algorithm to route them, with the CAAT graph representing agents, tasks, capabilities and actions. The learned planner discovers task requirements and completes tasks faster than baselines that optimize discovery and engagement separately, and transfers zero-shot from an outdoor map to a larger indoor map.", "keywords": [{"text": "heterogeneous teams", "domain": "agent-architecture"}, {"text": "multi-agent planning", "domain": "agent-architecture"}, {"text": "task discovery", "domain": "cognition-reasoning"}, {"text": "graph neural planner", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "TokenEconomizer: Learning from Experience to Make AI Coding Agents More Efficient", "title_zh": "TokenEconomizer：从经验中学习，让 AI 编程 Agent 更高效", "url": "https://www.microsoft.com/en-us/research/blog/tokeneconomizer-learning-from-experience-to-make-ai-coding-agents-more-efficient/", "source": "Microsoft Research", "section": "tools_frameworks", "organization": "Microsoft Research", "language": "en", "arxiv_id": "", "summary": "TokenEconomizer is an open-source plugin that builds on past coding sessions so AI coding agents avoid relearning the same lessons, aiming to cut costs while maintaining task success. Microsoft Research describes it as a path toward coding agents that learn not only how to solve tasks but also how to work more efficiently.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "experience reuse", "domain": "agent-memory"}, {"text": "token efficiency", "domain": "context-prompting"}, {"text": "session memory", "domain": "agent-memory"}], "link_verified": true, "is_highlight": true}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Our first phase of embedded assessments", "title_zh": "我们的第一阶段嵌入式评估", "url": "https://openai.com/index/our-first-phase-of-embedded-assessments", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI says it is beginning embedded assessments with Apollo Research, METR, Transluce and Goodfire to independently evaluate model alignment, safeguards and monitoring systems.", "keywords": [{"text": "independent evaluation", "domain": "evaluation-benchmark"}, {"text": "model alignment", "domain": "evaluation-benchmark"}, {"text": "safeguards monitoring", "domain": "ai-knowledge"}, {"text": "third-party auditing", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry & Applications", "items": [{"title": "More ways to move care forward with ChatGPT for Healthcare", "title_zh": "以更多方式推进 ChatGPT 医疗应用", "url": "https://openai.com/index/more-ways-to-move-care-forward-with-chatgpt-for-healthcare", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduced computer-use agents, improved clinical answers and new healthcare plugins that work across healthcare software, according to the announcement.", "keywords": [{"text": "computer-use agents", "domain": "agent-architecture"}, {"text": "healthcare plugins", "domain": "ai-knowledge"}, {"text": "clinical workflows", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "ACE Robotics' ACE-CaP-0 Has AI Agents Write Reusable Robot Code, Reporting 92.1% Success", "title_zh": "ACE Robotics 的 ACE-CaP-0 让 AI Agent 编写可复用机器人代码，报告 92.1% 成功率", "url": "https://pandaily.com/ace-robotics-ace-cap-0-code-as-policies-reusable-robot-skills", "source": "Pandaily", "section": "industry_applications", "organization": "ACE Robotics", "language": "en", "arxiv_id": "", "summary": "ACE Robotics' ACE-CaP-0 has an AI agent write and freeze robot control code as reusable skills; the authors' own tests report 221 of 240 successful real-robot trials, or 92.1%.", "keywords": [{"text": "code as policies", "domain": "agent-architecture"}, {"text": "reusable robot skills", "domain": "knowledge-lifecycle"}, {"text": "robot manipulation", "domain": "ai-knowledge"}, {"text": "real-robot trials", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Microsoft Research", "url": "https://www.microsoft.com/en-us/research/"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "Pandaily", "url": "https://pandaily.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
