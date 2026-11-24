@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-03-09</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry & Deployments</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">40 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>6 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">40/40 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">21</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:33%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:38%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:19%"></div></div>
+  <span class="stat-count">4</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">prompt injection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">browser automation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic engineering</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long context context window pricing multimodal input">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">1M context is now generally available for Opus 4.6 and Sonnet 4.6<div class="title-zh">Opus 4.6 与 Sonnet 4.6 正式开放 100 万 token 上下文</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context window</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">pricing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal input</span></div>
+  <div class="item-summary">A 1M-token context window is now generally available for Claude Opus 4.6 and Sonnet 4.6 at standard pricing across the full window, with no long-context premium. Media limits also expand to 600 images or PDF pages.</div>
+  <a class="item-link" href="https://claude.com/blog/1m-context-ga" target="_blank" rel="noopener">&rarr; claude.com</a>
+</div>
+<div class="item-card" data-keywords="prompt injection agent security sensitive data">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Designing AI agents to resist prompt injection<div class="title-zh">设计能抵御提示注入的 AI 智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">sensitive data</span></div>
+  <div class="item-summary">OpenAI describes how ChatGPT defends against prompt injection and social engineering by constraining risky actions and protecting sensitive data in agent workflows.</div>
+  <a class="item-link" href="https://openai.com/index/designing-agents-to-resist-prompt-injection" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="GraphRAG knowledge graph similarity expansion query routing noisy graphs">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14006</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs<div class="title-zh">超越显式边：在噪声与稀疏知识图谱上的鲁棒推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">similarity expansion</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">query routing</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">noisy graphs</span></div>
+  <div class="item-summary">INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14006v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="system prompts prompt interference agent memory cross-model evaluation coding agents">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2603.08993</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Arbiter: Detecting Interference in LLM Agent System Prompts<div class="title-zh">Arbiter：检测 LLM 智能体系统提示中的干扰</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">system prompts</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt interference</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cross-model evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span></div>
+  <div class="item-summary">Arbiter combines formal evaluation rules with multi-model LLM scouring to detect interference patterns in the system prompts of Claude Code, Codex CLI, and Gemini CLI. It reports 152 findings in undirected scouring and 21 hand-labeled interference patterns for one vendor, including a Gemini CLI memory-system data-loss finding consistent with an issue Google filed and patched.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.08993v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="planning retrieval decomposition teacher-student distillation tool use SEAL-0">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14458</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Distilling Reasoning Without Knowledge: A Framework for Reliable LLMs<div class="title-zh">不蒸馏知识而蒸馏推理：面向可靠 LLM 的框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">planning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval decomposition</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">teacher-student distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SEAL-0</span></div>
+  <div class="item-summary">The framework separates planning from factual retrieval and answer synthesis, training a lightweight student planner with teacher-generated structured decompositions and searchable fact requests but no factual answers. On the SEAL-0 benchmark, supervised planning improves both accuracy and latency relative to monolithic reasoning models and prompt-based tool-augmented systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14458v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[21]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="GraphRAG knowledge graph similarity expansion query routing noisy graphs">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14006</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs<div class="title-zh">超越显式边：在噪声与稀疏知识图谱上的鲁棒推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">similarity expansion</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">query routing</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">noisy graphs</span></div>
+  <div class="item-summary">INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14006v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="system prompts prompt interference agent memory cross-model evaluation coding agents">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2603.08993</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Arbiter: Detecting Interference in LLM Agent System Prompts<div class="title-zh">Arbiter：检测 LLM 智能体系统提示中的干扰</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">system prompts</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt interference</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cross-model evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span></div>
+  <div class="item-summary">Arbiter combines formal evaluation rules with multi-model LLM scouring to detect interference patterns in the system prompts of Claude Code, Codex CLI, and Gemini CLI. It reports 152 findings in undirected scouring and 21 hand-labeled interference patterns for one vendor, including a Gemini CLI memory-system data-loss finding consistent with an issue Google filed and patched.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.08993v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="planning retrieval decomposition teacher-student distillation tool use SEAL-0">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14458</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Distilling Reasoning Without Knowledge: A Framework for Reliable LLMs<div class="title-zh">不蒸馏知识而蒸馏推理：面向可靠 LLM 的框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">planning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval decomposition</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">teacher-student distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SEAL-0</span></div>
+  <div class="item-summary">The framework separates planning from factual retrieval and answer synthesis, training a lightweight student planner with teacher-generated structured decompositions and searchable fact requests but no factual answers. On the SEAL-0 benchmark, supervised planning improves both accuracy and latency relative to monolithic reasoning models and prompt-based tool-augmented systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14458v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent training reinforcement learning action comparison verifiable rewards">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.08706</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Critical Training<div class="title-zh">Agentic Critical Training：通过行动判别训练智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent training</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">action comparison</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifiable rewards</span></div>
+  <div class="item-summary">Agentic Critical Training uses reinforcement learning with verifiable rewards to teach models to judge actions, pairing an expert action with an alternative sampled from the initial policy and rewarding only selection of the expert action. On ALFWorld-ID, WebShop, and ScienceWorld it yields average gains of 5.85 points over imitation learning and 4.12 points over imitation learning followed by RL.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.08706v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory context optimization multi-agent games self-play">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.09022</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MEMO: Memory-Augmented Model Context Optimization for Robust Multi-Turn Multi-Agent LLM Games<div class="title-zh">MEMO：面向稳健多轮多智能体 LLM 游戏的记忆增强上下文优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context optimization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent games</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-play</span></div>
+  <div class="item-summary">MEMO is a self-play framework that optimizes inference-time context through a persistent memory bank and tournament-style prompt evolution with uncertainty-aware selection. Across five text-based games, it raised GPT-4o-mini's mean win rate from 25.1% to 49.5% and reduced run-to-run variance.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.09022v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="ARC-AGI abstraction reasoning benchmark survey program synthesis">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.13372</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The ARC of Progress towards AGI: A Living Survey of Abstraction and Reasoning<div class="title-zh">通往 AGI 的 ARC 之路：抽象与推理的持续更新综述</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ARC-AGI</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">abstraction reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark survey</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">program synthesis</span></div>
+  <div class="item-summary">This living survey presents the first cross-generation analysis of 82 approaches across three ARC-AGI benchmark versions, finding consistent 2-3x performance drops from ARC-AGI-1 to ARC-AGI-2 across program-synthesis, neuro-symbolic, and neural paradigms. It reports top scores of 93.0% on ARC-AGI-1, 68.8% on ARC-AGI-2, and 13% on ARC-AGI-3, while humans remain near-perfect.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.13372v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="RAG faithfulness verification rationale generation reranking biomedical QA">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.10143</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Reason and Verify: A Framework for Faithful Retrieval-Augmented Generation<div class="title-zh">Reason and Verify：面向忠实检索增强生成的框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">faithfulness verification</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">rationale generation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">reranking</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">biomedical QA</span></div>
+  <div class="item-summary">The framework adds neural query rewriting, BGE cross-encoder reranking, and rationale generation that grounds sub-claims in evidence spans, plus an eight-category taxonomy for assessing rationale faithfulness. With Llama-3-8B-Instruct it reaches 89.1% on BioASQ-Y/N and 73.0% on PubMedQA, competitive with systems using much larger models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.10143v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent orchestration RAG grounding AI governance LLM-as-judge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.11277</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">COMPASS: The explainable agentic framework for Sovereignty, Sustainability, Compliance, and Ethics<div class="title-zh">COMPASS：面向主权、可持续性、合规与伦理的可解释智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG grounding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI governance</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span></div>
+  <div class="item-summary">COMPASS is a multi-agent orchestration framework with an orchestrator and four specialized sub-agents for sovereignty, carbon-aware computing, compliance, and ethics, each using RAG to ground evaluations in verified documents. An LLM-as-judge assigns quantitative scores and explainable justifications, and automated evaluation indicates that RAG integration improves semantic coherence and mitigates hallucination risk.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.11277v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="user simulation agent evaluation Sim2Real gap τ-bench">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.11245</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Mind the Sim2Real Gap in User Simulation for Agentic Tasks<div class="title-zh">警惕智能体任务中用户模拟的 Sim2Real 差距</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">user simulation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Sim2Real gap</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">τ-bench</span></div>
+  <div class="item-summary">The authors run the full τ-bench protocol with 451 real participants across 165 tasks and benchmark 31 LLM simulators using a new User-Sim Index. They find simulators are excessively cooperative, stylistically uniform, and lacking realistic frustration, creating an "easy mode" that inflates agent success rates above the human baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.11245v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="generative retrieval multi-step reasoning financial documents query understanding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.12368</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Multi-Step Semantic Reasoning in Generative Retrieval<div class="title-zh">生成式检索中的多步语义推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">generative retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-step reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">financial documents</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query understanding</span></div>
+  <div class="item-summary">ReasonGR enhances multi-step semantic reasoning in generative retrieval for numerical contexts by combining task-specific instructions with stepwise reasoning guidance and a reasoning-focused adaptation module. Experiments on FinQA show improved retrieval accuracy and consistency for complex financial queries.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.12368v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reference extraction document parsing benchmark LoRA adaptation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2603.13651</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Benchmarking Large Language Models on Reference Extraction and Parsing in the Social Sciences and Humanities<div class="title-zh">大语言模型在社会科学与人文领域的参考文献抽取与解析基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">reference extraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document parsing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">LoRA adaptation</span></div>
+  <div class="item-summary">The paper introduces a unified benchmark for reference extraction and parsing on social-science and humanities corpora, comparing GROBID with DeepSeek-V3.1, Mistral-Small-3.2-24B, Gemma-3-27B-it and Qwen3-VL. Extraction largely saturates past a moderate capability threshold, parsing remains the bottleneck, and lightweight LoRA adaptation gives consistent gains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.13651v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hallucination mitigation long-context QA ESG reports chain-of-thought benchmark dataset">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.13154</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ESG-Bench: Benchmarking Long-Context ESG Reports for Hallucination Mitigation<div class="title-zh">ESG-Bench：面向幻觉缓解的长上下文 ESG 报告基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination mitigation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context QA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">ESG reports</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark dataset</span></div>
+  <div class="item-summary">ESG-Bench provides human-annotated QA pairs grounded in real ESG report contexts, with fine-grained labels marking whether model outputs are factually supported or hallucinated. Chain-of-thought prompting and fine-tuning on CoT rationales substantially reduce hallucinations, and the authors report that the gains transfer to QA benchmarks beyond ESG.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.13154v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="cognitive state plane memory decay episodic memory bounded context model-agnostic">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.13644</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">StatePlane: A Cognitive State Plane for Long-Horizon AI Systems Under Bounded Context<div class="title-zh">StatePlane：面向有限上下文长时程 AI 系统的认知状态平面</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">cognitive state plane</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory decay</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">bounded context</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model-agnostic</span></div>
+  <div class="item-summary">StatePlane is a model-agnostic cognitive state plane that governs the formation, evolution, retrieval and decay of episodic, semantic and procedural state for AI systems operating under bounded context. It argues that long-horizon intelligence can be achieved without expanding context windows or retraining models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.13644v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="GraphRAG multi-hop QA context compression SPARQL prompting reasoning bottleneck">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14045</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Reasoning Bottleneck in Graph-RAG: Structured Prompting and Context Compression for Multi-Hop QA<div class="title-zh">Graph-RAG 中的推理瓶颈：面向多跳问答的结构化提示与上下文压缩</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">SPARQL prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning bottleneck</span></div>
+  <div class="item-summary">Evaluating KET-RAG on three multi-hop QA benchmarks, the authors find that 77% to 91% of questions have the gold answer in the retrieved context yet accuracy is only 35% to 78%, with 73% to 84% of errors traced to reasoning failures. SPARQL chain-of-thought prompting and graph-walk compression improve accuracy, and with question-type routing an augmented Llama-8B matches or exceeds an unaugmented Llama-70B at roughly 12x lower cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14045v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory reward prediction error memory consolidation knowledge graph token efficiency">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14597</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">D-MEM: Dopamine-Gated Agentic Memory via Reward Prediction Error Routing<div class="title-zh">D-MEM：通过奖励预测误差路由的多巴胺门控智能体记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reward prediction error</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory consolidation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">token efficiency</span></div>
+  <div class="item-summary">D-MEM decouples short-term interaction from cognitive restructuring with a fast/slow router driven by reward prediction error: a lightweight critic scores surprise and utility, caching routine inputs in an O(1) buffer and triggering an O(N) memory-evolution pipeline for contradictions or preference shifts. The authors introduce the LoCoMo-Noise benchmark and report over 80% lower token consumption, removal of O(N^2) write-latency, and better multi-hop and adversarial performance.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14597v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="text-to-video retrieval state change hard negatives benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14426</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GenState-AI: State-Aware Dataset for Text-to-Video Retrieval on AI-Generated Videos<div class="title-zh">GenState-AI：面向 AI 生成视频的文本到视频检索状态感知数据集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">text-to-video retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">state change</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">hard negatives</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">GenState-AI is a benchmark of 956 AI-generated videos and 195 verified state-change queries across Toy, Cartoon, Home and Manipulation domains, designed so retrieval cannot be solved from static appearance alone. Qwen3-VL (8B) achieves the best macro-average Recall@1 and triplet consistency, but stronger retrieval does not consistently yield correct hard-negative ordering.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14426v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="red-teaming evaluator reliability LLM security Garak">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14633</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">When Scanners Lie: Evaluator Instability in LLM Red-Teaming<div class="title-zh">当扫描器说谎：LLM 红队测试中的评估器不稳定性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">red-teaming</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluator reliability</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">Garak</span></div>
+  <div class="item-summary">The study finds that open-source LLM vulnerability scanners produce attack-success rates that shift with the evaluator, with 22 of 25 Garak attack categories showing instability and reported scores varying by up to 33%. It proposes a two-phase, reliability-aware evaluation framework that raises evaluator accuracy from 72% to 89%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14633v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="chain-of-thought selective sampling inference efficiency confidence estimation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.08999</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Learning When to Sample: Confidence-Aware Selective Sampling for Efficient Chain-of-Thought Reasoning<div class="title-zh">学会何时采样：面向高效思维链推理的置信度感知选择性采样</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">selective sampling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">inference efficiency</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">confidence estimation</span></div>
+  <div class="item-summary">The framework analyzes a single chain-of-thought trajectory at inference time to decide whether to rely on it or trigger multi-path sampling. Trained on MedQA and transferred to MathQA, MedMCQA, and MMLU, it cut token usage by 71.7% versus full multi-path reasoning while accuracy changed by -0.41 percentage points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.08999v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic workflow synthetic data compliance checking data generation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.13625</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Design and evaluation of an agentic workflow for crisis-related synthetic tweet datasets<div class="title-zh">面向危机相关合成推文数据集的 agent 工作流设计与评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflow</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">synthetic data</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">compliance checking</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data generation</span></div>
+  <div class="item-summary">The paper presents an agentic workflow that iteratively generates synthetic crisis tweets conditioned on target characteristics, checks them against compliance rules and refines them with structured feedback. A post-earthquake damage-assessment case study indicates the synthetic data can support geolocalization and damage-level prediction.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.13625v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="clinical reasoning context influence adversarial context AI safety">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14158</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Clinician input steers AI toward accurate and harmful recommendations<div class="title-zh">临床医生的输入会引导 AI 给出准确但也有害的建议</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">clinical reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context influence</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial context</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI safety</span></div>
+  <div class="item-summary">Using 61 NEJM Case Records and 21 reasoning variants from eight models, the study finds that clinician context raises LLM-clinician concordance and improves correct final-diagnosis inclusion by a mean 20.4 points, while adversarial context degrades performance in 14 models. Inference-time scaling reduces harmful echoing of clinician-introduced recommendations across WHO harm-severity tiers.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14158v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="spatial memory embodied agents view synthesis AI2-THOR">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14669</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RenderMem: Rendering as Spatial Memory Retrieval<div class="title-zh">RenderMem：将渲染作为空间记忆检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">spatial memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">embodied agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">view synthesis</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">AI2-THOR</span></div>
+  <div class="item-summary">RenderMem is a spatial-memory framework for embodied agents that maintains a 3D scene representation and renders query-conditioned views as visual evidence, enabling reasoning about line-of-sight, visibility and occlusion from arbitrary viewpoints. Experiments in AI2-THOR show gains on viewpoint-dependent visibility and occlusion queries over prior memory baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14669v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="ontology management change management auditability">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">fabio-rovai/open-ontologies<div class="title-zh">open-ontologies：面向生产本体的变更管理工具</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology management</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">change management</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">auditability</span></div>
+  <div class="item-summary">Open-ontologies is a Rust tool for planning, applying, and rolling back changes to a production ontology, with a blast-radius report and a proof that an auditor can re-check.</div>
+  <a class="item-link" href="https://github.com/fabio-rovai/open-ontologies" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skills autonomous research workflow automation">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">wanshuiyin/Auto-claude-code-research-in-sleep<div class="title-zh">ARIS：睡眠中自动开展机器学习研究的技能集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous research</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">workflow automation</span></div>
+  <div class="item-summary">ARIS is a set of lightweight, Markdown-only skills for autonomous ML research, covering cross-model review loops, idea discovery, and experiment automation, and works with Claude Code, Codex, OpenClaw, or any LLM agent.</div>
+  <a class="item-link" href="https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent framework TypeScript agentic applications">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BuilderIO/agent-native<div class="title-zh">agent-native：构建智能体应用的 TypeScript 框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent framework</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">TypeScript</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic applications</span></div>
+  <div class="item-summary">agent-native is a TypeScript framework for building agentic applications.</div>
+  <a class="item-link" href="https://github.com/BuilderIO/agent-native" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skills browser automation live session access">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">pasky/chrome-cdp-skill<div class="title-zh">pasky/chrome-cdp-skill：让 AI agent 接入实时 Chrome 会话</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">browser automation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">live session access</span></div>
+  <div class="item-summary">A JavaScript skill that gives an AI agent access to a live Chrome session, connecting out of the box to tabs the user already has open.</div>
+  <a class="item-link" href="https://github.com/pasky/chrome-cdp-skill" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent tooling browser automation CLI">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">jackwener/OpenCLI<div class="title-zh">OpenCLI：把任意网站变成 CLI</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent tooling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">browser automation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">CLI</span></div>
+  <div class="item-summary">OpenCLI is a JavaScript project that turns any website into a command-line interface and lets an AI agent use the browser session the user is already logged into.</div>
+  <a class="item-link" href="https://github.com/jackwener/OpenCLI" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="multi-agent simulation knowledge graph local deployment">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">nikmcfly/MiroFish-Offline<div class="title-zh">MiroFish-Offline：离线多智能体模拟引擎</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent simulation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">local deployment</span></div>
+  <div class="item-summary">An English fork of MiroFish that provides an offline multi-agent simulation and prediction engine built on a local Neo4j graph database and Ollama stack.</div>
+  <a class="item-link" href="https://github.com/nikmcfly/MiroFish-Offline" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="code knowledge graph interactive exploration coding agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Egonex-AI/Understand-Anything<div class="title-zh">Egonex-AI/Understand-Anything——把代码变成可交互知识图谱</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">code knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">interactive exploration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span></div>
+  <div class="item-summary">A TypeScript tool that turns code into an interactive knowledge graph for exploration, search and question answering, and works with Claude Code, Codex, Cursor, Copilot, Gemini CLI and other coding agents.</div>
+  <a class="item-link" href="https://github.com/Egonex-AI/Understand-Anything" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long context context window pricing multimodal input">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">1M context is now generally available for Opus 4.6 and Sonnet 4.6<div class="title-zh">Opus 4.6 与 Sonnet 4.6 正式开放 100 万 token 上下文</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context window</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">pricing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal input</span></div>
+  <div class="item-summary">A 1M-token context window is now generally available for Claude Opus 4.6 and Sonnet 4.6 at standard pricing across the full window, with no long-context premium. Media limits also expand to 600 images or PDF pages.</div>
+  <a class="item-link" href="https://claude.com/blog/1m-context-ga" target="_blank" rel="noopener">&rarr; claude.com</a>
+</div>
+<div class="item-card" data-keywords="prompt injection agent security sensitive data">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Designing AI agents to resist prompt injection<div class="title-zh">设计能抵御提示注入的 AI 智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">sensitive data</span></div>
+  <div class="item-summary">OpenAI describes how ChatGPT defends against prompt injection and social engineering by constraining risky actions and protecting sensitive data in agent workflows.</div>
+  <a class="item-link" href="https://openai.com/index/designing-agents-to-resist-prompt-injection" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="instruction hierarchy prompt injection safety training">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Improving instruction hierarchy in frontier LLMs<div class="title-zh">改进前沿 LLM 中的指令层级</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">instruction hierarchy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">prompt injection</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">safety training</span></div>
+  <div class="item-summary">OpenAI describes IH-Challenge, which trains models to prioritize trusted instructions, improving instruction hierarchy, safety steerability, and resistance to prompt injection attacks.</div>
+  <a class="item-link" href="https://openai.com/index/instruction-hierarchy-challenge" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="agentic engineering AI coding capability levels">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Levels of Agentic Engineering<div class="title-zh">智能体工程的层级</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic engineering</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI coding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">capability levels</span></div>
+  <div class="item-summary">The post argues that AI coding ability is outpacing practitioners' ability to use it effectively and outlines eight levels of agentic engineering, from tab completion to autonomous agent teams.</div>
+  <a class="item-link" href="https://www.bassimeledath.com/blog/levels-of-agentic-engineering" target="_blank" rel="noopener">&rarr; www.bassimeledath.com</a>
+</div>
+<div class="item-card" data-keywords="agent runtime Responses API hosted containers">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From model to agent: Equipping the Responses API with a computer environment<div class="title-zh">从模型到智能体：为 Responses API 配备计算机环境</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent runtime</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Responses API</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">hosted containers</span></div>
+  <div class="item-summary">OpenAI explains how it built an agent runtime using the Responses API, shell tool, and hosted containers to run secure, scalable agents with files, tools, and state.</div>
+  <a class="item-link" href="https://openai.com/index/equip-responses-api-computer-environment" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="AI security autonomous agent SQL injection">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How we hacked McKinsey's AI platform<div class="title-zh">我们如何攻破麦肯锡的 AI 平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous agent</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">SQL injection</span></div>
+  <div class="item-summary">The post describes how an autonomous AI agent found a SQL injection vulnerability in McKinsey's Lilli AI platform, and says the data it extracted was worse than expected.</div>
+  <a class="item-link" href="https://codewall.ai/blog/how-we-hacked-mckinseys-ai-platform" target="_blank" rel="noopener">&rarr; codewall.ai</a>
+</div>
+<div class="item-card" data-keywords="mechanistic interpretability feature attribution data attribution interaction analysis">
+  <div class="item-meta">
+    <span class="item-org">UC Berkeley</span>
+    
+    
+    <span class="item-source">BAIR (Berkeley AI Research)</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Identifying Interactions at Scale for LLMs<div class="title-zh">大规模识别 LLM 中的交互作用</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">mechanistic interpretability</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">feature attribution</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data attribution</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">interaction analysis</span></div>
+  <div class="item-summary">A BAIR blog post surveys feature attribution, data attribution and mechanistic interpretability as lenses for understanding LLM behavior, arguing that the core difficulty is complexity at scale because behavior emerges from many interacting components rather than isolated parts.</div>
+  <a class="item-link" href="http://bair.berkeley.edu/blog/2026/03/13/spex/" target="_blank" rel="noopener">&rarr; bair.berkeley.edu</a>
+</div>
+<div class="item-card" data-keywords="spec-driven development agentic engineering LLM programming">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Kotlin creator's new language: talk to LLMs in specs, not English<div class="title-zh">Kotlin 之父的新语言：用规格而非英语与 LLM 对话</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">spec-driven development</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic engineering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM programming</span></div>
+  <div class="item-summary">CodeSpeak is described as an agentic engineering toolkit that lets developers write programs in structured human language.</div>
+  <a class="item-link" href="https://codespeak.dev/" target="_blank" rel="noopener">&rarr; codespeak.dev</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry & Deployments
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="acquisition AI security evaluation tooling">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OpenAI to acquire Promptfoo<div class="title-zh">OpenAI 将收购 Promptfoo</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">acquisition</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation tooling</span></div>
+  <div class="item-summary">OpenAI is acquiring Promptfoo, an AI security platform that helps enterprises identify and remediate vulnerabilities in AI systems during development.</div>
+  <a class="item-link" href="https://openai.com/index/openai-to-acquire-promptfoo" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="OpenClaw security alert China regulation">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">China cyber emergency center flags security risks in AI agent OpenClaw<div class="title-zh">中国国家网络安全应急中心提示 OpenClaw 安全风险</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">OpenClaw</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">security alert</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">China regulation</span></div>
+  <div class="item-summary">China's National Computer Network Emergency Response Technical Team/Coordination Center issued a risk alert on Tuesday about secure use of the OpenClaw AI agent, TechNode reports.</div>
+  <a class="item-link" href="https://technode.com/2026/03/11/china-cyber-emergency-center-flags-security-risks-in-ai-agent-openclaw/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph semantic search hybrid retrieval explainable AI candidate matching">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.14558</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">JobMatchAI-An Intelligent Job Matching Platform Using Knowledge Graphs, Semantic Search and Explainable AI<div class="title-zh">JobMatchAI：基于知识图谱、语义搜索与可解释 AI 的智能职位匹配平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">explainable AI</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">candidate matching</span></div>
+  <div class="item-summary">JobMatchAI combines Transformer embeddings, a skill knowledge graph and interpretable re-ranking to match candidates and jobs across skill fit, experience, location, salary and company preferences, with factor-wise explanations. It releases the JobSearch-XS benchmark and a hybrid BM25, knowledge-graph and semantic retrieval stack.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.14558v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="OpenClaw open-source agents China tech">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OpenClaw sparks boom as Chinese firms race into the AI agent era<div class="title-zh">OpenClaw 引发热潮，中国企业竞相进入 AI 智能体时代</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">OpenClaw</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">open-source agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">China tech</span></div>
+  <div class="item-summary">The open-source AI agent framework OpenClaw has gone viral worldwide and attracted significant attention from the tech industry, TechNode reports, as Chinese firms race into the AI agent era.</div>
+  <a class="item-link" href="https://technode.com/2026/03/10/openclaw-sparks-boom-as-chinese-firms-race-into-the-ai-agent-era/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://bair.berkeley.edu" target="_blank" rel="noopener">BAIR (Berkeley AI Research)</a></li>
+<li><a href="https://technode.com" target="_blank" rel="noopener">TechNode</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:42 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-03-09", "week_number": 11, "stats": {"total_items": 40, "unique_items": 40, "sources_count": 6, "links_verified_count": 40, "links_failed_count": 0, "section_counts": {"research_papers": 21, "tools_frameworks": 7, "blogs_insights": 8, "industry_applications": 4}}, "daily_keywords": [{"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "prompt injection", "domain": "agent-architecture"}, {"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "browser automation", "domain": "agent-architecture"}, {"text": "agentic engineering", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "1M context is now generally available for Opus 4.6 and Sonnet 4.6", "title_zh": "Opus 4.6 与 Sonnet 4.6 正式开放 100 万 token 上下文", "url": "https://claude.com/blog/1m-context-ga", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A 1M-token context window is now generally available for Claude Opus 4.6 and Sonnet 4.6 at standard pricing across the full window, with no long-context premium. Media limits also expand to 600 images or PDF pages.", "keywords": [{"text": "long context", "domain": "context-prompting"}, {"text": "context window", "domain": "agent-memory"}, {"text": "pricing", "domain": "ai-knowledge"}, {"text": "multimodal input", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true, "_day": "2026-03-13"}, {"title": "Designing AI agents to resist prompt injection", "title_zh": "设计能抵御提示注入的 AI 智能体", "url": "https://openai.com/index/designing-agents-to-resist-prompt-injection", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI describes how ChatGPT defends against prompt injection and social engineering by constraining risky actions and protecting sensitive data in agent workflows.", "keywords": [{"text": "prompt injection", "domain": "agent-architecture"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "sensitive data", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true, "_day": "2026-03-11"}, {"title": "Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs", "title_zh": "超越显式边：在噪声与稀疏知识图谱上的鲁棒推理", "url": "http://arxiv.org/abs/2603.14006v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14006", "summary": "INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "similarity expansion", "domain": "embeddings-vectors"}, {"text": "query routing", "domain": "agent-architecture"}, {"text": "noisy graphs", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true, "_day": "2026-03-14"}, {"title": "Arbiter: Detecting Interference in LLM Agent System Prompts", "title_zh": "Arbiter：检测 LLM 智能体系统提示中的干扰", "url": "http://arxiv.org/abs/2603.08993v2", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2603.08993", "summary": "Arbiter combines formal evaluation rules with multi-model LLM scouring to detect interference patterns in the system prompts of Claude Code, Codex CLI, and Gemini CLI. It reports 152 findings in undirected scouring and 21 hand-labeled interference patterns for one vendor, including a Gemini CLI memory-system data-loss finding consistent with an issue Google filed and patched.", "keywords": [{"text": "system prompts", "domain": "context-prompting"}, {"text": "prompt interference", "domain": "context-prompting"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "cross-model evaluation", "domain": "evaluation-benchmark"}, {"text": "coding agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true, "_day": "2026-03-09"}, {"title": "Distilling Reasoning Without Knowledge: A Framework for Reliable LLMs", "title_zh": "不蒸馏知识而蒸馏推理：面向可靠 LLM 的框架", "url": "http://arxiv.org/abs/2603.14458v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14458", "summary": "The framework separates planning from factual retrieval and answer synthesis, training a lightweight student planner with teacher-generated structured decompositions and searchable fact requests but no factual answers. On the SEAL-0 benchmark, supervised planning improves both accuracy and latency relative to monolithic reasoning models and prompt-based tool-augmented systems.", "keywords": [{"text": "planning", "domain": "cognition-reasoning"}, {"text": "retrieval decomposition", "domain": "rag-retrieval"}, {"text": "teacher-student distillation", "domain": "knowledge-lifecycle"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "SEAL-0", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true, "_day": "2026-03-15"}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Beyond Explicit Edges: Robust Reasoning over Noisy and Sparse Knowledge Graphs", "title_zh": "超越显式边：在噪声与稀疏知识图谱上的鲁棒推理", "url": "http://arxiv.org/abs/2603.14006v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14006", "summary": "INSES is a dynamic GraphRAG framework that couples LLM-guided navigation, which prunes noise and steers exploration, with embedding-based similarity expansion to recover hidden links in noisy or sparse knowledge graphs. A lightweight router sends simple queries to naive RAG and escalates complex ones to INSES, and the system performs favorably against RAG and GraphRAG baselines, notably on the MINE benchmark.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "similarity expansion", "domain": "embeddings-vectors"}, {"text": "query routing", "domain": "agent-architecture"}, {"text": "noisy graphs", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true}, {"title": "Arbiter: Detecting Interference in LLM Agent System Prompts", "title_zh": "Arbiter：检测 LLM 智能体系统提示中的干扰", "url": "http://arxiv.org/abs/2603.08993v2", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2603.08993", "summary": "Arbiter combines formal evaluation rules with multi-model LLM scouring to detect interference patterns in the system prompts of Claude Code, Codex CLI, and Gemini CLI. It reports 152 findings in undirected scouring and 21 hand-labeled interference patterns for one vendor, including a Gemini CLI memory-system data-loss finding consistent with an issue Google filed and patched.", "keywords": [{"text": "system prompts", "domain": "context-prompting"}, {"text": "prompt interference", "domain": "context-prompting"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "cross-model evaluation", "domain": "evaluation-benchmark"}, {"text": "coding agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Distilling Reasoning Without Knowledge: A Framework for Reliable LLMs", "title_zh": "不蒸馏知识而蒸馏推理：面向可靠 LLM 的框架", "url": "http://arxiv.org/abs/2603.14458v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14458", "summary": "The framework separates planning from factual retrieval and answer synthesis, training a lightweight student planner with teacher-generated structured decompositions and searchable fact requests but no factual answers. On the SEAL-0 benchmark, supervised planning improves both accuracy and latency relative to monolithic reasoning models and prompt-based tool-augmented systems.", "keywords": [{"text": "planning", "domain": "cognition-reasoning"}, {"text": "retrieval decomposition", "domain": "rag-retrieval"}, {"text": "teacher-student distillation", "domain": "knowledge-lifecycle"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "SEAL-0", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Agentic Critical Training", "title_zh": "Agentic Critical Training：通过行动判别训练智能体", "url": "http://arxiv.org/abs/2603.08706v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.08706", "summary": "Agentic Critical Training uses reinforcement learning with verifiable rewards to teach models to judge actions, pairing an expert action with an alternative sampled from the initial policy and rewarding only selection of the expert action. On ALFWorld-ID, WebShop, and ScienceWorld it yields average gains of 5.85 points over imitation learning and 4.12 points over imitation learning followed by RL.", "keywords": [{"text": "agent training", "domain": "agent-architecture"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "action comparison", "domain": "cognition-reasoning"}, {"text": "verifiable rewards", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "MEMO: Memory-Augmented Model Context Optimization for Robust Multi-Turn Multi-Agent LLM Games", "title_zh": "MEMO：面向稳健多轮多智能体 LLM 游戏的记忆增强上下文优化", "url": "http://arxiv.org/abs/2603.09022v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.09022", "summary": "MEMO is a self-play framework that optimizes inference-time context through a persistent memory bank and tournament-style prompt evolution with uncertainty-aware selection. Across five text-based games, it raised GPT-4o-mini's mean win rate from 25.1% to 49.5% and reduced run-to-run variance.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "context optimization", "domain": "context-prompting"}, {"text": "multi-agent games", "domain": "agent-architecture"}, {"text": "self-play", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "The ARC of Progress towards AGI: A Living Survey of Abstraction and Reasoning", "title_zh": "通往 AGI 的 ARC 之路：抽象与推理的持续更新综述", "url": "http://arxiv.org/abs/2603.13372v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.13372", "summary": "This living survey presents the first cross-generation analysis of 82 approaches across three ARC-AGI benchmark versions, finding consistent 2-3x performance drops from ARC-AGI-1 to ARC-AGI-2 across program-synthesis, neuro-symbolic, and neural paradigms. It reports top scores of 93.0% on ARC-AGI-1, 68.8% on ARC-AGI-2, and 13% on ARC-AGI-3, while humans remain near-perfect.", "keywords": [{"text": "ARC-AGI", "domain": "evaluation-benchmark"}, {"text": "abstraction reasoning", "domain": "cognition-reasoning"}, {"text": "benchmark survey", "domain": "evaluation-benchmark"}, {"text": "program synthesis", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Reason and Verify: A Framework for Faithful Retrieval-Augmented Generation", "title_zh": "Reason and Verify：面向忠实检索增强生成的框架", "url": "http://arxiv.org/abs/2603.10143v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.10143", "summary": "The framework adds neural query rewriting, BGE cross-encoder reranking, and rationale generation that grounds sub-claims in evidence spans, plus an eight-category taxonomy for assessing rationale faithfulness. With Llama-3-8B-Instruct it reaches 89.1% on BioASQ-Y/N and 73.0% on PubMedQA, competitive with systems using much larger models.", "keywords": [{"text": "RAG", "domain": "rag-retrieval"}, {"text": "faithfulness verification", "domain": "evaluation-benchmark"}, {"text": "rationale generation", "domain": "cognition-reasoning"}, {"text": "reranking", "domain": "rag-retrieval"}, {"text": "biomedical QA", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "COMPASS: The explainable agentic framework for Sovereignty, Sustainability, Compliance, and Ethics", "title_zh": "COMPASS：面向主权、可持续性、合规与伦理的可解释智能体框架", "url": "http://arxiv.org/abs/2603.11277v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.11277", "summary": "COMPASS is a multi-agent orchestration framework with an orchestrator and four specialized sub-agents for sovereignty, carbon-aware computing, compliance, and ethics, each using RAG to ground evaluations in verified documents. An LLM-as-judge assigns quantitative scores and explainable justifications, and automated evaluation indicates that RAG integration improves semantic coherence and mitigates hallucination risk.", "keywords": [{"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "RAG grounding", "domain": "rag-retrieval"}, {"text": "AI governance", "domain": "ai-knowledge"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Mind the Sim2Real Gap in User Simulation for Agentic Tasks", "title_zh": "警惕智能体任务中用户模拟的 Sim2Real 差距", "url": "http://arxiv.org/abs/2603.11245v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.11245", "summary": "The authors run the full τ-bench protocol with 451 real participants across 165 tasks and benchmark 31 LLM simulators using a new User-Sim Index. They find simulators are excessively cooperative, stylistically uniform, and lacking realistic frustration, creating an \"easy mode\" that inflates agent success rates above the human baseline.", "keywords": [{"text": "user simulation", "domain": "evaluation-benchmark"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "Sim2Real gap", "domain": "agent-architecture"}, {"text": "τ-bench", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Multi-Step Semantic Reasoning in Generative Retrieval", "title_zh": "生成式检索中的多步语义推理", "url": "http://arxiv.org/abs/2603.12368v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.12368", "summary": "ReasonGR enhances multi-step semantic reasoning in generative retrieval for numerical contexts by combining task-specific instructions with stepwise reasoning guidance and a reasoning-focused adaptation module. Experiments on FinQA show improved retrieval accuracy and consistency for complex financial queries.", "keywords": [{"text": "generative retrieval", "domain": "rag-retrieval"}, {"text": "multi-step reasoning", "domain": "cognition-reasoning"}, {"text": "financial documents", "domain": "ai-knowledge"}, {"text": "query understanding", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Benchmarking Large Language Models on Reference Extraction and Parsing in the Social Sciences and Humanities", "title_zh": "大语言模型在社会科学与人文领域的参考文献抽取与解析基准", "url": "http://arxiv.org/abs/2603.13651v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2603.13651", "summary": "The paper introduces a unified benchmark for reference extraction and parsing on social-science and humanities corpora, comparing GROBID with DeepSeek-V3.1, Mistral-Small-3.2-24B, Gemma-3-27B-it and Qwen3-VL. Extraction largely saturates past a moderate capability threshold, parsing remains the bottleneck, and lightweight LoRA adaptation gives consistent gains.", "keywords": [{"text": "reference extraction", "domain": "ai-knowledge"}, {"text": "document parsing", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "LoRA adaptation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "ESG-Bench: Benchmarking Long-Context ESG Reports for Hallucination Mitigation", "title_zh": "ESG-Bench：面向幻觉缓解的长上下文 ESG 报告基准", "url": "http://arxiv.org/abs/2603.13154v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.13154", "summary": "ESG-Bench provides human-annotated QA pairs grounded in real ESG report contexts, with fine-grained labels marking whether model outputs are factually supported or hallucinated. Chain-of-thought prompting and fine-tuning on CoT rationales substantially reduce hallucinations, and the authors report that the gains transfer to QA benchmarks beyond ESG.", "keywords": [{"text": "hallucination mitigation", "domain": "evaluation-benchmark"}, {"text": "long-context QA", "domain": "context-prompting"}, {"text": "ESG reports", "domain": "ai-knowledge"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "benchmark dataset", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "StatePlane: A Cognitive State Plane for Long-Horizon AI Systems Under Bounded Context", "title_zh": "StatePlane：面向有限上下文长时程 AI 系统的认知状态平面", "url": "http://arxiv.org/abs/2603.13644v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.13644", "summary": "StatePlane is a model-agnostic cognitive state plane that governs the formation, evolution, retrieval and decay of episodic, semantic and procedural state for AI systems operating under bounded context. It argues that long-horizon intelligence can be achieved without expanding context windows or retraining models.", "keywords": [{"text": "cognitive state plane", "domain": "agent-memory"}, {"text": "memory decay", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "bounded context", "domain": "context-prompting"}, {"text": "model-agnostic", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "The Reasoning Bottleneck in Graph-RAG: Structured Prompting and Context Compression for Multi-Hop QA", "title_zh": "Graph-RAG 中的推理瓶颈：面向多跳问答的结构化提示与上下文压缩", "url": "http://arxiv.org/abs/2603.14045v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14045", "summary": "Evaluating KET-RAG on three multi-hop QA benchmarks, the authors find that 77% to 91% of questions have the gold answer in the retrieved context yet accuracy is only 35% to 78%, with 73% to 84% of errors traced to reasoning failures. SPARQL chain-of-thought prompting and graph-walk compression improve accuracy, and with question-type routing an augmented Llama-8B matches or exceeds an unaugmented Llama-70B at roughly 12x lower cost.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "cognition-reasoning"}, {"text": "context compression", "domain": "context-prompting"}, {"text": "SPARQL prompting", "domain": "knowledge-graph"}, {"text": "reasoning bottleneck", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "D-MEM: Dopamine-Gated Agentic Memory via Reward Prediction Error Routing", "title_zh": "D-MEM：通过奖励预测误差路由的多巴胺门控智能体记忆", "url": "http://arxiv.org/abs/2603.14597v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14597", "summary": "D-MEM decouples short-term interaction from cognitive restructuring with a fast/slow router driven by reward prediction error: a lightweight critic scores surprise and utility, caching routine inputs in an O(1) buffer and triggering an O(N) memory-evolution pipeline for contradictions or preference shifts. The authors introduce the LoCoMo-Noise benchmark and report over 80% lower token consumption, removal of O(N^2) write-latency, and better multi-hop and adversarial performance.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "reward prediction error", "domain": "cognition-reasoning"}, {"text": "memory consolidation", "domain": "knowledge-lifecycle"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "token efficiency", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "GenState-AI: State-Aware Dataset for Text-to-Video Retrieval on AI-Generated Videos", "title_zh": "GenState-AI：面向 AI 生成视频的文本到视频检索状态感知数据集", "url": "http://arxiv.org/abs/2603.14426v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14426", "summary": "GenState-AI is a benchmark of 956 AI-generated videos and 195 verified state-change queries across Toy, Cartoon, Home and Manipulation domains, designed so retrieval cannot be solved from static appearance alone. Qwen3-VL (8B) achieves the best macro-average Recall@1 and triplet consistency, but stronger retrieval does not consistently yield correct hard-negative ordering.", "keywords": [{"text": "text-to-video retrieval", "domain": "rag-retrieval"}, {"text": "state change", "domain": "cognition-reasoning"}, {"text": "hard negatives", "domain": "embeddings-vectors"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "When Scanners Lie: Evaluator Instability in LLM Red-Teaming", "title_zh": "当扫描器说谎：LLM 红队测试中的评估器不稳定性", "url": "http://arxiv.org/abs/2603.14633v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14633", "summary": "The study finds that open-source LLM vulnerability scanners produce attack-success rates that shift with the evaluator, with 22 of 25 Garak attack categories showing instability and reported scores varying by up to 33%. It proposes a two-phase, reliability-aware evaluation framework that raises evaluator accuracy from 72% to 89%.", "keywords": [{"text": "red-teaming", "domain": "evaluation-benchmark"}, {"text": "evaluator reliability", "domain": "evaluation-benchmark"}, {"text": "LLM security", "domain": "ai-knowledge"}, {"text": "Garak", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Learning When to Sample: Confidence-Aware Selective Sampling for Efficient Chain-of-Thought Reasoning", "title_zh": "学会何时采样：面向高效思维链推理的置信度感知选择性采样", "url": "http://arxiv.org/abs/2603.08999v4", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.08999", "summary": "The framework analyzes a single chain-of-thought trajectory at inference time to decide whether to rely on it or trigger multi-path sampling. Trained on MedQA and transferred to MathQA, MedMCQA, and MMLU, it cut token usage by 71.7% versus full multi-path reasoning while accuracy changed by -0.41 percentage points.", "keywords": [{"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "selective sampling", "domain": "cognition-reasoning"}, {"text": "inference efficiency", "domain": "agent-architecture"}, {"text": "confidence estimation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Design and evaluation of an agentic workflow for crisis-related synthetic tweet datasets", "title_zh": "面向危机相关合成推文数据集的 agent 工作流设计与评估", "url": "http://arxiv.org/abs/2603.13625v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.13625", "summary": "The paper presents an agentic workflow that iteratively generates synthetic crisis tweets conditioned on target characteristics, checks them against compliance rules and refines them with structured feedback. A post-earthquake damage-assessment case study indicates the synthetic data can support geolocalization and damage-level prediction.", "keywords": [{"text": "agentic workflow", "domain": "agent-architecture"}, {"text": "synthetic data", "domain": "knowledge-lifecycle"}, {"text": "compliance checking", "domain": "evaluation-benchmark"}, {"text": "data generation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Clinician input steers AI toward accurate and harmful recommendations", "title_zh": "临床医生的输入会引导 AI 给出准确但也有害的建议", "url": "http://arxiv.org/abs/2603.14158v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14158", "summary": "Using 61 NEJM Case Records and 21 reasoning variants from eight models, the study finds that clinician context raises LLM-clinician concordance and improves correct final-diagnosis inclusion by a mean 20.4 points, while adversarial context degrades performance in 14 models. Inference-time scaling reduces harmful echoing of clinician-introduced recommendations across WHO harm-severity tiers.", "keywords": [{"text": "clinical reasoning", "domain": "cognition-reasoning"}, {"text": "context influence", "domain": "context-prompting"}, {"text": "adversarial context", "domain": "evaluation-benchmark"}, {"text": "AI safety", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "RenderMem: Rendering as Spatial Memory Retrieval", "title_zh": "RenderMem：将渲染作为空间记忆检索", "url": "http://arxiv.org/abs/2603.14669v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.14669", "summary": "RenderMem is a spatial-memory framework for embodied agents that maintains a 3D scene representation and renders query-conditioned views as visual evidence, enabling reasoning about line-of-sight, visibility and occlusion from arbitrary viewpoints. Experiments in AI2-THOR show gains on viewpoint-dependent visibility and occlusion queries over prior memory baselines.", "keywords": [{"text": "spatial memory", "domain": "agent-memory"}, {"text": "embodied agents", "domain": "agent-architecture"}, {"text": "view synthesis", "domain": "ai-knowledge"}, {"text": "AI2-THOR", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "fabio-rovai/open-ontologies", "title_zh": "open-ontologies：面向生产本体的变更管理工具", "url": "https://github.com/fabio-rovai/open-ontologies", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Open-ontologies is a Rust tool for planning, applying, and rolling back changes to a production ontology, with a blast-radius report and a proof that an auditor can re-check.", "keywords": [{"text": "ontology management", "domain": "knowledge-graph"}, {"text": "change management", "domain": "knowledge-lifecycle"}, {"text": "auditability", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "wanshuiyin/Auto-claude-code-research-in-sleep", "title_zh": "ARIS：睡眠中自动开展机器学习研究的技能集", "url": "https://github.com/wanshuiyin/Auto-claude-code-research-in-sleep", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "ARIS is a set of lightweight, Markdown-only skills for autonomous ML research, covering cross-model review loops, idea discovery, and experiment automation, and works with Claude Code, Codex, OpenClaw, or any LLM agent.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "autonomous research", "domain": "agent-architecture"}, {"text": "workflow automation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "BuilderIO/agent-native", "title_zh": "agent-native：构建智能体应用的 TypeScript 框架", "url": "https://github.com/BuilderIO/agent-native", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "agent-native is a TypeScript framework for building agentic applications.", "keywords": [{"text": "agent framework", "domain": "agent-architecture"}, {"text": "TypeScript", "domain": "agent-architecture"}, {"text": "agentic applications", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "pasky/chrome-cdp-skill", "title_zh": "pasky/chrome-cdp-skill：让 AI agent 接入实时 Chrome 会话", "url": "https://github.com/pasky/chrome-cdp-skill", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "A JavaScript skill that gives an AI agent access to a live Chrome session, connecting out of the box to tabs the user already has open.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "browser automation", "domain": "agent-architecture"}, {"text": "live session access", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "jackwener/OpenCLI", "title_zh": "OpenCLI：把任意网站变成 CLI", "url": "https://github.com/jackwener/OpenCLI", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "OpenCLI is a JavaScript project that turns any website into a command-line interface and lets an AI agent use the browser session the user is already logged into.", "keywords": [{"text": "agent tooling", "domain": "agent-architecture"}, {"text": "browser automation", "domain": "agent-architecture"}, {"text": "CLI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "nikmcfly/MiroFish-Offline", "title_zh": "MiroFish-Offline：离线多智能体模拟引擎", "url": "https://github.com/nikmcfly/MiroFish-Offline", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "An English fork of MiroFish that provides an offline multi-agent simulation and prediction engine built on a local Neo4j graph database and Ollama stack.", "keywords": [{"text": "multi-agent simulation", "domain": "agent-architecture"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "local deployment", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Egonex-AI/Understand-Anything", "title_zh": "Egonex-AI/Understand-Anything——把代码变成可交互知识图谱", "url": "https://github.com/Egonex-AI/Understand-Anything", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "A TypeScript tool that turns code into an interactive knowledge graph for exploration, search and question answering, and works with Claude Code, Codex, Cursor, Copilot, Gemini CLI and other coding agents.", "keywords": [{"text": "code knowledge graph", "domain": "knowledge-graph"}, {"text": "interactive exploration", "domain": "ai-knowledge"}, {"text": "coding agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "1M context is now generally available for Opus 4.6 and Sonnet 4.6", "title_zh": "Opus 4.6 与 Sonnet 4.6 正式开放 100 万 token 上下文", "url": "https://claude.com/blog/1m-context-ga", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A 1M-token context window is now generally available for Claude Opus 4.6 and Sonnet 4.6 at standard pricing across the full window, with no long-context premium. Media limits also expand to 600 images or PDF pages.", "keywords": [{"text": "long context", "domain": "context-prompting"}, {"text": "context window", "domain": "agent-memory"}, {"text": "pricing", "domain": "ai-knowledge"}, {"text": "multimodal input", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Designing AI agents to resist prompt injection", "title_zh": "设计能抵御提示注入的 AI 智能体", "url": "https://openai.com/index/designing-agents-to-resist-prompt-injection", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI describes how ChatGPT defends against prompt injection and social engineering by constraining risky actions and protecting sensitive data in agent workflows.", "keywords": [{"text": "prompt injection", "domain": "agent-architecture"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "sensitive data", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Improving instruction hierarchy in frontier LLMs", "title_zh": "改进前沿 LLM 中的指令层级", "url": "https://openai.com/index/instruction-hierarchy-challenge", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI describes IH-Challenge, which trains models to prioritize trusted instructions, improving instruction hierarchy, safety steerability, and resistance to prompt injection attacks.", "keywords": [{"text": "instruction hierarchy", "domain": "context-prompting"}, {"text": "prompt injection", "domain": "agent-architecture"}, {"text": "safety training", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Levels of Agentic Engineering", "title_zh": "智能体工程的层级", "url": "https://www.bassimeledath.com/blog/levels-of-agentic-engineering", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "The post argues that AI coding ability is outpacing practitioners' ability to use it effectively and outlines eight levels of agentic engineering, from tab completion to autonomous agent teams.", "keywords": [{"text": "agentic engineering", "domain": "agent-architecture"}, {"text": "AI coding", "domain": "agent-architecture"}, {"text": "capability levels", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "From model to agent: Equipping the Responses API with a computer environment", "title_zh": "从模型到智能体：为 Responses API 配备计算机环境", "url": "https://openai.com/index/equip-responses-api-computer-environment", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI explains how it built an agent runtime using the Responses API, shell tool, and hosted containers to run secure, scalable agents with files, tools, and state.", "keywords": [{"text": "agent runtime", "domain": "agent-architecture"}, {"text": "Responses API", "domain": "agent-architecture"}, {"text": "hosted containers", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "How we hacked McKinsey's AI platform", "title_zh": "我们如何攻破麦肯锡的 AI 平台", "url": "https://codewall.ai/blog/how-we-hacked-mckinseys-ai-platform", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "The post describes how an autonomous AI agent found a SQL injection vulnerability in McKinsey's Lilli AI platform, and says the data it extracted was worse than expected.", "keywords": [{"text": "AI security", "domain": "agent-architecture"}, {"text": "autonomous agent", "domain": "agent-architecture"}, {"text": "SQL injection", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Identifying Interactions at Scale for LLMs", "title_zh": "大规模识别 LLM 中的交互作用", "url": "http://bair.berkeley.edu/blog/2026/03/13/spex/", "source": "BAIR (Berkeley AI Research)", "section": "blogs_insights", "organization": "UC Berkeley", "language": "en", "arxiv_id": "", "summary": "A BAIR blog post surveys feature attribution, data attribution and mechanistic interpretability as lenses for understanding LLM behavior, arguing that the core difficulty is complexity at scale because behavior emerges from many interacting components rather than isolated parts.", "keywords": [{"text": "mechanistic interpretability", "domain": "ai-knowledge"}, {"text": "feature attribution", "domain": "ai-knowledge"}, {"text": "data attribution", "domain": "ai-knowledge"}, {"text": "interaction analysis", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Kotlin creator's new language: talk to LLMs in specs, not English", "title_zh": "Kotlin 之父的新语言：用规格而非英语与 LLM 对话", "url": "https://codespeak.dev/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "CodeSpeak is described as an agentic engineering toolkit that lets developers write programs in structured human language.", "keywords": [{"text": "spec-driven development", "domain": "context-prompting"}, {"text": "agentic engineering", "domain": "agent-architecture"}, {"text": "LLM programming", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry & Deployments", "items": [{"title": "OpenAI to acquire Promptfoo", "title_zh": "OpenAI 将收购 Promptfoo", "url": "https://openai.com/index/openai-to-acquire-promptfoo", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI is acquiring Promptfoo, an AI security platform that helps enterprises identify and remediate vulnerabilities in AI systems during development.", "keywords": [{"text": "acquisition", "domain": "ai-knowledge"}, {"text": "AI security", "domain": "agent-architecture"}, {"text": "evaluation tooling", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "China cyber emergency center flags security risks in AI agent OpenClaw", "title_zh": "中国国家网络安全应急中心提示 OpenClaw 安全风险", "url": "https://technode.com/2026/03/11/china-cyber-emergency-center-flags-security-risks-in-ai-agent-openclaw/", "source": "TechNode", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "", "summary": "China's National Computer Network Emergency Response Technical Team/Coordination Center issued a risk alert on Tuesday about secure use of the OpenClaw AI agent, TechNode reports.", "keywords": [{"text": "OpenClaw", "domain": "agent-architecture"}, {"text": "security alert", "domain": "agent-architecture"}, {"text": "China regulation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "JobMatchAI-An Intelligent Job Matching Platform Using Knowledge Graphs, Semantic Search and Explainable AI", "title_zh": "JobMatchAI：基于知识图谱、语义搜索与可解释 AI 的智能职位匹配平台", "url": "http://arxiv.org/abs/2603.14558v3", "source": "arXiv", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "2603.14558", "summary": "JobMatchAI combines Transformer embeddings, a skill knowledge graph and interpretable re-ranking to match candidates and jobs across skill fit, experience, location, salary and company preferences, with factor-wise explanations. It releases the JobSearch-XS benchmark and a hybrid BM25, knowledge-graph and semantic retrieval stack.", "keywords": [{"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "semantic search", "domain": "rag-retrieval"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}, {"text": "explainable AI", "domain": "ai-knowledge"}, {"text": "candidate matching", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "OpenClaw sparks boom as Chinese firms race into the AI agent era", "title_zh": "OpenClaw 引发热潮，中国企业竞相进入 AI 智能体时代", "url": "https://technode.com/2026/03/10/openclaw-sparks-boom-as-chinese-firms-race-into-the-ai-agent-era/", "source": "TechNode", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "", "summary": "The open-source AI agent framework OpenClaw has gone viral worldwide and attracted significant attention from the tech industry, TechNode reports, as Chinese firms race into the AI agent era.", "keywords": [{"text": "OpenClaw", "domain": "agent-architecture"}, {"text": "open-source agents", "domain": "agent-architecture"}, {"text": "China tech", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "BAIR (Berkeley AI Research)", "url": "https://bair.berkeley.edu"}, {"name": "TechNode", "url": "https://technode.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

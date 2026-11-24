@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-04</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry & Deployments</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">40 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>7 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">40/40 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">20</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:35%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:10%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:45%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:10%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic search</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Claude Code</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="text-to-SQL database exploration plan repair benchmark">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2605.02815</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FlexSQL: Flexible Exploration and Execution Make Better Text-to-SQL Agents<div class="title-zh">FlexSQL：灵活探索与执行让文本到 SQL 智能体更出色</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">text-to-SQL</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">database exploration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">plan repair</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">FlexSQL lets a text-to-SQL agent explore schema structure, inspect data values and run verification queries at any point, generating diverse execution plans and repairing at both code and plan levels. With gpt-oss-120b it scores 65.4% on Spider2-Snow, outperforming open-source baselines that use stronger, larger models such as gpt-o3 and DeepSeek-R1.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.02815v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent orchestration web search information extraction benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.27221</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Web2BigTable: A Bi-Level Multi-Agent LLM System for Internet-Scale Information Search and Extraction<div class="title-zh">Web2BigTable：面向互联网级信息搜索与抽取的双层多智能体 LLM 系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">web search</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">information extraction</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">Web2BigTable is a multi-agent web-to-table framework in which an upper-level orchestrator decomposes tasks and worker agents solve sub-problems in parallel. It reports state of the art on WideSearch with a 38.50 Avg@4 success rate, 7.5x the runner-up, plus 73.0 accuracy on XBench-DeepSearch.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2604.27221" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="multimodal foundation model multimodal agents perception GUI agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GLM-5V-Turbo: Toward a Native Foundation Model for Multimodal Agents<div class="title-zh">GLM-5V-Turbo：迈向多模态智能体的原生基础模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal foundation model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multimodal agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">perception</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GUI agents</span></div>
+  <div class="item-summary">A technical report introduces GLM-5V-Turbo, which treats multimodal perception as a core part of reasoning, planning, tool use and execution for agents over images, video, webpages, documents and GUIs. The report drew 163 points and 32 comments on Hacker News.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2604.26752" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent benchmark multi-agent games model behavior contamination resistance">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.04312</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Island: A Saturation- and Contamination-Resistant Benchmark from Multiagent Games<div class="title-zh">Agent Island：源自多智能体博弈、抗饱和与抗污染的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent games</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">model behavior</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">contamination resistance</span></div>
+  <div class="item-summary">Agent Island is a multiplayer simulation where language-model agents compete in a game of cooperation, conflict and persuasion, designed to resist saturation and contamination and ranked with a Bayesian Plackett-Luce model that quantifies uncertainty in player skill. In 999 games involving 49 models, openai/gpt-5.5 had a posterior mean skill of 5.64 versus 3.10 for the second-ranked model, and models were 8.3 percentage points more likely to support a same-provider finalist.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.04312v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning-intensive retrieval agentic search retrieval benchmark fine-tuning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.04018</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Rethinking Reasoning-Intensive Retrieval: Evaluating and Advancing Retrievers in Agentic Search Systems<div class="title-zh">重新思考推理密集型检索：评估并推进智能体搜索系统中的检索器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">reasoning-intensive retrieval</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">fine-tuning</span></div>
+  <div class="item-summary">The authors introduce BRIGHT-Pro, an expert-annotated benchmark that expands each query with multi-aspect gold evidence and evaluates retrievers under static and agentic search protocols. They also build RTriever-Synth, an aspect-decomposed synthetic corpus used to LoRA fine-tune RTriever-4B from Qwen3-Embedding-4B, which substantially improves over its base model.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.04018v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[20]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="text-to-SQL database exploration plan repair benchmark">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2605.02815</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FlexSQL: Flexible Exploration and Execution Make Better Text-to-SQL Agents<div class="title-zh">FlexSQL：灵活探索与执行让文本到 SQL 智能体更出色</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">text-to-SQL</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">database exploration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">plan repair</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">FlexSQL lets a text-to-SQL agent explore schema structure, inspect data values and run verification queries at any point, generating diverse execution plans and repairing at both code and plan levels. With gpt-oss-120b it scores 65.4% on Spider2-Snow, outperforming open-source baselines that use stronger, larger models such as gpt-o3 and DeepSeek-R1.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.02815v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent orchestration web search information extraction benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.27221</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Web2BigTable: A Bi-Level Multi-Agent LLM System for Internet-Scale Information Search and Extraction<div class="title-zh">Web2BigTable：面向互联网级信息搜索与抽取的双层多智能体 LLM 系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">web search</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">information extraction</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">Web2BigTable is a multi-agent web-to-table framework in which an upper-level orchestrator decomposes tasks and worker agents solve sub-problems in parallel. It reports state of the art on WideSearch with a 38.50 Avg@4 success rate, 7.5x the runner-up, plus 73.0 accuracy on XBench-DeepSearch.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2604.27221" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="agent benchmark multi-agent games model behavior contamination resistance">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.04312</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Island: A Saturation- and Contamination-Resistant Benchmark from Multiagent Games<div class="title-zh">Agent Island：源自多智能体博弈、抗饱和与抗污染的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent games</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">model behavior</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">contamination resistance</span></div>
+  <div class="item-summary">Agent Island is a multiplayer simulation where language-model agents compete in a game of cooperation, conflict and persuasion, designed to resist saturation and contamination and ranked with a Bayesian Plackett-Luce model that quantifies uncertainty in player skill. In 999 games involving 49 models, openai/gpt-5.5 had a posterior mean skill of 5.64 versus 3.10 for the second-ranked model, and models were 8.3 percentage points more likely to support a same-provider finalist.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.04312v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning-intensive retrieval agentic search retrieval benchmark fine-tuning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.04018</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Rethinking Reasoning-Intensive Retrieval: Evaluating and Advancing Retrievers in Agentic Search Systems<div class="title-zh">重新思考推理密集型检索：评估并推进智能体搜索系统中的检索器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">reasoning-intensive retrieval</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic search</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">fine-tuning</span></div>
+  <div class="item-summary">The authors introduce BRIGHT-Pro, an expert-annotated benchmark that expands each query with multi-aspect gold evidence and evaluates retrievers under static and agentic search protocols. They also build RTriever-Synth, an aspect-decomposed synthetic corpus used to LoRA fine-tune RTriever-4B from Qwen3-Embedding-4B, which substantially improves over its base model.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.04018v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompting strategies deterministic computation tool use evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.03227</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Evaluating Prompting and Execution-Based Methods for Deterministic Computation in LLMs<div class="title-zh">评估 LLM 确定性计算中的提示与执行方法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompting strategies</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">deterministic computation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span></div>
+  <div class="item-summary">The study compares chain-of-thought, least-to-most, program-of-thought and self-consistency prompting on exact computation tasks such as binary counting, longest substring detection and arithmetic. Program-of-thought reached perfect accuracy by delegating to an interpreter, while a small CodeT5 model trained to generate programs also achieved perfect accuracy on held-out synthetic data.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.03227v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent systems orchestration traces reward design credit assignment">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.02801</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Reinforcement Learning for LLM-based Multi-Agent Systems through Orchestration Traces<div class="title-zh">通过编排轨迹为基于 LLM 的多智能体系统做强化学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration traces</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reward design</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">credit assignment</span></div>
+  <div class="item-summary">The paper frames multi-agent RL through orchestration traces, temporal interaction graphs covering spawning, delegation, communication, tool use, aggregation and stopping, and organizes reward design, credit assignment and five orchestration sub-decisions. It reports no explicit RL training method for the stopping decision in its curated pool as of May 4, 2026, and releases an 84-entry tagged paper pool.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.02801v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt engineering multi-hop QA biomedical reasoning evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07548</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Evaluating Advanced Prompting on Gemini Flash for Multi-Hop Biomedical QA<div class="title-zh">评估高级提示策略在 Gemini Flash 多跳生物医学问答中的表现</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt engineering</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">biomedical reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span></div>
+  <div class="item-summary">The authors evaluated Gemini Flash models on the MedHopQA challenge using a multi-component prompt combining role-playing, multi-shot chain-of-thought examples and detailed formatting rules. Their best prompt reached a Concept Level Score of 0.720 versus 0.565 for a baseline prompt, nearly matching the result from Gemini 2.5 Flash.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07548v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic search scientific discovery benchmark gaming density functional theory">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.05460</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Discovery of Exchange-Correlation Density Functionals<div class="title-zh">交换关联密度泛函的智能体式发现</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific discovery</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark gaming</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">density functional theory</span></div>
+  <div class="item-summary">An LLM agent proposes structured functional-form changes in an iterative plan-execute-summarize loop, yielding SAFS26-a, which improves on the ωB97M-V baseline by about 9%. The authors caution that capable models can also exploit unphysical shortcuts, so domain constraints remain essential.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.05460v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="parallel reasoning agent harness reinforcement learning test-time scaling">
+  <div class="item-meta">
+    <span class="item-org">LongCat</span>
+    <span class="arxiv-tag">arxiv:2605.02396</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">HeavySkill: Heavy Thinking as the Inner Skill in Agentic Harness<div class="title-zh">HeavySkill：把深度思考作为智能体框架的内在技能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">parallel reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">test-time scaling</span></div>
+  <div class="item-summary">LongCat's HeavySkill treats heavy thinking as an inner model skill, using a two-stage parallel-reasoning-then-summarization pipeline that the authors say beats Best-of-N strategies and can be scaled in depth and width with reinforcement learning.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.02396" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="creative reasoning affordance reasoning tool use agent benchmark">
+  <div class="item-meta">
+    <span class="item-org">UIUC</span>
+    <span class="arxiv-tag">arxiv:2605.02910</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CreativityBench: Evaluating Agent Creative Reasoning via Affordance-Based Tool Repurposing<div class="title-zh">CreativityBench：通过基于可供性的工具再利用评估智能体创造性推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">creative reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">affordance reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span></div>
+  <div class="item-summary">CreativityBench, built by UIUC researchers, tests whether LLMs can repurpose objects by reasoning about affordances; across 10 models and 14,000 tasks, models choose plausible objects but miss the parts and mechanisms required.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.02910" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="prompting techniques multiple-choice QA reproducible evaluation reasoning budget">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.14109</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ReasonLab: A Controlled and Auditable Evaluation of Prompting Techniques for Multiple-Choice QA<div class="title-zh">ReasonLab：对多项选择问答提示技术的受控可审计评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompting techniques</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multiple-choice QA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reproducible evaluation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning budget</span></div>
+  <div class="item-summary">ReasonLab makes prompting technique a first-class experimental variable and retains every generation, covering eight techniques, 10 MCQA datasets, 27 model configurations and 480,927 evaluations at temperature zero. It finds prompting technique is a minor determinant of accuracy, while enabling model reasoning is worth up to 12.74 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.14109v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool library skill composition typed retrieval planner evolution">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.08399</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CoCoDA: Co-evolving Compositional DAG for Tool-Augmented Agents<div class="title-zh">CoCoDA：面向工具增强智能体的协同进化组合 DAG</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">tool library</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">skill composition</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">typed retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">planner evolution</span></div>
+  <div class="item-summary">CoCoDA co-evolves a planner and tool library around a compositional code DAG whose nodes store typed signatures, descriptions, pre- and post-conditions and worked examples, with typed retrieval pruning candidates before context materialization. Successful trajectories are folded into validated composite tools, and an 8B student matches or exceeds a 32B teacher on GSM8K and MATH.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.08399v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="persistent memory prompt injection agent security memory sandbox attack evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.08442</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Injection-Execution Dissociation: A Mechanistic Evaluation of Persistent Memory Attacks and Defenses in Stateful LLM Agents<div class="title-zh">注入-执行分离：有状态 LLM 智能体持久记忆攻击与防御的机制评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">persistent memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory sandbox</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">attack evaluation</span></div>
+  <div class="item-summary">The study separates whether a stateful agent stores an injected instruction from whether it later acts on it, evaluating 29 frontier endpoints with a malicious document in the retrieval corpus. Execution was common, and models that never exfiltrated in draft-only runs sometimes did when a follow-up supplied content and asked for a send; only removing the recall tool blocked the attack, and even that was bypassed when models rebuilt the instruction from the corpus.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.08442v6" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic research constraint programming tool use solver automation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.09186</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic MIP Research: Accelerated Constraint Handler Generation<div class="title-zh">智能体式混合整数规划研究：加速约束处理器生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic research</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">constraint programming</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">solver automation</span></div>
+  <div class="item-summary">The framework embeds LLM agents in a solver-aware harness to generate, verify and evaluate SCIP constraint handlers, recovering global constraint structures from constraint programming on MIPLIB 2017. It also supports in-context tuning and debugging of generated handlers, and novel propagation methods solved five additional instances.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.09186v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="streaming trajectories context management self-distillation scam detection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16363</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ORACLE: Anticipating Scams from Partial Trajectories in Streaming App Usage<div class="title-zh">ORACLE：从流式应用使用中的部分轨迹预判诈骗</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">streaming trajectories</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-distillation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scam detection</span></div>
+  <div class="item-summary">ORACLE is an agentic framework for anticipating scams from streaming app-usage trajectories, using a self-evolving context manager to consolidate entity-centric interactions and on-policy self-distillation from a teacher conditioned on anti-scam reflections and clues. It is evaluated on a long-horizon benchmark covering 12 scam types, 95 apps and trajectories averaging 15 days.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16363v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning catastrophic forgetting malware analysis parameter interpolation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.09664</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis<div class="title-zh">FreeMOCA：面向恶意代码分析的无记忆持续学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">malware analysis</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">parameter interpolation</span></div>
+  <div class="item-summary">FreeMOCA is a memory- and compute-efficient continual-learning framework for malicious code analysis that preserves prior knowledge through adaptive layer-wise interpolation between consecutive task updates. On EMBER and AZ benchmarks it outperforms 11 baselines in class-incremental settings, reduces forgetting and improves accuracy by up to 42% and 37%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.09664v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph poisoning agent tool use data integrity trust evaluation agent security">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.09822</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Oracle Poisoning: Corrupting Knowledge Graphs to Weaponise AI Agent Reasoning<div class="title-zh">Oracle Poisoning：破坏知识图谱以武器化 AI 智能体推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph poisoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data integrity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">trust evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span></div>
+  <div class="item-summary">Oracle Poisoning corrupts a structured knowledge graph that agents query at runtime, so they reach incorrect conclusions through correct reasoning; the authors demonstrate six scenarios against a production 42-million-node code knowledge graph. Across nine models from three providers, every model trusted poisoned data at 100% under directed queries at moderate attacker sophistication, while inline evaluation produced false negatives relative to real tool use.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.09822v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent skills skill discovery representation learning MRR">
+  <div class="item-meta">
+    <span class="item-org">Peking University</span>
+    <span class="arxiv-tag">arxiv:2604.24026</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Skill Text to Skill Structure: The Scheduling-Structural-Logical Representation for Agent Skills<div class="title-zh">从技能文本到技能结构：Agent Skills 的调度-结构-逻辑表示</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">skill discovery</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">representation learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">MRR</span></div>
+  <div class="item-summary">A Peking University paper introduces a Scheduling-Structural-Logical representation that separates skill-level scheduling signals, scene-level execution structure and logic-level action evidence for LLM agent skills. It raises Skill Discovery MRR from 0.573 to 0.707.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2604.24026" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="skill retrieval skill libraries agent context execution contracts">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.06978</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Group of Skills: Group-Structured Skill Retrieval for Agent Skill Libraries<div class="title-zh">技能组：面向智能体技能库的分组结构化技能检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">skill retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill libraries</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">agent context</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">execution contracts</span></div>
+  <div class="item-summary">GoSkills changes the agent-facing retrieval object from a flat skill list to role-labeled execution groups built from a typed skill graph, rendering Start, Support, Check and Avoid fields without changing the downstream agent. Across SkillsBench, ALFWorld and Terminal-Bench 2 with six backbones it reports the highest mean reward or accuracy in every benchmark-backbone setting.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.06978v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="evidence synthesis medical benchmark retrieval grounding negation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.09661</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MedMeta: A Benchmark for LLMs in Synthesizing Meta-Analysis Conclusion from Medical Studies<div class="title-zh">MedMeta：评测 LLM 从医学研究中综合元分析结论的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence synthesis</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">medical benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval grounding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">negation</span></div>
+  <div class="item-summary">MedMeta is a benchmark of 81 PubMed meta-analyses that tests whether LLMs can synthesize conclusions from cited study abstracts under golden-RAG and parametric-only workflows. Golden-RAG consistently outperformed parametric-only, domain fine-tuning added little once external material was provided, all models failed to reject negated evidence, and even under ideal RAG conditions models averaged only about 2.7 out of 5.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.09661v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent runtime multi-agent workflows open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Rath-Team/OpenRath<div class="title-zh">OpenRath：面向动态多智能体工作流的类 PyTorch 运行时</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent runtime</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">OpenRath is an open-source Python runtime described as PyTorch-like, aimed at dynamic multi-agent and multi-session agent workflows, with tags for agent frameworks, LLM agents and Anthropic compatibility. The repository has 960 stars and 51 forks.</div>
+  <a class="item-link" href="https://github.com/Rath-Team/OpenRath" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="token efficiency open source AI agent">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">TokenRhythm/opensquilla<div class="title-zh">TokenRhythm/opensquilla</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">token efficiency</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI agent</span></div>
+  <div class="item-summary">OpenSquilla is a GitHub-trending Python token-efficient AI agent positioned as delivering higher intelligence density on the same budget, with 7,082 stars and 583 forks.</div>
+  <a class="item-link" href="https://github.com/TokenRhythm/opensquilla" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent sandboxing virtual terminal Claude Code">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">strukto-ai/mirage<div class="title-zh">strukto-ai/mirage</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent sandboxing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">virtual terminal</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Claude Code</span></div>
+  <div class="item-summary">Mirage is a GitHub-trending TypeScript project described as a virtual terminal for AI agents, with 3,729 stars and 275 forks and topics including agent sandboxing and Claude Code.</div>
+  <a class="item-link" href="https://github.com/strukto-ai/mirage" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent workspace model routing open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">freestylefly/wesight<div class="title-zh">freestylefly/wesight</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent workspace</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model routing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">wesight is an open-source desktop AI agent workspace offering one-click setup for Claude Code, Codex, OpenClaw and Hermes Agent plus custom LLM model routing; it has 959 stars and 211 forks on GitHub Trending.</div>
+  <a class="item-link" href="https://github.com/freestylefly/wesight" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="long-horizon agents lifecycle-aware memory PaperBench research agents">
+  <div class="item-meta">
+    <span class="item-org">AutoTrustAI</span>
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AutoTrustAI/PaperGuru-Benchmark<div class="title-zh">AutoTrustAI/PaperGuru-Benchmark</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">lifecycle-aware memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">PaperBench</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">research agents</span></div>
+  <div class="item-summary">PaperGuru-Benchmark is a trending repository presenting lifecycle-aware memory for long-horizon LLM agents, reporting 66.05% on PaperBench and 94.66% on SurveyBench, with ten peer-reviewed acceptances at FSE, ICML, TOSEM, AEI and ICoGB.</div>
+  <a class="item-link" href="https://github.com/AutoTrustAI/PaperGuru-Benchmark" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="self-improving agents coding agents autonomous tasks open source">
+  <div class="item-meta">
+    <span class="item-org">PrimeIntellect</span>
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PrimeIntellect-ai/prime-agent<div class="title-zh">PrimeIntellect-ai/prime-agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">self-improving agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous tasks</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">prime-agent is a trending Rust repository from PrimeIntellect, described as a self-improving RLM agent for coding workflows and long-running autonomous tasks; it has 22,331 stars and 2,475 forks.</div>
+  <a class="item-link" href="https://github.com/PrimeIntellect-ai/prime-agent" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skills skill evaluation open source">
+  <div class="item-meta">
+    <span class="item-org">Alibaba</span>
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">alibaba/skill-up<div class="title-zh">alibaba/skill-up</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent skills</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">skill evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">alibaba/skill-up is a Go tool from Alibaba for evaluating and evolving Agent Skills, tagged agent-skills, ai and ai-agents, with 1,349 stars and 116 forks on GitHub.</div>
+  <a class="item-link" href="https://github.com/alibaba/skill-up" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal foundation model multimodal agents perception GUI agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GLM-5V-Turbo: Toward a Native Foundation Model for Multimodal Agents<div class="title-zh">GLM-5V-Turbo：迈向多模态智能体的原生基础模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal foundation model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multimodal agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">perception</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GUI agents</span></div>
+  <div class="item-summary">A technical report introduces GLM-5V-Turbo, which treats multimodal perception as a core part of reasoning, planning, tool use and execution for agents over images, video, webpages, documents and GUIs. The report drew 163 points and 32 comments on Hacker News.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2604.26752" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning model mixture-of-experts test-time compute Markovian RSA AMD training">
+  <div class="item-meta">
+    <span class="item-org">Zyphra</span>
+    <span class="arxiv-tag">arxiv:2605.05365</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ZAYA1-8B Technical Report<div class="title-zh">ZAYA1-8B 技术报告</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">reasoning model</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">mixture-of-experts</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">test-time compute</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">Markovian RSA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AMD training</span></div>
+  <div class="item-summary">ZAYA1-8B is a reasoning-focused mixture-of-experts model with 8B total and 700M active parameters whose core pretraining, midtraining and supervised fine-tuning ran on a full-stack AMD platform; it matches or exceeds DeepSeek-R1-0528 on several math and coding benchmarks. A test-time method called Markovian RSA lifts it to 91.9% on AIME'25 and 89.6% on HMMT'25 while carrying forward only a 4K-token reasoning tail.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.05365v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding agents software quality agent skills">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Skills<div class="title-zh">Agent Skills：让编码智能体不再跳过规范、测试与评审</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">software quality</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span></div>
+  <div class="item-summary">A post on Addy Osmani's blog, discussed on Hacker News, argues that AI coding agents take the shortest path to done by skipping specs, tests and reviews that keep software reliable at scale, and proposes Agent Skills as the remedy.</div>
+  <a class="item-link" href="https://addyosmani.com/blog/agent-skills/" target="_blank" rel="noopener">&rarr; addyosmani.com</a>
+</div>
+<div class="item-card" data-keywords="agentic coding algorithm discovery Gemini">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AlphaEvolve: How our Gemini-powered coding agent is scaling impact across fields<div class="title-zh">AlphaEvolve：Gemini 驱动的编码智能体如何跨领域扩大影响</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic coding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">algorithm discovery</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Gemini</span></div>
+  <div class="item-summary">Google DeepMind describes how AlphaEvolve's Gemini-powered algorithms are driving impact across business, infrastructure and science.</div>
+  <a class="item-link" href="https://deepmind.google/blog/alphaevolve-impact/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+<div class="item-card" data-keywords="agentic workflows Codex enterprise AI adoption">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How frontier firms are pulling ahead<div class="title-zh">前沿企业如何拉开差距</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Codex</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise AI adoption</span></div>
+  <div class="item-summary">OpenAI's B2B Signals research examines how leading enterprises deepen AI adoption, scale Codex-powered agentic workflows and build what the company describes as durable competitive advantage.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-b2b-signals" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="adaptive parallel reasoning inference scaling task decomposition test-time compute">
+  <div class="item-meta">
+    <span class="item-org">UC Berkeley</span>
+    
+    
+    <span class="item-source">BAIR (Berkeley AI Research)</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Adaptive Parallel Reasoning: The Next Paradigm in Efficient Inference Scaling<div class="title-zh">自适应并行推理：高效推理扩展的下一个范式</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">adaptive parallel reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">inference scaling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task decomposition</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">test-time compute</span></div>
+  <div class="item-summary">A Berkeley AI Research overview surveys adaptive parallel reasoning, in which a reasoning model decides for itself when to decompose independent subtasks, how many concurrent threads to spawn and how to coordinate them. The post combines a landscape survey with the authors' perspective and notes that a co-author helped lead ThreadWeaver, one of the methods discussed.</div>
+  <a class="item-link" href="http://bair.berkeley.edu/blog/2026/05/08/adaptive-parallel-reasoning/" target="_blank" rel="noopener">&rarr; bair.berkeley.edu</a>
+</div>
+<div class="item-card" data-keywords="coding agents sandboxing agent telemetry enterprise security">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Running Codex safely at OpenAI<div class="title-zh">在 OpenAI 安全地运行 Codex</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandboxing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent telemetry</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise security</span></div>
+  <div class="item-summary">OpenAI describes how it runs Codex securely using sandboxing, approvals, network policies and agent-native telemetry to support safe and compliant adoption of coding agents.</div>
+  <a class="item-link" href="https://openai.com/index/running-codex-safely" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="agent version control provenance coding agents Claude Code">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: Git for AI Agents<div class="title-zh">Show HN：面向 AI 智能体的 Git</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent version control</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">provenance</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Claude Code</span></div>
+  <div class="item-summary">The Show HN launch presents re_gent, an open-source version-control tool that records what an AI coding agent did, supports blaming lines back to a prompt and rewinding, and currently works with Claude Code.</div>
+  <a class="item-link" href="https://github.com/regent-vcs/re_gent" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agentic misalignment AI safety Claude">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Teaching Claude Why<div class="title-zh">教 Claude 明辨缘由</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic misalignment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI safety</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Claude</span></div>
+  <div class="item-summary">An Anthropic research post describes work on reducing agentic misalignment in Claude, framed as teaching the model why.</div>
+  <a class="item-link" href="https://www.anthropic.com/research/teaching-claude-why" target="_blank" rel="noopener">&rarr; www.anthropic.com</a>
+</div>
+<div class="item-card" data-keywords="coding agents maintenance cost engineering economics">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An AI coding agent, used to write code, needs to reduce your maintenance costs<div class="title-zh">用来写代码的 AI 编码智能体，必须降低你的维护成本</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">maintenance cost</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">engineering economics</span></div>
+  <div class="item-summary">James Shore argues that an AI coding agent must reduce maintenance costs in proportion to the speed it adds, or teams trade a temporary boost for permanent indenture; the Hacker News discussion drew 380 points and 108 comments.</div>
+  <a class="item-link" href="https://www.jamesshore.com/v2/blog/2026/you-need-ai-that-reduces-your-maintenance-costs" target="_blank" rel="noopener">&rarr; www.jamesshore.com</a>
+</div>
+<div class="item-card" data-keywords="multimodal retrieval file search Gemini API">
+  <div class="item-meta">
+    <span class="item-org">Google</span>
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Gemini API File Search is now multimodal<div class="title-zh">Gemini API File Search 现已支持多模态</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">file search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Gemini API</span></div>
+  <div class="item-summary">Google says updates to the Gemini API File Search tool make it easier for developers to build efficient, multimodal file retrieval systems; the Hacker News submission drew 156 points and 46 comments.</div>
+  <a class="item-link" href="https://blog.google/innovation-and-ai/technology/developers-tools/expanded-gemini-api-file-search-multimodal-rag/" target="_blank" rel="noopener">&rarr; blog.google</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry & Deployments
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="AI agents finance workflows enterprise adoption">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OpenAI and PwC collaborate to reimagine the office of the CFO<div class="title-zh">OpenAI 与 PwC 合作重塑 CFO 办公室</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">finance workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise adoption</span></div>
+  <div class="item-summary">OpenAI and PwC are partnering to help enterprises use AI agents to automate finance workflows, improve forecasting, strengthen controls and modernize the CFO function.</div>
+  <a class="item-link" href="https://openai.com/index/openai-pwc-finance-collaboration" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="voice agents customer service enterprise deployment">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Parloa builds service agents customers want to talk to<div class="title-zh">Parloa 打造客户愿意对话的服务智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">voice agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">customer service</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise deployment</span></div>
+  <div class="item-summary">Parloa uses OpenAI models to power scalable, voice-driven customer service agents that enterprises can design, simulate and deploy for reliable real-time interactions.</div>
+  <a class="item-link" href="https://openai.com/index/parloa" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://huggingface.co/papers" target="_blank" rel="noopener">HuggingFace Papers</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://deepmind.google" target="_blank" rel="noopener">Google DeepMind</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://bair.berkeley.edu/blog/" target="_blank" rel="noopener">BAIR (Berkeley AI Research)</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:42 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-04", "week_number": 19, "stats": {"total_items": 40, "unique_items": 40, "sources_count": 7, "links_verified_count": 40, "links_failed_count": 0, "section_counts": {"research_papers": 20, "tools_frameworks": 7, "models_embeddings": 2, "blogs_insights": 9, "industry_applications": 2}}, "daily_keywords": [{"text": "open source", "domain": "ai-knowledge"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "agentic search", "domain": "agent-architecture"}, {"text": "evaluation", "domain": "evaluation-benchmark"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "Claude Code", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "FlexSQL: Flexible Exploration and Execution Make Better Text-to-SQL Agents", "title_zh": "FlexSQL：灵活探索与执行让文本到 SQL 智能体更出色", "url": "http://arxiv.org/abs/2605.02815v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2605.02815", "summary": "FlexSQL lets a text-to-SQL agent explore schema structure, inspect data values and run verification queries at any point, generating diverse execution plans and repairing at both code and plan levels. With gpt-oss-120b it scores 65.4% on Spider2-Snow, outperforming open-source baselines that use stronger, larger models such as gpt-o3 and DeepSeek-R1.", "keywords": [{"text": "text-to-SQL", "domain": "agent-architecture"}, {"text": "database exploration", "domain": "rag-retrieval"}, {"text": "plan repair", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true, "_day": "2026-05-04"}, {"title": "Web2BigTable: A Bi-Level Multi-Agent LLM System for Internet-Scale Information Search and Extraction", "title_zh": "Web2BigTable：面向互联网级信息搜索与抽取的双层多智能体 LLM 系统", "url": "https://huggingface.co/papers/2604.27221", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.27221", "summary": "Web2BigTable is a multi-agent web-to-table framework in which an upper-level orchestrator decomposes tasks and worker agents solve sub-problems in parallel. It reports state of the art on WideSearch with a 38.50 Avg@4 success rate, 7.5x the runner-up, plus 73.0 accuracy on XBench-DeepSearch.", "keywords": [{"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "web search", "domain": "rag-retrieval"}, {"text": "information extraction", "domain": "knowledge-lifecycle"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true, "_day": "2026-05-04"}, {"title": "GLM-5V-Turbo: Toward a Native Foundation Model for Multimodal Agents", "title_zh": "GLM-5V-Turbo：迈向多模态智能体的原生基础模型", "url": "https://arxiv.org/abs/2604.26752", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "A technical report introduces GLM-5V-Turbo, which treats multimodal perception as a core part of reasoning, planning, tool use and execution for agents over images, video, webpages, documents and GUIs. The report drew 163 points and 32 comments on Hacker News.", "keywords": [{"text": "multimodal foundation model", "domain": "ai-knowledge"}, {"text": "multimodal agents", "domain": "agent-architecture"}, {"text": "perception", "domain": "cognition-reasoning"}, {"text": "GUI agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true, "_day": "2026-05-05"}, {"title": "Agent Island: A Saturation- and Contamination-Resistant Benchmark from Multiagent Games", "title_zh": "Agent Island：源自多智能体博弈、抗饱和与抗污染的基准", "url": "http://arxiv.org/abs/2605.04312v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.04312", "summary": "Agent Island is a multiplayer simulation where language-model agents compete in a game of cooperation, conflict and persuasion, designed to resist saturation and contamination and ranked with a Bayesian Plackett-Luce model that quantifies uncertainty in player skill. In 999 games involving 49 models, openai/gpt-5.5 had a posterior mean skill of 5.64 versus 3.10 for the second-ranked model, and models were 8.3 percentage points more likely to support a same-provider finalist.", "keywords": [{"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "multi-agent games", "domain": "agent-architecture"}, {"text": "model behavior", "domain": "cognition-reasoning"}, {"text": "contamination resistance", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true, "_day": "2026-05-05"}, {"title": "Rethinking Reasoning-Intensive Retrieval: Evaluating and Advancing Retrievers in Agentic Search Systems", "title_zh": "重新思考推理密集型检索：评估并推进智能体搜索系统中的检索器", "url": "http://arxiv.org/abs/2605.04018v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.04018", "summary": "The authors introduce BRIGHT-Pro, an expert-annotated benchmark that expands each query with multi-aspect gold evidence and evaluates retrievers under static and agentic search protocols. They also build RTriever-Synth, an aspect-decomposed synthetic corpus used to LoRA fine-tune RTriever-4B from Qwen3-Embedding-4B, which substantially improves over its base model.", "keywords": [{"text": "reasoning-intensive retrieval", "domain": "rag-retrieval"}, {"text": "agentic search", "domain": "rag-retrieval"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}, {"text": "fine-tuning", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": true, "_day": "2026-05-05"}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "FlexSQL: Flexible Exploration and Execution Make Better Text-to-SQL Agents", "title_zh": "FlexSQL：灵活探索与执行让文本到 SQL 智能体更出色", "url": "http://arxiv.org/abs/2605.02815v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2605.02815", "summary": "FlexSQL lets a text-to-SQL agent explore schema structure, inspect data values and run verification queries at any point, generating diverse execution plans and repairing at both code and plan levels. With gpt-oss-120b it scores 65.4% on Spider2-Snow, outperforming open-source baselines that use stronger, larger models such as gpt-o3 and DeepSeek-R1.", "keywords": [{"text": "text-to-SQL", "domain": "agent-architecture"}, {"text": "database exploration", "domain": "rag-retrieval"}, {"text": "plan repair", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Web2BigTable: A Bi-Level Multi-Agent LLM System for Internet-Scale Information Search and Extraction", "title_zh": "Web2BigTable：面向互联网级信息搜索与抽取的双层多智能体 LLM 系统", "url": "https://huggingface.co/papers/2604.27221", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.27221", "summary": "Web2BigTable is a multi-agent web-to-table framework in which an upper-level orchestrator decomposes tasks and worker agents solve sub-problems in parallel. It reports state of the art on WideSearch with a 38.50 Avg@4 success rate, 7.5x the runner-up, plus 73.0 accuracy on XBench-DeepSearch.", "keywords": [{"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "web search", "domain": "rag-retrieval"}, {"text": "information extraction", "domain": "knowledge-lifecycle"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Agent Island: A Saturation- and Contamination-Resistant Benchmark from Multiagent Games", "title_zh": "Agent Island：源自多智能体博弈、抗饱和与抗污染的基准", "url": "http://arxiv.org/abs/2605.04312v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.04312", "summary": "Agent Island is a multiplayer simulation where language-model agents compete in a game of cooperation, conflict and persuasion, designed to resist saturation and contamination and ranked with a Bayesian Plackett-Luce model that quantifies uncertainty in player skill. In 999 games involving 49 models, openai/gpt-5.5 had a posterior mean skill of 5.64 versus 3.10 for the second-ranked model, and models were 8.3 percentage points more likely to support a same-provider finalist.", "keywords": [{"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "multi-agent games", "domain": "agent-architecture"}, {"text": "model behavior", "domain": "cognition-reasoning"}, {"text": "contamination resistance", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Rethinking Reasoning-Intensive Retrieval: Evaluating and Advancing Retrievers in Agentic Search Systems", "title_zh": "重新思考推理密集型检索：评估并推进智能体搜索系统中的检索器", "url": "http://arxiv.org/abs/2605.04018v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.04018", "summary": "The authors introduce BRIGHT-Pro, an expert-annotated benchmark that expands each query with multi-aspect gold evidence and evaluates retrievers under static and agentic search protocols. They also build RTriever-Synth, an aspect-decomposed synthetic corpus used to LoRA fine-tune RTriever-4B from Qwen3-Embedding-4B, which substantially improves over its base model.", "keywords": [{"text": "reasoning-intensive retrieval", "domain": "rag-retrieval"}, {"text": "agentic search", "domain": "rag-retrieval"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}, {"text": "fine-tuning", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": true}, {"title": "Evaluating Prompting and Execution-Based Methods for Deterministic Computation in LLMs", "title_zh": "评估 LLM 确定性计算中的提示与执行方法", "url": "http://arxiv.org/abs/2605.03227v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.03227", "summary": "The study compares chain-of-thought, least-to-most, program-of-thought and self-consistency prompting on exact computation tasks such as binary counting, longest substring detection and arithmetic. Program-of-thought reached perfect accuracy by delegating to an interpreter, while a small CodeT5 model trained to generate programs also achieved perfect accuracy on held-out synthetic data.", "keywords": [{"text": "prompting strategies", "domain": "context-prompting"}, {"text": "deterministic computation", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Reinforcement Learning for LLM-based Multi-Agent Systems through Orchestration Traces", "title_zh": "通过编排轨迹为基于 LLM 的多智能体系统做强化学习", "url": "http://arxiv.org/abs/2605.02801v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.02801", "summary": "The paper frames multi-agent RL through orchestration traces, temporal interaction graphs covering spawning, delegation, communication, tool use, aggregation and stopping, and organizes reward design, credit assignment and five orchestration sub-decisions. It reports no explicit RL training method for the stopping decision in its curated pool as of May 4, 2026, and releases an 84-entry tagged paper pool.", "keywords": [{"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "orchestration traces", "domain": "agent-architecture"}, {"text": "reward design", "domain": "cognition-reasoning"}, {"text": "credit assignment", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Evaluating Advanced Prompting on Gemini Flash for Multi-Hop Biomedical QA", "title_zh": "评估高级提示策略在 Gemini Flash 多跳生物医学问答中的表现", "url": "http://arxiv.org/abs/2606.07548v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07548", "summary": "The authors evaluated Gemini Flash models on the MedHopQA challenge using a multi-component prompt combining role-playing, multi-shot chain-of-thought examples and detailed formatting rules. Their best prompt reached a Concept Level Score of 0.720 versus 0.565 for a baseline prompt, nearly matching the result from Gemini 2.5 Flash.", "keywords": [{"text": "prompt engineering", "domain": "context-prompting"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "biomedical reasoning", "domain": "cognition-reasoning"}, {"text": "evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic Discovery of Exchange-Correlation Density Functionals", "title_zh": "交换关联密度泛函的智能体式发现", "url": "http://arxiv.org/abs/2605.05460v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.05460", "summary": "An LLM agent proposes structured functional-form changes in an iterative plan-execute-summarize loop, yielding SAFS26-a, which improves on the ωB97M-V baseline by about 9%. The authors caution that capable models can also exploit unphysical shortcuts, so domain constraints remain essential.", "keywords": [{"text": "agentic search", "domain": "agent-architecture"}, {"text": "scientific discovery", "domain": "ai-knowledge"}, {"text": "benchmark gaming", "domain": "evaluation-benchmark"}, {"text": "density functional theory", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "HeavySkill: Heavy Thinking as the Inner Skill in Agentic Harness", "title_zh": "HeavySkill：把深度思考作为智能体框架的内在技能", "url": "https://huggingface.co/papers/2605.02396", "source": "HuggingFace Papers", "section": "research_papers", "organization": "LongCat", "language": "en", "arxiv_id": "2605.02396", "summary": "LongCat's HeavySkill treats heavy thinking as an inner model skill, using a two-stage parallel-reasoning-then-summarization pipeline that the authors say beats Best-of-N strategies and can be scaled in depth and width with reinforcement learning.", "keywords": [{"text": "parallel reasoning", "domain": "cognition-reasoning"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "reinforcement learning", "domain": "ai-knowledge"}, {"text": "test-time scaling", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "CreativityBench: Evaluating Agent Creative Reasoning via Affordance-Based Tool Repurposing", "title_zh": "CreativityBench：通过基于可供性的工具再利用评估智能体创造性推理", "url": "https://huggingface.co/papers/2605.02910", "source": "HuggingFace Papers", "section": "research_papers", "organization": "UIUC", "language": "en", "arxiv_id": "2605.02910", "summary": "CreativityBench, built by UIUC researchers, tests whether LLMs can repurpose objects by reasoning about affordances; across 10 models and 14,000 tasks, models choose plausible objects but miss the parts and mechanisms required.", "keywords": [{"text": "creative reasoning", "domain": "cognition-reasoning"}, {"text": "affordance reasoning", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ReasonLab: A Controlled and Auditable Evaluation of Prompting Techniques for Multiple-Choice QA", "title_zh": "ReasonLab：对多项选择问答提示技术的受控可审计评估", "url": "http://arxiv.org/abs/2607.14109v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.14109", "summary": "ReasonLab makes prompting technique a first-class experimental variable and retains every generation, covering eight techniques, 10 MCQA datasets, 27 model configurations and 480,927 evaluations at temperature zero. It finds prompting technique is a minor determinant of accuracy, while enabling model reasoning is worth up to 12.74 points.", "keywords": [{"text": "prompting techniques", "domain": "context-prompting"}, {"text": "multiple-choice QA", "domain": "evaluation-benchmark"}, {"text": "reproducible evaluation", "domain": "evaluation-benchmark"}, {"text": "reasoning budget", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "CoCoDA: Co-evolving Compositional DAG for Tool-Augmented Agents", "title_zh": "CoCoDA：面向工具增强智能体的协同进化组合 DAG", "url": "http://arxiv.org/abs/2605.08399v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.08399", "summary": "CoCoDA co-evolves a planner and tool library around a compositional code DAG whose nodes store typed signatures, descriptions, pre- and post-conditions and worked examples, with typed retrieval pruning candidates before context materialization. Successful trajectories are folded into validated composite tools, and an 8B student matches or exceeds a 32B teacher on GSM8K and MATH.", "keywords": [{"text": "tool library", "domain": "knowledge-lifecycle"}, {"text": "skill composition", "domain": "agent-architecture"}, {"text": "typed retrieval", "domain": "rag-retrieval"}, {"text": "planner evolution", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Injection-Execution Dissociation: A Mechanistic Evaluation of Persistent Memory Attacks and Defenses in Stateful LLM Agents", "title_zh": "注入-执行分离：有状态 LLM 智能体持久记忆攻击与防御的机制评估", "url": "http://arxiv.org/abs/2605.08442v6", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.08442", "summary": "The study separates whether a stateful agent stores an injected instruction from whether it later acts on it, evaluating 29 frontier endpoints with a malicious document in the retrieval corpus. Execution was common, and models that never exfiltrated in draft-only runs sometimes did when a follow-up supplied content and asked for a send; only removing the recall tool blocked the attack, and even that was bypassed when models rebuilt the instruction from the corpus.", "keywords": [{"text": "persistent memory", "domain": "agent-memory"}, {"text": "prompt injection", "domain": "rag-retrieval"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "memory sandbox", "domain": "agent-memory"}, {"text": "attack evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic MIP Research: Accelerated Constraint Handler Generation", "title_zh": "智能体式混合整数规划研究：加速约束处理器生成", "url": "http://arxiv.org/abs/2605.09186v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.09186", "summary": "The framework embeds LLM agents in a solver-aware harness to generate, verify and evaluate SCIP constraint handlers, recovering global constraint structures from constraint programming on MIPLIB 2017. It also supports in-context tuning and debugging of generated handlers, and novel propagation methods solved five additional instances.", "keywords": [{"text": "agentic research", "domain": "agent-architecture"}, {"text": "constraint programming", "domain": "ai-knowledge"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "solver automation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "ORACLE: Anticipating Scams from Partial Trajectories in Streaming App Usage", "title_zh": "ORACLE：从流式应用使用中的部分轨迹预判诈骗", "url": "http://arxiv.org/abs/2605.16363v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16363", "summary": "ORACLE is an agentic framework for anticipating scams from streaming app-usage trajectories, using a self-evolving context manager to consolidate entity-centric interactions and on-policy self-distillation from a teacher conditioned on anti-scam reflections and clues. It is evaluated on a long-horizon benchmark covering 12 scam types, 95 apps and trajectories averaging 15 days.", "keywords": [{"text": "streaming trajectories", "domain": "agent-memory"}, {"text": "context management", "domain": "context-prompting"}, {"text": "self-distillation", "domain": "knowledge-lifecycle"}, {"text": "scam detection", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "FreeMOCA: Memory-Free Continual Learning for Malicious Code Analysis", "title_zh": "FreeMOCA：面向恶意代码分析的无记忆持续学习", "url": "http://arxiv.org/abs/2605.09664v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.09664", "summary": "FreeMOCA is a memory- and compute-efficient continual-learning framework for malicious code analysis that preserves prior knowledge through adaptive layer-wise interpolation between consecutive task updates. On EMBER and AZ benchmarks it outperforms 11 baselines in class-incremental settings, reduces forgetting and improves accuracy by up to 42% and 37%.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "malware analysis", "domain": "ai-knowledge"}, {"text": "parameter interpolation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Oracle Poisoning: Corrupting Knowledge Graphs to Weaponise AI Agent Reasoning", "title_zh": "Oracle Poisoning：破坏知识图谱以武器化 AI 智能体推理", "url": "http://arxiv.org/abs/2605.09822v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.09822", "summary": "Oracle Poisoning corrupts a structured knowledge graph that agents query at runtime, so they reach incorrect conclusions through correct reasoning; the authors demonstrate six scenarios against a production 42-million-node code knowledge graph. Across nine models from three providers, every model trusted poisoned data at 100% under directed queries at moderate attacker sophistication, while inline evaluation produced false negatives relative to real tool use.", "keywords": [{"text": "knowledge graph poisoning", "domain": "knowledge-graph"}, {"text": "agent tool use", "domain": "agent-architecture"}, {"text": "data integrity", "domain": "ai-knowledge"}, {"text": "trust evaluation", "domain": "evaluation-benchmark"}, {"text": "agent security", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "From Skill Text to Skill Structure: The Scheduling-Structural-Logical Representation for Agent Skills", "title_zh": "从技能文本到技能结构：Agent Skills 的调度-结构-逻辑表示", "url": "https://huggingface.co/papers/2604.24026", "source": "HuggingFace Papers", "section": "research_papers", "organization": "Peking University", "language": "en", "arxiv_id": "2604.24026", "summary": "A Peking University paper introduces a Scheduling-Structural-Logical representation that separates skill-level scheduling signals, scene-level execution structure and logic-level action evidence for LLM agent skills. It raises Skill Discovery MRR from 0.573 to 0.707.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "skill discovery", "domain": "rag-retrieval"}, {"text": "representation learning", "domain": "embeddings-vectors"}, {"text": "MRR", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Group of Skills: Group-Structured Skill Retrieval for Agent Skill Libraries", "title_zh": "技能组：面向智能体技能库的分组结构化技能检索", "url": "http://arxiv.org/abs/2605.06978v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.06978", "summary": "GoSkills changes the agent-facing retrieval object from a flat skill list to role-labeled execution groups built from a typed skill graph, rendering Start, Support, Check and Avoid fields without changing the downstream agent. Across SkillsBench, ALFWorld and Terminal-Bench 2 with six backbones it reports the highest mean reward or accuracy in every benchmark-backbone setting.", "keywords": [{"text": "skill retrieval", "domain": "agent-memory"}, {"text": "skill libraries", "domain": "knowledge-lifecycle"}, {"text": "agent context", "domain": "context-prompting"}, {"text": "execution contracts", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "MedMeta: A Benchmark for LLMs in Synthesizing Meta-Analysis Conclusion from Medical Studies", "title_zh": "MedMeta：评测 LLM 从医学研究中综合元分析结论的基准", "url": "http://arxiv.org/abs/2605.09661v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.09661", "summary": "MedMeta is a benchmark of 81 PubMed meta-analyses that tests whether LLMs can synthesize conclusions from cited study abstracts under golden-RAG and parametric-only workflows. Golden-RAG consistently outperformed parametric-only, domain fine-tuning added little once external material was provided, all models failed to reject negated evidence, and even under ideal RAG conditions models averaged only about 2.7 out of 5.", "keywords": [{"text": "evidence synthesis", "domain": "rag-retrieval"}, {"text": "medical benchmark", "domain": "evaluation-benchmark"}, {"text": "retrieval grounding", "domain": "rag-retrieval"}, {"text": "negation", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "Rath-Team/OpenRath", "title_zh": "OpenRath：面向动态多智能体工作流的类 PyTorch 运行时", "url": "https://github.com/Rath-Team/OpenRath", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "OpenRath is an open-source Python runtime described as PyTorch-like, aimed at dynamic multi-agent and multi-session agent workflows, with tags for agent frameworks, LLM agents and Anthropic compatibility. The repository has 960 stars and 51 forks.", "keywords": [{"text": "agent runtime", "domain": "agent-architecture"}, {"text": "multi-agent workflows", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "TokenRhythm/opensquilla", "title_zh": "TokenRhythm/opensquilla", "url": "https://github.com/TokenRhythm/opensquilla", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "OpenSquilla is a GitHub-trending Python token-efficient AI agent positioned as delivering higher intelligence density on the same budget, with 7,082 stars and 583 forks.", "keywords": [{"text": "token efficiency", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}, {"text": "AI agent", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "strukto-ai/mirage", "title_zh": "strukto-ai/mirage", "url": "https://github.com/strukto-ai/mirage", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Mirage is a GitHub-trending TypeScript project described as a virtual terminal for AI agents, with 3,729 stars and 275 forks and topics including agent sandboxing and Claude Code.", "keywords": [{"text": "agent sandboxing", "domain": "agent-architecture"}, {"text": "virtual terminal", "domain": "agent-architecture"}, {"text": "Claude Code", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "freestylefly/wesight", "title_zh": "freestylefly/wesight", "url": "https://github.com/freestylefly/wesight", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "wesight is an open-source desktop AI agent workspace offering one-click setup for Claude Code, Codex, OpenClaw and Hermes Agent plus custom LLM model routing; it has 959 stars and 211 forks on GitHub Trending.", "keywords": [{"text": "agent workspace", "domain": "agent-architecture"}, {"text": "model routing", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "AutoTrustAI/PaperGuru-Benchmark", "title_zh": "AutoTrustAI/PaperGuru-Benchmark", "url": "https://github.com/AutoTrustAI/PaperGuru-Benchmark", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "AutoTrustAI", "language": "en", "arxiv_id": "", "summary": "PaperGuru-Benchmark is a trending repository presenting lifecycle-aware memory for long-horizon LLM agents, reporting 66.05% on PaperBench and 94.66% on SurveyBench, with ten peer-reviewed acceptances at FSE, ICML, TOSEM, AEI and ICoGB.", "keywords": [{"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "lifecycle-aware memory", "domain": "agent-memory"}, {"text": "PaperBench", "domain": "evaluation-benchmark"}, {"text": "research agents", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "PrimeIntellect-ai/prime-agent", "title_zh": "PrimeIntellect-ai/prime-agent", "url": "https://github.com/PrimeIntellect-ai/prime-agent", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "PrimeIntellect", "language": "en", "arxiv_id": "", "summary": "prime-agent is a trending Rust repository from PrimeIntellect, described as a self-improving RLM agent for coding workflows and long-running autonomous tasks; it has 22,331 stars and 2,475 forks.", "keywords": [{"text": "self-improving agents", "domain": "agent-memory"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "autonomous tasks", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "alibaba/skill-up", "title_zh": "alibaba/skill-up", "url": "https://github.com/alibaba/skill-up", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "Alibaba", "language": "en", "arxiv_id": "", "summary": "alibaba/skill-up is a Go tool from Alibaba for evaluating and evolving Agent Skills, tagged agent-skills, ai and ai-agents, with 1,349 stars and 116 forks on GitHub.", "keywords": [{"text": "agent skills", "domain": "knowledge-lifecycle"}, {"text": "skill evaluation", "domain": "evaluation-benchmark"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "GLM-5V-Turbo: Toward a Native Foundation Model for Multimodal Agents", "title_zh": "GLM-5V-Turbo：迈向多模态智能体的原生基础模型", "url": "https://arxiv.org/abs/2604.26752", "source": "Hacker News", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "", "summary": "A technical report introduces GLM-5V-Turbo, which treats multimodal perception as a core part of reasoning, planning, tool use and execution for agents over images, video, webpages, documents and GUIs. The report drew 163 points and 32 comments on Hacker News.", "keywords": [{"text": "multimodal foundation model", "domain": "ai-knowledge"}, {"text": "multimodal agents", "domain": "agent-architecture"}, {"text": "perception", "domain": "cognition-reasoning"}, {"text": "GUI agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "ZAYA1-8B Technical Report", "title_zh": "ZAYA1-8B 技术报告", "url": "http://arxiv.org/abs/2605.05365v1", "source": "arXiv", "section": "models_embeddings", "organization": "Zyphra", "language": "en", "arxiv_id": "2605.05365", "summary": "ZAYA1-8B is a reasoning-focused mixture-of-experts model with 8B total and 700M active parameters whose core pretraining, midtraining and supervised fine-tuning ran on a full-stack AMD platform; it matches or exceeds DeepSeek-R1-0528 on several math and coding benchmarks. A test-time method called Markovian RSA lifts it to 91.9% on AIME'25 and 89.6% on HMMT'25 while carrying forward only a 4K-token reasoning tail.", "keywords": [{"text": "reasoning model", "domain": "ai-knowledge"}, {"text": "mixture-of-experts", "domain": "ai-knowledge"}, {"text": "test-time compute", "domain": "cognition-reasoning"}, {"text": "Markovian RSA", "domain": "cognition-reasoning"}, {"text": "AMD training", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Agent Skills", "title_zh": "Agent Skills：让编码智能体不再跳过规范、测试与评审", "url": "https://addyosmani.com/blog/agent-skills/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A post on Addy Osmani's blog, discussed on Hacker News, argues that AI coding agents take the shortest path to done by skipping specs, tests and reviews that keep software reliable at scale, and proposes Agent Skills as the remedy.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "software quality", "domain": "knowledge-lifecycle"}, {"text": "agent skills", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "AlphaEvolve: How our Gemini-powered coding agent is scaling impact across fields", "title_zh": "AlphaEvolve：Gemini 驱动的编码智能体如何跨领域扩大影响", "url": "https://deepmind.google/blog/alphaevolve-impact/", "source": "Google DeepMind", "section": "blogs_insights", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind describes how AlphaEvolve's Gemini-powered algorithms are driving impact across business, infrastructure and science.", "keywords": [{"text": "agentic coding", "domain": "agent-architecture"}, {"text": "algorithm discovery", "domain": "ai-knowledge"}, {"text": "Gemini", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "How frontier firms are pulling ahead", "title_zh": "前沿企业如何拉开差距", "url": "https://openai.com/index/introducing-b2b-signals", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI's B2B Signals research examines how leading enterprises deepen AI adoption, scale Codex-powered agentic workflows and build what the company describes as durable competitive advantage.", "keywords": [{"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "Codex", "domain": "agent-architecture"}, {"text": "enterprise AI adoption", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Adaptive Parallel Reasoning: The Next Paradigm in Efficient Inference Scaling", "title_zh": "自适应并行推理：高效推理扩展的下一个范式", "url": "http://bair.berkeley.edu/blog/2026/05/08/adaptive-parallel-reasoning/", "source": "BAIR (Berkeley AI Research)", "section": "blogs_insights", "organization": "UC Berkeley", "language": "en", "arxiv_id": "", "summary": "A Berkeley AI Research overview surveys adaptive parallel reasoning, in which a reasoning model decides for itself when to decompose independent subtasks, how many concurrent threads to spawn and how to coordinate them. The post combines a landscape survey with the authors' perspective and notes that a co-author helped lead ThreadWeaver, one of the methods discussed.", "keywords": [{"text": "adaptive parallel reasoning", "domain": "cognition-reasoning"}, {"text": "inference scaling", "domain": "cognition-reasoning"}, {"text": "task decomposition", "domain": "agent-architecture"}, {"text": "test-time compute", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Running Codex safely at OpenAI", "title_zh": "在 OpenAI 安全地运行 Codex", "url": "https://openai.com/index/running-codex-safely", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI describes how it runs Codex securely using sandboxing, approvals, network policies and agent-native telemetry to support safe and compliant adoption of coding agents.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "sandboxing", "domain": "agent-architecture"}, {"text": "agent telemetry", "domain": "evaluation-benchmark"}, {"text": "enterprise security", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Show HN: Git for AI Agents", "title_zh": "Show HN：面向 AI 智能体的 Git", "url": "https://github.com/regent-vcs/re_gent", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "The Show HN launch presents re_gent, an open-source version-control tool that records what an AI coding agent did, supports blaming lines back to a prompt and rewinding, and currently works with Claude Code.", "keywords": [{"text": "agent version control", "domain": "agent-architecture"}, {"text": "provenance", "domain": "knowledge-lifecycle"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "Claude Code", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Teaching Claude Why", "title_zh": "教 Claude 明辨缘由", "url": "https://www.anthropic.com/research/teaching-claude-why", "source": "Hacker News", "section": "blogs_insights", "organization": "Anthropic", "language": "en", "arxiv_id": "", "summary": "An Anthropic research post describes work on reducing agentic misalignment in Claude, framed as teaching the model why.", "keywords": [{"text": "agentic misalignment", "domain": "agent-architecture"}, {"text": "AI safety", "domain": "ai-knowledge"}, {"text": "Claude", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "An AI coding agent, used to write code, needs to reduce your maintenance costs", "title_zh": "用来写代码的 AI 编码智能体，必须降低你的维护成本", "url": "https://www.jamesshore.com/v2/blog/2026/you-need-ai-that-reduces-your-maintenance-costs", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "James Shore argues that an AI coding agent must reduce maintenance costs in proportion to the speed it adds, or teams trade a temporary boost for permanent indenture; the Hacker News discussion drew 380 points and 108 comments.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "maintenance cost", "domain": "ai-knowledge"}, {"text": "engineering economics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Gemini API File Search is now multimodal", "title_zh": "Gemini API File Search 现已支持多模态", "url": "https://blog.google/innovation-and-ai/technology/developers-tools/expanded-gemini-api-file-search-multimodal-rag/", "source": "Hacker News", "section": "blogs_insights", "organization": "Google", "language": "en", "arxiv_id": "", "summary": "Google says updates to the Gemini API File Search tool make it easier for developers to build efficient, multimodal file retrieval systems; the Hacker News submission drew 156 points and 46 comments.", "keywords": [{"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "file search", "domain": "rag-retrieval"}, {"text": "Gemini API", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry & Deployments", "items": [{"title": "OpenAI and PwC collaborate to reimagine the office of the CFO", "title_zh": "OpenAI 与 PwC 合作重塑 CFO 办公室", "url": "https://openai.com/index/openai-pwc-finance-collaboration", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI and PwC are partnering to help enterprises use AI agents to automate finance workflows, improve forecasting, strengthen controls and modernize the CFO function.", "keywords": [{"text": "AI agents", "domain": "agent-architecture"}, {"text": "finance workflows", "domain": "ai-knowledge"}, {"text": "enterprise adoption", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Parloa builds service agents customers want to talk to", "title_zh": "Parloa 打造客户愿意对话的服务智能体", "url": "https://openai.com/index/parloa", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "Parloa uses OpenAI models to power scalable, voice-driven customer service agents that enterprises can design, simulate and deploy for reliable real-time interactions.", "keywords": [{"text": "voice agents", "domain": "agent-architecture"}, {"text": "customer service", "domain": "ai-knowledge"}, {"text": "enterprise deployment", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "HuggingFace Papers", "url": "https://huggingface.co/papers"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Google DeepMind", "url": "https://deepmind.google"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "BAIR (Berkeley AI Research)", "url": "https://bair.berkeley.edu/blog/"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

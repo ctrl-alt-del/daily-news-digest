@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2025-12-29</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">33 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">33/33 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">27</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">3</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:7%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:3%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector search</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory compression</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning evaluation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">filtered ANNS</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">index architecture</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">low-selectivity filters</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="vector search filtered ANNS index architecture low-selectivity filters">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01291</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Curator: Efficient Vector Search with Low-Selectivity Filters<div class="title-zh">Curator：面向低选择性过滤的高效向量搜索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">filtered ANNS</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">index architecture</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">low-selectivity filters</span></div>
+  <div class="item-summary">Curator is a partition-based index for filtered approximate nearest-neighbor search, building label-specific indexes inside a shared clustering tree to avoid the connectivity breakdown that graph indexes suffer on low-selectivity filters. Combined with state-of-the-art graph indexes, it cuts low-selectivity query latency by up to 20.9x versus pre-filtering while adding only 5.5% construction time and 4.3% memory.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01291v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent architecture KV-cache sparsification memory efficiency topological data analysis context management">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2601.01298</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Warp-Cortex: An Asynchronous, Memory-Efficient Architecture for Million-Agent Cognitive Scaling on Consumer Hardware<div class="title-zh">Warp-Cortex：在消费级硬件上实现百万级智能体认知扩展的异步内存高效架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent architecture</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV-cache sparsification</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory efficiency</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">topological data analysis</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span></div>
+  <div class="item-summary">Warp-Cortex decouples agent logic from physical memory through singleton weight sharing and a topological KV-cache sparsification scheme, reducing weight memory to O(1) and context to O(N·k). On a single RTX 4090 it demonstrates 100 concurrent agents in 2.2 GB of VRAM, with a theoretical capacity above 1,000 agents before compute latency becomes the bottleneck.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01298v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic reasoning iterative distillation meta-cognition tool use open model weights">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04237</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SAGE-32B: Agentic Reasoning via Iterative Distillation<div class="title-zh">SAGE-32B：通过迭代蒸馏实现智能体推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">iterative distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">meta-cognition</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open model weights</span></div>
+  <div class="item-summary">SAGE-32B is a 32B model initialized from Qwen2.5-32B and fine-tuned with Iterative Distillation, a two-stage process with tested feedback loops, to operate in an agentic loop emphasizing task decomposition, tool use and error recovery. It adds an inverse-reasoning meta-cognition head that forecasts planning failures, reports higher multi-tool success than similarly sized baselines while remaining competitive on standard reasoning tests, and releases its weights.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04237v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-evolving agents hierarchical memory closed-loop optimization knowledge transfer clinical trial redesign">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00290</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ClinicalReTrial: Clinical Trial Redesign with Self-Evolving Agents<div class="title-zh">ClinicalReTrial：基于自演化智能体的临床试验方案重设计</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">closed-loop optimization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge transfer</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical trial redesign</span></div>
+  <div class="item-summary">ClinicalReTrial treats trial protocol redesign as an iterative, reward-driven optimization problem, combining failure diagnosis, safety-aware edits and candidate evaluation in a closed loop, with hierarchical memory that distills transferable redesign patterns across trials. Under its simulation environment it turns 56.7% of failed protocols into predicted successes, with a mean success-probability gain of 7.4% at about $0.156 per trial.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00290v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="memory compression continual learning codebook optimization catastrophic forgetting knowledge retention">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00756</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Memory Bank Compression for Continual Adaptation of Large Language Models<div class="title-zh">面向大模型持续适应的记忆库压缩</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory compression</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">codebook optimization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge retention</span></div>
+  <div class="item-summary">MBC compresses an LLM's external memory bank through codebook optimization during online adaptation, adding an online resetting mechanism to prevent codebook collapse and key-value low-rank adaptation in attention layers. On question-answering benchmarks it reduces the memory-bank size to 0.3% of the strongest baseline while maintaining high retention accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00756v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[27]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="vector search filtered ANNS index architecture low-selectivity filters">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01291</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Curator: Efficient Vector Search with Low-Selectivity Filters<div class="title-zh">Curator：面向低选择性过滤的高效向量搜索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">filtered ANNS</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">index architecture</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">low-selectivity filters</span></div>
+  <div class="item-summary">Curator is a partition-based index for filtered approximate nearest-neighbor search, building label-specific indexes inside a shared clustering tree to avoid the connectivity breakdown that graph indexes suffer on low-selectivity filters. Combined with state-of-the-art graph indexes, it cuts low-selectivity query latency by up to 20.9x versus pre-filtering while adding only 5.5% construction time and 4.3% memory.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01291v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent architecture KV-cache sparsification memory efficiency topological data analysis context management">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2601.01298</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Warp-Cortex: An Asynchronous, Memory-Efficient Architecture for Million-Agent Cognitive Scaling on Consumer Hardware<div class="title-zh">Warp-Cortex：在消费级硬件上实现百万级智能体认知扩展的异步内存高效架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent architecture</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV-cache sparsification</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory efficiency</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">topological data analysis</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span></div>
+  <div class="item-summary">Warp-Cortex decouples agent logic from physical memory through singleton weight sharing and a topological KV-cache sparsification scheme, reducing weight memory to O(1) and context to O(N·k). On a single RTX 4090 it demonstrates 100 concurrent agents in 2.2 GB of VRAM, with a theoretical capacity above 1,000 agents before compute latency becomes the bottleneck.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01298v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-evolving agents hierarchical memory closed-loop optimization knowledge transfer clinical trial redesign">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00290</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ClinicalReTrial: Clinical Trial Redesign with Self-Evolving Agents<div class="title-zh">ClinicalReTrial：基于自演化智能体的临床试验方案重设计</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">closed-loop optimization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge transfer</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical trial redesign</span></div>
+  <div class="item-summary">ClinicalReTrial treats trial protocol redesign as an iterative, reward-driven optimization problem, combining failure diagnosis, safety-aware edits and candidate evaluation in a closed loop, with hierarchical memory that distills transferable redesign patterns across trials. Under its simulation environment it turns 56.7% of failed protocols into predicted successes, with a mean success-probability gain of 7.4% at about $0.156 per trial.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00290v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="memory compression continual learning codebook optimization catastrophic forgetting knowledge retention">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00756</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Memory Bank Compression for Continual Adaptation of Large Language Models<div class="title-zh">面向大模型持续适应的记忆库压缩</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory compression</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">codebook optimization</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge retention</span></div>
+  <div class="item-summary">MBC compresses an LLM's external memory bank through codebook optimization during online adaptation, adding an online resetting mechanism to prevent codebook collapse and key-value low-rank adaptation in attention layers. On question-answering benchmarks it reduces the memory-bank size to 0.3% of the strongest baseline while maintaining high retention accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00756v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent benchmark tool use consistency multi-agent coordination network robustness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.03281</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">$α^3$-Bench: A Unified Benchmark of Safety, Robustness, and Efficiency for LLM-Based UAV Agents over 6G Networks<div class="title-zh">$α^3$-Bench：面向 6G 网络下大模型无人机智能体的安全、鲁棒性与效率统一基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use consistency</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent coordination</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">network robustness</span></div>
+  <div class="item-summary">$α^3$-Bench evaluates LLM-driven UAV agents as multi-turn control loops under simulated 6G conditions, using 113k conversational episodes and a composite metric spanning task outcome, safety policy, tool consistency, interaction quality, network robustness and communication cost. Across 17 LLMs, several achieve high mission success and safety compliance, but robustness and efficiency vary widely under degraded network conditions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.03281v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation dual-agent system supervised fine-tuning MITRE CWE knowledge vulnerability detection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00254</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An Empirical Evaluation of LLM-Based Approaches for Code Vulnerability Detection: RAG, SFT, and Dual-Agent Systems<div class="title-zh">大模型代码漏洞检测方法的实证评估：RAG、SFT 与双智能体系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">dual-agent system</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">supervised fine-tuning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">MITRE CWE knowledge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">vulnerability detection</span></div>
+  <div class="item-summary">This comparative study evaluates RAG, supervised fine-tuning with QLoRA adapters and a dual-agent audit architecture against a baseline LLM for detecting five CWE vulnerability categories. The RAG variant, augmented with internet and MITRE CWE knowledge, achieved the highest accuracy (0.86) and F1 (0.85), while the dual-agent setup improved reasoning transparency with lower resource overhead.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00254v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="parameter-efficient fine-tuning catastrophic forgetting low-rank adaptation model drift Fisher information">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00231</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GRIT -- Geometry-Aware PEFT with K-FACPreconditioning, Fisher-Guided Reprojection, andDynamic Rank Adaptation<div class="title-zh">GRIT：几何感知的参数高效微调，结合 K-FAC 预条件与 Fisher 引导重投影</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">parameter-efficient fine-tuning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-rank adaptation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">model drift</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">Fisher information</span></div>
+  <div class="item-summary">GRIT keeps the LoRA parameterization but preconditions gradients in rank space with K-FAC, periodically reprojects the low-rank basis onto dominant Fisher eigendirections, and adapts rank from the spectrum. On LLaMA backbones it matches or beats LoRA and QLoRA while cutting trainable parameters by 46% on average, and reports lower drift and a better updates-versus-retention frontier.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00231v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="jailbreak safety alignment adversarial prompting LLM robustness">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.00213</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Overlooked Safety Vulnerability in LLMs: Malicious Intelligent Optimization Algorithm Request and its Jailbreak<div class="title-zh">大模型被忽视的安全漏洞：恶意智能优化算法请求及其越狱</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">jailbreak</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">safety alignment</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">adversarial prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM robustness</span></div>
+  <div class="item-summary">The authors introduce MalOptBench, a benchmark of 60 malicious optimization-algorithm requests, and MOBjailbreak, a jailbreak tailored to that setting. Testing 13 LLMs including GPT-5 and DeepSeek-V3.1, they report an average attack success rate of 83.59% and an average harmfulness score of 4.28 out of 5, with plug-and-play defenses only marginally effective.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00213v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="world models synthetic users recommender evaluation persona alignment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00930</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AlignUSER: Human-Aligned LLM Agents via World Models for Recommender System Evaluation<div class="title-zh">AlignUSER：基于世界模型的人类对齐大模型智能体用于推荐系统评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">world models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">synthetic users</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">recommender evaluation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">persona alignment</span></div>
+  <div class="item-summary">AlignUSER learns world-model-driven user agents from human interaction rollouts by framing world modeling as next-state prediction, then aligns actions with human personas using counterfactual trajectories and comparisons with human choices. Across multiple datasets it reproduces genuine human behavior more closely than prior synthetic-user approaches at both micro and macro levels.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00930v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent retrieval financial data tool availability agent benchmark structured data">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2603.04403</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FinRetrieval: A Benchmark for Financial Data Retrieval by AI Agents<div class="title-zh">FinRetrieval：面向 AI 智能体财务数据检索的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agent retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">financial data</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool availability</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">structured data</span></div>
+  <div class="item-summary">FinRetrieval benchmarks whether AI agents can retrieve specific numeric values from structured financial databases, with 500 questions and tool-call traces from 14 configurations across Anthropic, OpenAI and Google models. Tool availability dominates results: Claude Opus scores 90.8% with structured data APIs but only 19.8% with web search alone, a 71-point gap.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.04403v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hybrid retrieval RAG infrastructure embedding strategies reproducible benchmarking vector search">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2603.04402</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SearchGym: A Modular Infrastructure for Cross-Platform Benchmarking and Hybrid Search Orchestration<div class="title-zh">SearchGym：跨平台基准测试与混合检索编排的模块化基础设施</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG infrastructure</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding strategies</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reproducible benchmarking</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector search</span></div>
+  <div class="item-summary">SearchGym decouples data representation, embedding strategy and retrieval logic into Dataset, VectorSet and App abstractions, enabling reproducible composition of RAG systems from hierarchical configurations. It also analyzes how the optimal ordering of semantic ranking and structured filtering depends on filter strength, and reports a 70% Top-100 retrieval rate on the LitSearch benchmark.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2603.04402v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="categorical clustering external knowledge base value embedding semantic enrichment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01162</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Bridging the Semantic Gap for Categorical Data Clustering via Large Language Models<div class="title-zh">BREVE：借助大模型弥合类别数据聚类的语义鸿沟</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">categorical clustering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">external knowledge base</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">value embedding</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">semantic enrichment</span></div>
+  <div class="item-summary">BREVE enriches each categorical value with a dense embedding drawn from an external knowledge base, appends a lightweight one-hot component to preserve value identity, and uses cluster-compactness-guided weights to control how much enrichment enters the representation. Across eight benchmark datasets it achieves an average ARI rank of 1.3 against seven competitors.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01162v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="temporal knowledge graph multi-hop reasoning reinforcement learning question answering T-GRPO">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01195</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Reinforcement Learning Enhanced Multi-hop Reasoning for Temporal Knowledge Question Answering<div class="title-zh">面向时序知识图谱问答的强化学习增强多跳推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">temporal knowledge graph</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">multi-hop reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">question answering</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">T-GRPO</span></div>
+  <div class="item-summary">The MRE framework improves temporal knowledge-graph question answering by generating diverse reasoning trajectories, fine-tuning on valid ones as a cold start, and then applying Tree-Group Relative Policy Optimization that explores each hop with feedback from later hops. On two TKGQA benchmarks it consistently surpasses state-of-the-art methods and shows better robustness to noisy temporal annotations.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01195v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="length extrapolation positional encoding long context attention bias">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.06113</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Towards Infinite Length Extrapolation: A Unified Approach<div class="title-zh">迈向无限长度外推：一种统一方法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">length extrapolation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">positional encoding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long context</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">attention bias</span></div>
+  <div class="item-summary">The paper recasts positional encoding as a multiplicative transformation plus an additive bias in the attention score, then introduces Adaptive Positional Encoding with adaptive frequency modulation and a combined linear, logarithmic and square-root decay bias. It derives conditions for infinite-context extrapolation and tests the approach on TinyStories and a synthetic dataset with stories up to 32,000 words.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.06113v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="dynamic RAG selective memory memory decay embedding efficiency">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.02428</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Dynamic Retrieval-Augmented Generation System with Selective Memory and Remembrance<div class="title-zh">具备选择性记忆与遗忘的动态检索增强生成系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">dynamic RAG</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">selective memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory decay</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding efficiency</span></div>
+  <div class="item-summary">Adaptive RAG Memory replaces a static vector index with a dynamic memory substrate in which frequently retrieved items are consolidated and protected while rarely used ones decay. On a lightweight retrieval benchmark it reaches NDCG@5 of about 0.940 and Recall@5 of 1.000 with roughly 22M embedding parameters, and compares static versus dynamic RAG across Llama 3.1 and GPT-4o.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.02428v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-LLM orchestration Bayesian updating cost-aware decisions contrastive prompting value of information">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.01522</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Bayesian Orchestration of Multi-LLM Agents for Cost-Aware Sequential Decision-Making<div class="title-zh">成本感知多 LLM 智能体序贯决策的贝叶斯编排</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-LLM orchestration</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">Bayesian updating</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">cost-aware decisions</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">contrastive prompting</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">value of information</span></div>
+  <div class="item-summary">The paper argues that querying one LLM for a confidence score is inadequate for sequential decisions with asymmetric costs, and instead treats multiple LLMs as approximate likelihood models whose contrastive estimates are aggregated and updated with Bayes rule. In resume screening with 1,000 resumes and five LLMs, it reports a 34% cost reduction ($294,000) versus the best single-model baseline and narrows the max demographic-parity gap from 22 to 5 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01522v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="social simulation behavioral alignment context formation decision-making">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.01546</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Improving Behavioral Alignment in LLM Social Simulations via Context Formation and Navigation<div class="title-zh">通过情境构建与导航改进大模型社会模拟中的行为对齐</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">social simulation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">behavioral alignment</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context formation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">decision-making</span></div>
+  <div class="item-summary">The authors propose a two-stage framework: context formation, which specifies the experimental design and decision context, and context navigation, which guides reasoning within that representation. Across four models and three economic games, complex decision environments require both stages to match human behavior, while a simpler demand-estimation task needs only context formation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01546v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="rank aggregation benchmark analysis algorithm comparison statistical estimation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01664</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Who is the Winning Algorithm? Rank Aggregation for Comparative Studies<div class="title-zh">谁是最佳算法？面向比较研究的排名聚合</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">rank aggregation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark analysis</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">algorithm comparison</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">statistical estimation</span></div>
+  <div class="item-summary">The paper proposes a framework that estimates each algorithm's probability of ranking first on a future unseen dataset by using complete rankings across a benchmark rather than only win counts, and reports gains over existing methods in synthetic and real-world examples.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01664v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="query categorization hierarchical taxonomy chain-of-thought semantic search embeddings">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00510</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Chain-of-Thought Approach to Semantic Query Categorization in e-Commerce Taxonomies<div class="title-zh">电商分类体系下语义查询分类的思维链方法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">query categorization</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">hierarchical taxonomy</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic search</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embeddings</span></div>
+  <div class="item-summary">The authors combine tree search with LLM semantic scoring in a chain-of-thought approach to map e-commerce queries to leaf categories in hierarchical taxonomies. On human-judged query-category pairs and relevance tests it outperforms an embedding-based categorization benchmark, and the approach can also surface problems within the taxonomy itself.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00510v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation semantic retrieval tool feedback embedding model secure code generation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.00509</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Improving LLM-Assisted Secure Code Generation through Retrieval-Augmented-Generation and Multi-Tool Feedback<div class="title-zh">通过检索增强生成与多工具反馈改进大模型辅助的安全代码生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool feedback</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding model</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">secure code generation</span></div>
+  <div class="item-summary">The authors build a retrieval-augmented repair loop in which one code-generating LLM iteratively fixes its output using compiler diagnostics, CodeQL security scanning and KLEE symbolic execution, retrieving prior successful repairs with a lightweight embedding model. On 3,242 programs they report a 96% reduction in vulnerabilities for DeepSeek-Coder and a drop in CodeLlama-7B's critical defect rate from 58.55% to 22.19%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00509v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="atomic sentence extraction knowledge decomposition dependency parsing ROUGE">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.00506</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Rule-Based Approaches to Atomic Sentence Extraction<div class="title-zh">基于规则的原子句抽取方法研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">atomic sentence extraction</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge decomposition</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">dependency parsing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ROUGE</span></div>
+  <div class="item-summary">The study analyzes how relative clauses, adverbial clauses, coordination and passive constructions affect dependency-based atomic sentence extraction, implementing spaCy rules on WikiSplit and scoring them with ROUGE and BERTScore. It reports ROUGE-1 F1 of 0.6714 and BERTScore F1 of 0.5898, concluding that rule-based extraction is reasonably accurate but sensitive to syntactic complexity.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00506v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sycophancy LLM evaluation rebuttal reasoning effort">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2601.03285</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Feedback Indices to Evaluate LLM Responses to Rebuttals for Multiple Choice Type Questions<div class="title-zh">评估大模型对多项选择题反驳反馈的指标</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">sycophancy</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM evaluation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">rebuttal</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning effort</span></div>
+  <div class="item-summary">The authors propose a fictitious-response rebuttal method and a set of indices to quantify sycophancy and stubbornness when LLMs are challenged on multiple-choice answers. In tests with OpenAI models on physics problems, newer models and those using greater reasoning effort show less sycophantic behavior.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.03285v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning traces self-correction inference stability entropy reasoning evaluation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.00514</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Illusion of Insight in Reasoning Models<div class="title-zh">推理模型中的“洞察幻觉”</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning traces</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-correction</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">inference stability</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">entropy</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning evaluation</span></div>
+  <div class="item-summary">Analyzing more than one million reasoning traces across hundreds of training checkpoints, the authors find that mid-reasoning strategy shifts are rare, do not become more frequent with training, and seldom improve accuracy. They conclude such shifts reflect unstable inference rather than intrinsic self-correction, and show that artificially triggering shifts under high entropy reliably improves accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.00514v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic recommender trustworthy RAG memory compression scientific data multi-turn dialogue">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01118</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ScienceDB AI: An LLM-Driven Agentic Recommender System for Large-Scale Scientific Data Sharing Services<div class="title-zh">ScienceDB AI：面向大规模科学数据共享服务的 LLM 驱动智能体推荐系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic recommender</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">trustworthy RAG</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">memory compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific data</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multi-turn dialogue</span></div>
+  <div class="item-summary">ScienceDB AI is an LLM-driven conversational recommender for a large scientific data-sharing platform, combining a Scientific Intention Perceptor, a Structured Memory Compressor for multi-turn dialogue and a two-stage Trustworthy RAG that returns citable dataset references via CSTR identifiers. It was evaluated on more than 10 million real-world datasets in offline and online experiments.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01118v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="cognitive conviction reasoning evaluation confusion matrix calibration">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2601.01532</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Aletheia: Quantifying Cognitive Conviction in Reasoning Models via Regularized Inverse Confusion Matrix<div class="title-zh">Aletheia：通过正则化逆混淆矩阵量化推理模型的认知信念强度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">cognitive conviction</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">confusion matrix</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">calibration</span></div>
+  <div class="item-summary">Project Aletheia proposes a framework that uses Tikhonov regularization to invert a judge's confusion matrix, aiming to measure the depth of belief in reasoning models rather than only knowledge breadth. A preliminary pilot on 2025 baselines such as DeepSeek-R1 and OpenAI o1 suggests reasoning models can act as a cognitive buffer but may exhibit defensive overthinking under adversarial pressure.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01532v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool-use agents failure-driven data generation verifiable reasoning training data">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01498</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Failure to Mastery: Generating Hard Samples for Tool-use Agents<div class="title-zh">从失败到精通：为工具使用智能体生成困难样本</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-use agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">failure-driven data generation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">verifiable reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">training data</span></div>
+  <div class="item-summary">HardGen builds a dynamic API graph from agent failure cases to synthesize hard traces, uses them as priors to instantiate advanced tools and queries, and generates verifiable chain-of-thought data in a closed evaluation loop. The authors report that a 4B-parameter model trained on the resulting dataset outperforms several leading open and closed models, including GPT-5.2, Gemini-3-Pro and Claude-Opus-4.5.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01498v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent collusion belief manipulation truthful evidence agent safety">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.01685</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Lying with Truths: Open-Channel Multi-Agent Collusion for Belief Manipulation via Generative Montage<div class="title-zh">用真相撒谎：开放信道多智能体合谋与信念操纵</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent collusion</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">belief manipulation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">truthful evidence</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent safety</span></div>
+  <div class="item-summary">The paper formalizes a cognitive collusion attack in which agents coordinate to steer beliefs using only truthful evidence fragments posted through public channels, and reports success rates of 74.4% for proprietary models and 70.6% for open-weight models across 14 LLM families. Stronger reasoning models prove more susceptible, and false beliefs spread to downstream judges.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.01685v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent session capture Git integration code provenance developer tooling">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">entireio/cli<div class="title-zh">entireio/cli：把 AI 智能体会话记录进 Git</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent session capture</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">Git integration</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">code provenance</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">developer tooling</span></div>
+  <div class="item-summary">entireio/cli is a Go command-line tool that hooks into the Git workflow to capture AI agent sessions and index them alongside commits, creating a searchable record of how code was written.</div>
+  <a class="item-link" href="https://github.com/entireio/cli" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="code review agent agentic tooling Linux kernel">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">sashiko-dev/sashiko<div class="title-zh">sashiko：用 Agent 审查 Linux 内核代码变更</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code review agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic tooling</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Linux kernel</span></div>
+  <div class="item-summary">sashiko is a Rust-based agentic review tool for Linux kernel code changes.</div>
+  <a class="item-link" href="https://github.com/sashiko-dev/sashiko" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="knowledge-base RAG pgvector AI interview open-source platform">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Snailclimb/interview-guide<div class="title-zh">Snailclimb/interview-guide：开源 AI 面试平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">knowledge-base RAG</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">pgvector</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI interview</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source platform</span></div>
+  <div class="item-summary">interview-guide is an open-source AI interview platform built on Spring Boot 4.1, Java 25, Spring AI 2.0, React, PostgreSQL/pgvector, Redis and RustFS, supporting resume analysis, mock and voice interviews, and knowledge-base RAG.</div>
+  <a class="item-link" href="https://github.com/Snailclimb/interview-guide" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic reasoning iterative distillation meta-cognition tool use open model weights">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.04237</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SAGE-32B: Agentic Reasoning via Iterative Distillation<div class="title-zh">SAGE-32B：通过迭代蒸馏实现智能体推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">iterative distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">meta-cognition</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open model weights</span></div>
+  <div class="item-summary">SAGE-32B is a 32B model initialized from Qwen2.5-32B and fine-tuned with Iterative Distillation, a two-stage process with tested feedback loops, to operate in an agentic loop emphasizing task decomposition, tool use and error recovery. It adds an inverse-reasoning meta-cognition head that forecasts planning failures, reports higher multi-tool success than similarly sized baselines while remaining competitive on standard reasoning tests, and releases its weights.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.04237v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="vision-language model agentic ability Korean language open-source model reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.03286</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">HyperCLOVA X 32B Think<div class="title-zh">HyperCLOVA X 32B Think：面向韩语语境与智能体能力的开源视觉语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">vision-language model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic ability</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Korean language</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source model</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning</span></div>
+  <div class="item-summary">HyperCLOVA X 32B Think is a vision-language model pre-trained with an emphasis on reasoning and post-trained for multimodal understanding, agentic behavior and human-preference alignment, with particular attention to Korean language and culture. The team reports strong results against comparably sized models on Korean text and vision benchmarks and on agent-oriented evaluations, and open-sources the model.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.03286v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="recursive inference long context context decomposition inference paradigm">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Recursive Language Models<div class="title-zh">递归语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">recursive inference</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context decomposition</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">inference paradigm</span></div>
+  <div class="item-summary">Recursive Language Models treat long prompts as an external environment that the model can examine, decompose and recursively query, handling inputs up to two orders of magnitude beyond its context window. The authors report outperforming vanilla frontier LLMs and common long-context or coding scaffolds on four long-context tasks at comparable cost, and post-train an initial model at small scale.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2512.24601" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:42 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2025-12-29", "week_number": 1, "stats": {"total_items": 33, "unique_items": 33, "sources_count": 3, "links_verified_count": 33, "links_failed_count": 0, "section_counts": {"research_papers": 27, "tools_frameworks": 3, "models_embeddings": 2, "blogs_insights": 1}}, "daily_keywords": [{"text": "vector search", "domain": "embeddings-vectors"}, {"text": "memory compression", "domain": "agent-memory"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "long context", "domain": "context-prompting"}, {"text": "reasoning evaluation", "domain": "evaluation-benchmark"}, {"text": "filtered ANNS", "domain": "rag-retrieval"}, {"text": "index architecture", "domain": "embeddings-vectors"}, {"text": "low-selectivity filters", "domain": "rag-retrieval"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Curator: Efficient Vector Search with Low-Selectivity Filters", "title_zh": "Curator：面向低选择性过滤的高效向量搜索", "url": "http://arxiv.org/abs/2601.01291v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01291", "summary": "Curator is a partition-based index for filtered approximate nearest-neighbor search, building label-specific indexes inside a shared clustering tree to avoid the connectivity breakdown that graph indexes suffer on low-selectivity filters. Combined with state-of-the-art graph indexes, it cuts low-selectivity query latency by up to 20.9x versus pre-filtering while adding only 5.5% construction time and 4.3% memory.", "keywords": [{"text": "vector search", "domain": "embeddings-vectors"}, {"text": "filtered ANNS", "domain": "rag-retrieval"}, {"text": "index architecture", "domain": "embeddings-vectors"}, {"text": "low-selectivity filters", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-03"}, {"title": "Warp-Cortex: An Asynchronous, Memory-Efficient Architecture for Million-Agent Cognitive Scaling on Consumer Hardware", "title_zh": "Warp-Cortex：在消费级硬件上实现百万级智能体认知扩展的异步内存高效架构", "url": "http://arxiv.org/abs/2601.01298v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2601.01298", "summary": "Warp-Cortex decouples agent logic from physical memory through singleton weight sharing and a topological KV-cache sparsification scheme, reducing weight memory to O(1) and context to O(N·k). On a single RTX 4090 it demonstrates 100 concurrent agents in 2.2 GB of VRAM, with a theoretical capacity above 1,000 agents before compute latency becomes the bottleneck.", "keywords": [{"text": "multi-agent architecture", "domain": "agent-architecture"}, {"text": "KV-cache sparsification", "domain": "agent-memory"}, {"text": "memory efficiency", "domain": "agent-memory"}, {"text": "topological data analysis", "domain": "embeddings-vectors"}, {"text": "context management", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-03"}, {"title": "SAGE-32B: Agentic Reasoning via Iterative Distillation", "title_zh": "SAGE-32B：通过迭代蒸馏实现智能体推理", "url": "http://arxiv.org/abs/2601.04237v2", "source": "arXiv", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "2601.04237", "summary": "SAGE-32B is a 32B model initialized from Qwen2.5-32B and fine-tuned with Iterative Distillation, a two-stage process with tested feedback loops, to operate in an agentic loop emphasizing task decomposition, tool use and error recovery. It adds an inverse-reasoning meta-cognition head that forecasts planning failures, reports higher multi-tool success than similarly sized baselines while remaining competitive on standard reasoning tests, and releases its weights.", "keywords": [{"text": "agentic reasoning", "domain": "agent-architecture"}, {"text": "iterative distillation", "domain": "knowledge-lifecycle"}, {"text": "meta-cognition", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "open model weights", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-04"}, {"title": "ClinicalReTrial: Clinical Trial Redesign with Self-Evolving Agents", "title_zh": "ClinicalReTrial：基于自演化智能体的临床试验方案重设计", "url": "http://arxiv.org/abs/2601.00290v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00290", "summary": "ClinicalReTrial treats trial protocol redesign as an iterative, reward-driven optimization problem, combining failure diagnosis, safety-aware edits and candidate evaluation in a closed loop, with hierarchical memory that distills transferable redesign patterns across trials. Under its simulation environment it turns 56.7% of failed protocols into predicted successes, with a mean success-probability gain of 7.4% at about $0.156 per trial.", "keywords": [{"text": "self-evolving agents", "domain": "agent-architecture"}, {"text": "hierarchical memory", "domain": "agent-memory"}, {"text": "closed-loop optimization", "domain": "agent-architecture"}, {"text": "knowledge transfer", "domain": "knowledge-lifecycle"}, {"text": "clinical trial redesign", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-01"}, {"title": "Memory Bank Compression for Continual Adaptation of Large Language Models", "title_zh": "面向大模型持续适应的记忆库压缩", "url": "http://arxiv.org/abs/2601.00756v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00756", "summary": "MBC compresses an LLM's external memory bank through codebook optimization during online adaptation, adding an online resetting mechanism to prevent codebook collapse and key-value low-rank adaptation in attention layers. On question-answering benchmarks it reduces the memory-bank size to 0.3% of the strongest baseline while maintaining high retention accuracy.", "keywords": [{"text": "memory compression", "domain": "agent-memory"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "codebook optimization", "domain": "embeddings-vectors"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "knowledge retention", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-02"}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Curator: Efficient Vector Search with Low-Selectivity Filters", "title_zh": "Curator：面向低选择性过滤的高效向量搜索", "url": "http://arxiv.org/abs/2601.01291v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01291", "summary": "Curator is a partition-based index for filtered approximate nearest-neighbor search, building label-specific indexes inside a shared clustering tree to avoid the connectivity breakdown that graph indexes suffer on low-selectivity filters. Combined with state-of-the-art graph indexes, it cuts low-selectivity query latency by up to 20.9x versus pre-filtering while adding only 5.5% construction time and 4.3% memory.", "keywords": [{"text": "vector search", "domain": "embeddings-vectors"}, {"text": "filtered ANNS", "domain": "rag-retrieval"}, {"text": "index architecture", "domain": "embeddings-vectors"}, {"text": "low-selectivity filters", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Warp-Cortex: An Asynchronous, Memory-Efficient Architecture for Million-Agent Cognitive Scaling on Consumer Hardware", "title_zh": "Warp-Cortex：在消费级硬件上实现百万级智能体认知扩展的异步内存高效架构", "url": "http://arxiv.org/abs/2601.01298v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2601.01298", "summary": "Warp-Cortex decouples agent logic from physical memory through singleton weight sharing and a topological KV-cache sparsification scheme, reducing weight memory to O(1) and context to O(N·k). On a single RTX 4090 it demonstrates 100 concurrent agents in 2.2 GB of VRAM, with a theoretical capacity above 1,000 agents before compute latency becomes the bottleneck.", "keywords": [{"text": "multi-agent architecture", "domain": "agent-architecture"}, {"text": "KV-cache sparsification", "domain": "agent-memory"}, {"text": "memory efficiency", "domain": "agent-memory"}, {"text": "topological data analysis", "domain": "embeddings-vectors"}, {"text": "context management", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "ClinicalReTrial: Clinical Trial Redesign with Self-Evolving Agents", "title_zh": "ClinicalReTrial：基于自演化智能体的临床试验方案重设计", "url": "http://arxiv.org/abs/2601.00290v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00290", "summary": "ClinicalReTrial treats trial protocol redesign as an iterative, reward-driven optimization problem, combining failure diagnosis, safety-aware edits and candidate evaluation in a closed loop, with hierarchical memory that distills transferable redesign patterns across trials. Under its simulation environment it turns 56.7% of failed protocols into predicted successes, with a mean success-probability gain of 7.4% at about $0.156 per trial.", "keywords": [{"text": "self-evolving agents", "domain": "agent-architecture"}, {"text": "hierarchical memory", "domain": "agent-memory"}, {"text": "closed-loop optimization", "domain": "agent-architecture"}, {"text": "knowledge transfer", "domain": "knowledge-lifecycle"}, {"text": "clinical trial redesign", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Memory Bank Compression for Continual Adaptation of Large Language Models", "title_zh": "面向大模型持续适应的记忆库压缩", "url": "http://arxiv.org/abs/2601.00756v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00756", "summary": "MBC compresses an LLM's external memory bank through codebook optimization during online adaptation, adding an online resetting mechanism to prevent codebook collapse and key-value low-rank adaptation in attention layers. On question-answering benchmarks it reduces the memory-bank size to 0.3% of the strongest baseline while maintaining high retention accuracy.", "keywords": [{"text": "memory compression", "domain": "agent-memory"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "codebook optimization", "domain": "embeddings-vectors"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "knowledge retention", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "$α^3$-Bench: A Unified Benchmark of Safety, Robustness, and Efficiency for LLM-Based UAV Agents over 6G Networks", "title_zh": "$α^3$-Bench：面向 6G 网络下大模型无人机智能体的安全、鲁棒性与效率统一基准", "url": "http://arxiv.org/abs/2601.03281v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.03281", "summary": "$α^3$-Bench evaluates LLM-driven UAV agents as multi-turn control loops under simulated 6G conditions, using 113k conversational episodes and a composite metric spanning task outcome, safety policy, tool consistency, interaction quality, network robustness and communication cost. Across 17 LLMs, several achieve high mission success and safety compliance, but robustness and efficiency vary widely under degraded network conditions.", "keywords": [{"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "tool use consistency", "domain": "agent-architecture"}, {"text": "multi-agent coordination", "domain": "agent-architecture"}, {"text": "network robustness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "An Empirical Evaluation of LLM-Based Approaches for Code Vulnerability Detection: RAG, SFT, and Dual-Agent Systems", "title_zh": "大模型代码漏洞检测方法的实证评估：RAG、SFT 与双智能体系统", "url": "http://arxiv.org/abs/2601.00254v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00254", "summary": "This comparative study evaluates RAG, supervised fine-tuning with QLoRA adapters and a dual-agent audit architecture against a baseline LLM for detecting five CWE vulnerability categories. The RAG variant, augmented with internet and MITRE CWE knowledge, achieved the highest accuracy (0.86) and F1 (0.85), while the dual-agent setup improved reasoning transparency with lower resource overhead.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "dual-agent system", "domain": "agent-architecture"}, {"text": "supervised fine-tuning", "domain": "ai-knowledge"}, {"text": "MITRE CWE knowledge", "domain": "ai-knowledge"}, {"text": "vulnerability detection", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "GRIT -- Geometry-Aware PEFT with K-FACPreconditioning, Fisher-Guided Reprojection, andDynamic Rank Adaptation", "title_zh": "GRIT：几何感知的参数高效微调，结合 K-FAC 预条件与 Fisher 引导重投影", "url": "http://arxiv.org/abs/2601.00231v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00231", "summary": "GRIT keeps the LoRA parameterization but preconditions gradients in rank space with K-FAC, periodically reprojects the low-rank basis onto dominant Fisher eigendirections, and adapts rank from the spectrum. On LLaMA backbones it matches or beats LoRA and QLoRA while cutting trainable parameters by 46% on average, and reports lower drift and a better updates-versus-retention frontier.", "keywords": [{"text": "parameter-efficient fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "low-rank adaptation", "domain": "ai-knowledge"}, {"text": "model drift", "domain": "knowledge-lifecycle"}, {"text": "Fisher information", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "Overlooked Safety Vulnerability in LLMs: Malicious Intelligent Optimization Algorithm Request and its Jailbreak", "title_zh": "大模型被忽视的安全漏洞：恶意智能优化算法请求及其越狱", "url": "http://arxiv.org/abs/2601.00213v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.00213", "summary": "The authors introduce MalOptBench, a benchmark of 60 malicious optimization-algorithm requests, and MOBjailbreak, a jailbreak tailored to that setting. Testing 13 LLMs including GPT-5 and DeepSeek-V3.1, they report an average attack success rate of 83.59% and an average harmfulness score of 4.28 out of 5, with plug-and-play defenses only marginally effective.", "keywords": [{"text": "jailbreak", "domain": "evaluation-benchmark"}, {"text": "safety alignment", "domain": "ai-knowledge"}, {"text": "adversarial prompting", "domain": "context-prompting"}, {"text": "LLM robustness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "AlignUSER: Human-Aligned LLM Agents via World Models for Recommender System Evaluation", "title_zh": "AlignUSER：基于世界模型的人类对齐大模型智能体用于推荐系统评估", "url": "http://arxiv.org/abs/2601.00930v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00930", "summary": "AlignUSER learns world-model-driven user agents from human interaction rollouts by framing world modeling as next-state prediction, then aligns actions with human personas using counterfactual trajectories and comparisons with human choices. Across multiple datasets it reproduces genuine human behavior more closely than prior synthetic-user approaches at both micro and macro levels.", "keywords": [{"text": "world models", "domain": "agent-architecture"}, {"text": "synthetic users", "domain": "agent-architecture"}, {"text": "recommender evaluation", "domain": "evaluation-benchmark"}, {"text": "persona alignment", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "FinRetrieval: A Benchmark for Financial Data Retrieval by AI Agents", "title_zh": "FinRetrieval：面向 AI 智能体财务数据检索的基准", "url": "http://arxiv.org/abs/2603.04403v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2603.04403", "summary": "FinRetrieval benchmarks whether AI agents can retrieve specific numeric values from structured financial databases, with 500 questions and tool-call traces from 14 configurations across Anthropic, OpenAI and Google models. Tool availability dominates results: Claude Opus scores 90.8% with structured data APIs but only 19.8% with web search alone, a 71-point gap.", "keywords": [{"text": "agent retrieval", "domain": "rag-retrieval"}, {"text": "financial data", "domain": "ai-knowledge"}, {"text": "tool availability", "domain": "agent-architecture"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "structured data", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "SearchGym: A Modular Infrastructure for Cross-Platform Benchmarking and Hybrid Search Orchestration", "title_zh": "SearchGym：跨平台基准测试与混合检索编排的模块化基础设施", "url": "http://arxiv.org/abs/2603.04402v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2603.04402", "summary": "SearchGym decouples data representation, embedding strategy and retrieval logic into Dataset, VectorSet and App abstractions, enabling reproducible composition of RAG systems from hierarchical configurations. It also analyzes how the optimal ordering of semantic ranking and structured filtering depends on filter strength, and reports a 70% Top-100 retrieval rate on the LitSearch benchmark.", "keywords": [{"text": "hybrid retrieval", "domain": "rag-retrieval"}, {"text": "RAG infrastructure", "domain": "rag-retrieval"}, {"text": "embedding strategies", "domain": "embeddings-vectors"}, {"text": "reproducible benchmarking", "domain": "evaluation-benchmark"}, {"text": "vector search", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "Bridging the Semantic Gap for Categorical Data Clustering via Large Language Models", "title_zh": "BREVE：借助大模型弥合类别数据聚类的语义鸿沟", "url": "http://arxiv.org/abs/2601.01162v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01162", "summary": "BREVE enriches each categorical value with a dense embedding drawn from an external knowledge base, appends a lightweight one-hot component to preserve value identity, and uses cluster-compactness-guided weights to control how much enrichment enters the representation. Across eight benchmark datasets it achieves an average ARI rank of 1.3 against seven competitors.", "keywords": [{"text": "categorical clustering", "domain": "embeddings-vectors"}, {"text": "external knowledge base", "domain": "ai-knowledge"}, {"text": "value embedding", "domain": "embeddings-vectors"}, {"text": "semantic enrichment", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Reinforcement Learning Enhanced Multi-hop Reasoning for Temporal Knowledge Question Answering", "title_zh": "面向时序知识图谱问答的强化学习增强多跳推理", "url": "http://arxiv.org/abs/2601.01195v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01195", "summary": "The MRE framework improves temporal knowledge-graph question answering by generating diverse reasoning trajectories, fine-tuning on valid ones as a cold start, and then applying Tree-Group Relative Policy Optimization that explores each hop with feedback from later hops. On two TKGQA benchmarks it consistently surpasses state-of-the-art methods and shows better robustness to noisy temporal annotations.", "keywords": [{"text": "temporal knowledge graph", "domain": "knowledge-graph"}, {"text": "multi-hop reasoning", "domain": "knowledge-graph"}, {"text": "reinforcement learning", "domain": "agent-architecture"}, {"text": "question answering", "domain": "rag-retrieval"}, {"text": "T-GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Towards Infinite Length Extrapolation: A Unified Approach", "title_zh": "迈向无限长度外推：一种统一方法", "url": "http://arxiv.org/abs/2601.06113v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.06113", "summary": "The paper recasts positional encoding as a multiplicative transformation plus an additive bias in the attention score, then introduces Adaptive Positional Encoding with adaptive frequency modulation and a combined linear, logarithmic and square-root decay bias. It derives conditions for infinite-context extrapolation and tests the approach on TinyStories and a synthetic dataset with stories up to 32,000 words.", "keywords": [{"text": "length extrapolation", "domain": "context-prompting"}, {"text": "positional encoding", "domain": "context-prompting"}, {"text": "long context", "domain": "agent-memory"}, {"text": "attention bias", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "A Dynamic Retrieval-Augmented Generation System with Selective Memory and Remembrance", "title_zh": "具备选择性记忆与遗忘的动态检索增强生成系统", "url": "http://arxiv.org/abs/2601.02428v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.02428", "summary": "Adaptive RAG Memory replaces a static vector index with a dynamic memory substrate in which frequently retrieved items are consolidated and protected while rarely used ones decay. On a lightweight retrieval benchmark it reaches NDCG@5 of about 0.940 and Recall@5 of 1.000 with roughly 22M embedding parameters, and compares static versus dynamic RAG across Llama 3.1 and GPT-4o.", "keywords": [{"text": "dynamic RAG", "domain": "rag-retrieval"}, {"text": "selective memory", "domain": "agent-memory"}, {"text": "memory decay", "domain": "knowledge-lifecycle"}, {"text": "embedding efficiency", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "Bayesian Orchestration of Multi-LLM Agents for Cost-Aware Sequential Decision-Making", "title_zh": "成本感知多 LLM 智能体序贯决策的贝叶斯编排", "url": "http://arxiv.org/abs/2601.01522v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.01522", "summary": "The paper argues that querying one LLM for a confidence score is inadequate for sequential decisions with asymmetric costs, and instead treats multiple LLMs as approximate likelihood models whose contrastive estimates are aggregated and updated with Bayes rule. In resume screening with 1,000 resumes and five LLMs, it reports a 34% cost reduction ($294,000) versus the best single-model baseline and narrows the max demographic-parity gap from 22 to 5 points.", "keywords": [{"text": "multi-LLM orchestration", "domain": "agent-architecture"}, {"text": "Bayesian updating", "domain": "cognition-reasoning"}, {"text": "cost-aware decisions", "domain": "agent-architecture"}, {"text": "contrastive prompting", "domain": "context-prompting"}, {"text": "value of information", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Improving Behavioral Alignment in LLM Social Simulations via Context Formation and Navigation", "title_zh": "通过情境构建与导航改进大模型社会模拟中的行为对齐", "url": "http://arxiv.org/abs/2601.01546v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.01546", "summary": "The authors propose a two-stage framework: context formation, which specifies the experimental design and decision context, and context navigation, which guides reasoning within that representation. Across four models and three economic games, complex decision environments require both stages to match human behavior, while a simpler demand-estimation task needs only context formation.", "keywords": [{"text": "social simulation", "domain": "agent-architecture"}, {"text": "behavioral alignment", "domain": "cognition-reasoning"}, {"text": "context formation", "domain": "context-prompting"}, {"text": "decision-making", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Who is the Winning Algorithm? Rank Aggregation for Comparative Studies", "title_zh": "谁是最佳算法？面向比较研究的排名聚合", "url": "http://arxiv.org/abs/2601.01664v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01664", "summary": "The paper proposes a framework that estimates each algorithm's probability of ranking first on a future unseen dataset by using complete rankings across a benchmark rather than only win counts, and reports gains over existing methods in synthetic and real-world examples.", "keywords": [{"text": "rank aggregation", "domain": "evaluation-benchmark"}, {"text": "benchmark analysis", "domain": "evaluation-benchmark"}, {"text": "algorithm comparison", "domain": "evaluation-benchmark"}, {"text": "statistical estimation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "A Chain-of-Thought Approach to Semantic Query Categorization in e-Commerce Taxonomies", "title_zh": "电商分类体系下语义查询分类的思维链方法", "url": "http://arxiv.org/abs/2601.00510v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00510", "summary": "The authors combine tree search with LLM semantic scoring in a chain-of-thought approach to map e-commerce queries to leaf categories in hierarchical taxonomies. On human-judged query-category pairs and relevance tests it outperforms an embedding-based categorization benchmark, and the approach can also surface problems within the taxonomy itself.", "keywords": [{"text": "query categorization", "domain": "rag-retrieval"}, {"text": "hierarchical taxonomy", "domain": "knowledge-graph"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "semantic search", "domain": "rag-retrieval"}, {"text": "embeddings", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "Improving LLM-Assisted Secure Code Generation through Retrieval-Augmented-Generation and Multi-Tool Feedback", "title_zh": "通过检索增强生成与多工具反馈改进大模型辅助的安全代码生成", "url": "http://arxiv.org/abs/2601.00509v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.00509", "summary": "The authors build a retrieval-augmented repair loop in which one code-generating LLM iteratively fixes its output using compiler diagnostics, CodeQL security scanning and KLEE symbolic execution, retrieving prior successful repairs with a lightweight embedding model. On 3,242 programs they report a 96% reduction in vulnerabilities for DeepSeek-Coder and a drop in CodeLlama-7B's critical defect rate from 58.55% to 22.19%.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "semantic retrieval", "domain": "rag-retrieval"}, {"text": "tool feedback", "domain": "agent-architecture"}, {"text": "embedding model", "domain": "embeddings-vectors"}, {"text": "secure code generation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Rule-Based Approaches to Atomic Sentence Extraction", "title_zh": "基于规则的原子句抽取方法研究", "url": "http://arxiv.org/abs/2601.00506v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.00506", "summary": "The study analyzes how relative clauses, adverbial clauses, coordination and passive constructions affect dependency-based atomic sentence extraction, implementing spaCy rules on WikiSplit and scoring them with ROUGE and BERTScore. It reports ROUGE-1 F1 of 0.6714 and BERTScore F1 of 0.5898, concluding that rule-based extraction is reasonably accurate but sensitive to syntactic complexity.", "keywords": [{"text": "atomic sentence extraction", "domain": "knowledge-lifecycle"}, {"text": "knowledge decomposition", "domain": "knowledge-lifecycle"}, {"text": "dependency parsing", "domain": "ai-knowledge"}, {"text": "ROUGE", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Feedback Indices to Evaluate LLM Responses to Rebuttals for Multiple Choice Type Questions", "title_zh": "评估大模型对多项选择题反驳反馈的指标", "url": "http://arxiv.org/abs/2601.03285v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2601.03285", "summary": "The authors propose a fictitious-response rebuttal method and a set of indices to quantify sycophancy and stubbornness when LLMs are challenged on multiple-choice answers. In tests with OpenAI models on physics problems, newer models and those using greater reasoning effort show less sycophantic behavior.", "keywords": [{"text": "sycophancy", "domain": "cognition-reasoning"}, {"text": "LLM evaluation", "domain": "evaluation-benchmark"}, {"text": "rebuttal", "domain": "context-prompting"}, {"text": "reasoning effort", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "The Illusion of Insight in Reasoning Models", "title_zh": "推理模型中的“洞察幻觉”", "url": "http://arxiv.org/abs/2601.00514v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.00514", "summary": "Analyzing more than one million reasoning traces across hundreds of training checkpoints, the authors find that mid-reasoning strategy shifts are rare, do not become more frequent with training, and seldom improve accuracy. They conclude such shifts reflect unstable inference rather than intrinsic self-correction, and show that artificially triggering shifts under high entropy reliably improves accuracy.", "keywords": [{"text": "reasoning traces", "domain": "cognition-reasoning"}, {"text": "self-correction", "domain": "cognition-reasoning"}, {"text": "inference stability", "domain": "cognition-reasoning"}, {"text": "entropy", "domain": "context-prompting"}, {"text": "reasoning evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ScienceDB AI: An LLM-Driven Agentic Recommender System for Large-Scale Scientific Data Sharing Services", "title_zh": "ScienceDB AI：面向大规模科学数据共享服务的 LLM 驱动智能体推荐系统", "url": "http://arxiv.org/abs/2601.01118v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01118", "summary": "ScienceDB AI is an LLM-driven conversational recommender for a large scientific data-sharing platform, combining a Scientific Intention Perceptor, a Structured Memory Compressor for multi-turn dialogue and a two-stage Trustworthy RAG that returns citable dataset references via CSTR identifiers. It was evaluated on more than 10 million real-world datasets in offline and online experiments.", "keywords": [{"text": "agentic recommender", "domain": "agent-architecture"}, {"text": "trustworthy RAG", "domain": "rag-retrieval"}, {"text": "memory compression", "domain": "agent-memory"}, {"text": "scientific data", "domain": "ai-knowledge"}, {"text": "multi-turn dialogue", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Aletheia: Quantifying Cognitive Conviction in Reasoning Models via Regularized Inverse Confusion Matrix", "title_zh": "Aletheia：通过正则化逆混淆矩阵量化推理模型的认知信念强度", "url": "http://arxiv.org/abs/2601.01532v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2601.01532", "summary": "Project Aletheia proposes a framework that uses Tikhonov regularization to invert a judge's confusion matrix, aiming to measure the depth of belief in reasoning models rather than only knowledge breadth. A preliminary pilot on 2025 baselines such as DeepSeek-R1 and OpenAI o1 suggests reasoning models can act as a cognitive buffer but may exhibit defensive overthinking under adversarial pressure.", "keywords": [{"text": "cognitive conviction", "domain": "cognition-reasoning"}, {"text": "reasoning evaluation", "domain": "evaluation-benchmark"}, {"text": "confusion matrix", "domain": "evaluation-benchmark"}, {"text": "calibration", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "From Failure to Mastery: Generating Hard Samples for Tool-use Agents", "title_zh": "从失败到精通：为工具使用智能体生成困难样本", "url": "http://arxiv.org/abs/2601.01498v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01498", "summary": "HardGen builds a dynamic API graph from agent failure cases to synthesize hard traces, uses them as priors to instantiate advanced tools and queries, and generates verifiable chain-of-thought data in a closed evaluation loop. The authors report that a 4B-parameter model trained on the resulting dataset outperforms several leading open and closed models, including GPT-5.2, Gemini-3-Pro and Claude-Opus-4.5.", "keywords": [{"text": "tool-use agents", "domain": "agent-architecture"}, {"text": "failure-driven data generation", "domain": "knowledge-lifecycle"}, {"text": "verifiable reasoning", "domain": "cognition-reasoning"}, {"text": "training data", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Lying with Truths: Open-Channel Multi-Agent Collusion for Belief Manipulation via Generative Montage", "title_zh": "用真相撒谎：开放信道多智能体合谋与信念操纵", "url": "http://arxiv.org/abs/2601.01685v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.01685", "summary": "The paper formalizes a cognitive collusion attack in which agents coordinate to steer beliefs using only truthful evidence fragments posted through public channels, and reports success rates of 74.4% for proprietary models and 70.6% for open-weight models across 14 LLM families. Stronger reasoning models prove more susceptible, and false beliefs spread to downstream judges.", "keywords": [{"text": "multi-agent collusion", "domain": "agent-architecture"}, {"text": "belief manipulation", "domain": "cognition-reasoning"}, {"text": "truthful evidence", "domain": "ai-knowledge"}, {"text": "agent safety", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "entireio/cli", "title_zh": "entireio/cli：把 AI 智能体会话记录进 Git", "url": "https://github.com/entireio/cli", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "entireio/cli is a Go command-line tool that hooks into the Git workflow to capture AI agent sessions and index them alongside commits, creating a searchable record of how code was written.", "keywords": [{"text": "agent session capture", "domain": "agent-memory"}, {"text": "Git integration", "domain": "knowledge-lifecycle"}, {"text": "code provenance", "domain": "knowledge-lifecycle"}, {"text": "developer tooling", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "sashiko-dev/sashiko", "title_zh": "sashiko：用 Agent 审查 Linux 内核代码变更", "url": "https://github.com/sashiko-dev/sashiko", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "sashiko is a Rust-based agentic review tool for Linux kernel code changes.", "keywords": [{"text": "code review agent", "domain": "agent-architecture"}, {"text": "agentic tooling", "domain": "agent-architecture"}, {"text": "Linux kernel", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Snailclimb/interview-guide", "title_zh": "Snailclimb/interview-guide：开源 AI 面试平台", "url": "https://github.com/Snailclimb/interview-guide", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "interview-guide is an open-source AI interview platform built on Spring Boot 4.1, Java 25, Spring AI 2.0, React, PostgreSQL/pgvector, Redis and RustFS, supporting resume analysis, mock and voice interviews, and knowledge-base RAG.", "keywords": [{"text": "knowledge-base RAG", "domain": "rag-retrieval"}, {"text": "pgvector", "domain": "embeddings-vectors"}, {"text": "AI interview", "domain": "agent-architecture"}, {"text": "open-source platform", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "SAGE-32B: Agentic Reasoning via Iterative Distillation", "title_zh": "SAGE-32B：通过迭代蒸馏实现智能体推理", "url": "http://arxiv.org/abs/2601.04237v2", "source": "arXiv", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "2601.04237", "summary": "SAGE-32B is a 32B model initialized from Qwen2.5-32B and fine-tuned with Iterative Distillation, a two-stage process with tested feedback loops, to operate in an agentic loop emphasizing task decomposition, tool use and error recovery. It adds an inverse-reasoning meta-cognition head that forecasts planning failures, reports higher multi-tool success than similarly sized baselines while remaining competitive on standard reasoning tests, and releases its weights.", "keywords": [{"text": "agentic reasoning", "domain": "agent-architecture"}, {"text": "iterative distillation", "domain": "knowledge-lifecycle"}, {"text": "meta-cognition", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "open model weights", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "HyperCLOVA X 32B Think", "title_zh": "HyperCLOVA X 32B Think：面向韩语语境与智能体能力的开源视觉语言模型", "url": "http://arxiv.org/abs/2601.03286v1", "source": "arXiv", "section": "models_embeddings", "organization": "", "language": "en", "arxiv_id": "2601.03286", "summary": "HyperCLOVA X 32B Think is a vision-language model pre-trained with an emphasis on reasoning and post-trained for multimodal understanding, agentic behavior and human-preference alignment, with particular attention to Korean language and culture. The team reports strong results against comparably sized models on Korean text and vision benchmarks and on agent-oriented evaluations, and open-sources the model.", "keywords": [{"text": "vision-language model", "domain": "ai-knowledge"}, {"text": "agentic ability", "domain": "agent-architecture"}, {"text": "Korean language", "domain": "ai-knowledge"}, {"text": "open-source model", "domain": "ai-knowledge"}, {"text": "reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Recursive Language Models", "title_zh": "递归语言模型", "url": "https://arxiv.org/abs/2512.24601", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Recursive Language Models treat long prompts as an external environment that the model can examine, decompose and recursively query, handling inputs up to two orders of magnitude beyond its context window. The authors report outperforming vanilla frontier LLMs and common long-context or coding scaffolds on four long-context tasks at comparable cost, and post-train an initial model at small scale.", "keywords": [{"text": "recursive inference", "domain": "agent-architecture"}, {"text": "long context", "domain": "context-prompting"}, {"text": "context decomposition", "domain": "agent-memory"}, {"text": "inference paradigm", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

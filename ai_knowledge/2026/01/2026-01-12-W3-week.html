@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-01-12</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">40 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>5 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">40/40 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">28</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:17%"></div></div>
+  <span class="stat-count">5</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP server</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent design</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic RAG</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data synthesis</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">adversarial distractors</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic RAG data synthesis adversarial distractors error correction retrieval robustness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08699</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RAGShaper: Eliciting Sophisticated Agentic RAG Skills via Automated Data Synthesis<div class="title-zh">RAGShaper：通过自动化数据合成激发复杂的智能体 RAG 技能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic RAG</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data synthesis</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">adversarial distractors</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">error correction</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval robustness</span></div>
+  <div class="item-summary">RAGShaper is a data-synthesis framework for agentic RAG that builds dense information trees with adversarial distractors at perception and cognition levels, then uses constrained navigation to force a teacher agent to demonstrate error correction and noise rejection. Models trained on the synthesized corpus reportedly outperform existing baselines and show greater robustness on noise-intensive and complex retrieval tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08699v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="code knowledge graph coding agents local indexing token efficiency">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">colbymchenry/codegraph<div class="title-zh">colbymchenry/codegraph：面向编程智能体的本地代码知识图谱</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">code knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">local indexing</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">token efficiency</span></div>
+  <div class="item-summary">codegraph is a C project that provides a pre-indexed code knowledge graph which syncs automatically when code changes, aimed at coding agents such as Claude Code, Codex, Gemini, Cursor, and OpenCode. It is described as fully local and as reducing token use and tool calls.</div>
+  <a class="item-link" href="https://github.com/colbymchenry/codegraph" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="contextual intent intent-aware retrieval long-horizon memory CAME-Bench retrieval noise">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.10702</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Grounding Agent Memory in Contextual Intent<div class="title-zh">将智能体记忆锚定于情境意图</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">contextual intent</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">intent-aware retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-horizon memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">CAME-Bench</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval noise</span></div>
+  <div class="item-summary">STITCH indexes each step of a long-horizon agent trajectory with a structured "contextual intent" cue—latent goal, action type, and salient entity types—and retrieves history by matching the current step's intent. Across the new CAME-Bench and LongMemEval it reports state-of-the-art results, beating the strongest baseline by 35.6%, with gains growing as trajectories lengthen.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.10702v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="citation verification knowledge integrity evidence aggregation miscitation taxonomy agentic retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.16993</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature<div class="title-zh">BibAgent：面向科学文献可追溯错误引用检测的智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">citation verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge integrity</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence aggregation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">miscitation taxonomy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic retrieval</span></div>
+  <div class="item-summary">BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.16993v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-context understanding gated memory multi-agent system error accumulation hallucination propagation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.11913</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LSTM-MAS: A Long Short-Term Memory Inspired Multi-Agent System for Long-Context Understanding<div class="title-zh">LSTM-MAS：受长短期记忆启发的长上下文多智能体系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context understanding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">gated memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">error accumulation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">hallucination propagation</span></div>
+  <div class="item-summary">LSTM-MAS is a chained multi-agent system inspired by LSTM gates for long-context understanding, with worker, filter, judge, and manager agents controlling information flow between segments. Compared with the prior CoA multi-agent approach, it reports gains of 97.97%, 65.75%, 122.19%, 39.61%, and 10.80% on NarrativeQA, Qasper, HotpotQA, 2WikiMQA, and MuSiQue.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.11913v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[28]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic RAG data synthesis adversarial distractors error correction retrieval robustness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08699</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RAGShaper: Eliciting Sophisticated Agentic RAG Skills via Automated Data Synthesis<div class="title-zh">RAGShaper：通过自动化数据合成激发复杂的智能体 RAG 技能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic RAG</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">data synthesis</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">adversarial distractors</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">error correction</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval robustness</span></div>
+  <div class="item-summary">RAGShaper is a data-synthesis framework for agentic RAG that builds dense information trees with adversarial distractors at perception and cognition levels, then uses constrained navigation to force a teacher agent to demonstrate error correction and noise rejection. Models trained on the synthesized corpus reportedly outperform existing baselines and show greater robustness on noise-intensive and complex retrieval tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08699v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="contextual intent intent-aware retrieval long-horizon memory CAME-Bench retrieval noise">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.10702</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Grounding Agent Memory in Contextual Intent<div class="title-zh">将智能体记忆锚定于情境意图</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">contextual intent</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">intent-aware retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-horizon memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">CAME-Bench</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval noise</span></div>
+  <div class="item-summary">STITCH indexes each step of a long-horizon agent trajectory with a structured "contextual intent" cue—latent goal, action type, and salient entity types—and retrieves history by matching the current step's intent. Across the new CAME-Bench and LongMemEval it reports state-of-the-art results, beating the strongest baseline by 35.6%, with gains growing as trajectories lengthen.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.10702v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="citation verification knowledge integrity evidence aggregation miscitation taxonomy agentic retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.16993</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature<div class="title-zh">BibAgent：面向科学文献可追溯错误引用检测的智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">citation verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge integrity</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence aggregation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">miscitation taxonomy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic retrieval</span></div>
+  <div class="item-summary">BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.16993v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-context understanding gated memory multi-agent system error accumulation hallucination propagation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.11913</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LSTM-MAS: A Long Short-Term Memory Inspired Multi-Agent System for Long-Context Understanding<div class="title-zh">LSTM-MAS：受长短期记忆启发的长上下文多智能体系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context understanding</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">gated memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">error accumulation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">hallucination propagation</span></div>
+  <div class="item-summary">LSTM-MAS is a chained multi-agent system inspired by LSTM gates for long-context understanding, with worker, filter, judge, and manager agents controlling information flow between segments. Compared with the prior CoA multi-agent approach, it reports gains of 97.97%, 65.75%, 122.19%, 39.61%, and 10.80% on NarrativeQA, Qasper, HotpotQA, 2WikiMQA, and MuSiQue.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.11913v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="RAG prompting small language models retrieval integration log comprehension model efficiency">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.07790</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Benchmarking Small Language Models and Small Reasoning Language Models on System Log Severity Classification<div class="title-zh">小语言模型与小推理模型在系统日志严重性分类上的基准测试</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG prompting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">small language models</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">retrieval integration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">log comprehension</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">model efficiency</span></div>
+  <div class="item-summary">Using real journalctl data from Linux production servers, the authors evaluate nine models drawn from small language models and small reasoning language models under zero-shot, few-shot and RAG prompting, treating severity classification as a probe of runtime log comprehension. Qwen3-4B reaches 95.64% with RAG and Gemma3-1B improves from 20.25% to 85.28%, while several small reasoning models degrade substantially when paired with retrieval.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07790v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="meta-level reasoning tool selection tabular QA task decomposition numeracy">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.07696</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Exploring the Meta-level Reasoning of Large Language Models via a Tool-based Multi-hop Tabular Question Answering Task<div class="title-zh">通过基于工具的多跳表格问答任务探索大语言模型的元级推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">meta-level reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool selection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tabular QA</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">task decomposition</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">numeracy</span></div>
+  <div class="item-summary">The authors distinguish meta-level reasoning, or reasoning about the intermediate steps needed for a task, from object-level execution, and design a tool-based multi-hop tabular QA task over geopolitical indicators with "essential actions" for comparing tool calls. They find LLMs show good meta-level reasoning but flawed task understanding, that n-shot prompting has little effect on accuracy, and provide further evidence of poor numeracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07696v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="clinical agents EHR reasoning action-based benchmark aggregation errors retrieval failures">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08988</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ART: Action-based Reasoning Task Benchmarking for Medical AI Agents<div class="title-zh">ART：面向医疗 AI 智能体的基于行动的推理任务基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">clinical agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">EHR reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">action-based benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">aggregation errors</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval failures</span></div>
+  <div class="item-summary">ART is an action-based reasoning benchmark for medical AI agents that mines real electronic health record data into tasks targeting threshold evaluation, temporal aggregation and conditional logic. On 600 tasks, GPT-4o-mini and Claude 3.5 Sonnet show near-perfect retrieval after prompt refinement but substantial gaps in aggregation (28% to 64%) and threshold reasoning (32% to 38%).</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08988v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="document quality decoding query performance prediction retrieval signals">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.09028</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OpenDecoder: Open Large Language Model Decoding to Incorporate Document Quality in RAG<div class="title-zh">OpenDecoder：在 RAG 中引入文档质量的开放大模型解码</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document quality</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">decoding</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">query performance prediction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval signals</span></div>
+  <div class="item-summary">OpenDecoder passes explicit signals about retrieved documents, such as relevance, ranking and query-performance-prediction scores, into the LLM's generation step. The authors report improved robustness and results over baselines on five benchmark datasets.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.09028v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continuum memory persistent state consolidation stateless RAG long-horizon agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.09913</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Continuum Memory Architectures for Long-Horizon LLM Agents<div class="title-zh">面向长时程 LLM 智能体的连续记忆架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">continuum memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">persistent state</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">consolidation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">stateless RAG</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span></div>
+  <div class="item-summary">The paper characterizes Continuum Memory Architecture as a family of systems that maintain and revise internal state using persistent storage, selective retention, associative routing, temporal chaining and consolidation. Its argument is that the stateless lookup approach of RAG is inadequate for agents operating over long horizons.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.09913v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="clinical text-to-SQL cohort reasoning schema grounding execution evaluation EHR analytics">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.09876</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Patient-Similarity Cohort Reasoning in Clinical Text-to-SQL<div class="title-zh">临床 Text-to-SQL 中的患者相似性队列推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">clinical text-to-SQL</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">cohort reasoning</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">schema grounding</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">execution evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">EHR analytics</span></div>
+  <div class="item-summary">CLINSQL is a new benchmark of 633 tasks annotated by experts on MIMIC-IV v3.1, where success requires multi-table joins, clinically meaningful filters and runnable SQL over time windows and patient-similarity groups. Across 22 models, results remain short of clinical reliability: GPT-5-mini scores 74.7% on execution, DeepSeek-R1 is the best open-source model at 69.2%, and Gemini-2.5-Pro falls from 85.5% on Easy to 67.2% on Hard.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.09876v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-evolving agents problem generation multi-role collaboration difficulty modeling distillation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.11792</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A self-evolving multi-role collaborative framework with fine-grained difficulty guidance for innovative mathematical problem generation<div class="title-zh">面向创新数学问题生成的自进化多角色协作框架与细粒度难度引导</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">problem generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-role collaboration</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">difficulty modeling</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">distillation</span></div>
+  <div class="item-summary">The paper proposes innovative math problem generation and a self-evolving multi-role framework with a sampler, generator, evaluator, state machine and memory, using iterative self-assessment and external feedback. It adds a difficulty model with association-guided path sampling and a multi-stage training pipeline, reporting improved innovation while maintaining a high correctness rate.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.11792v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="clinician alignment retrieval-augmented generation preference optimization evaluation framework patient messaging">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.11344</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How Much Would a Clinician Edit This Draft? Evaluating LLM Alignment for Patient Message Response Drafting<div class="title-zh">临床医生会如何修改这份草稿？评估 LLM 在患者消息回复起草中的对齐</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinician alignment</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">preference optimization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation framework</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">patient messaging</span></div>
+  <div class="item-summary">The authors develop a taxonomy of thematic elements in clinician responses and an evaluation framework for assessing clinician editing load of LLM-drafted patient portal messages at content and theme levels. Testing thematic prompting, retrieval-augmented generation, supervised fine-tuning and direct preference optimization, they find substantial epistemic uncertainty in aligning drafts with individual clinicians, with particular difficulty in question asking to elicit further information.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.11344v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="neural topic modeling clinical embeddings BERTopic topic labeling patient narratives">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.12154</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Analyzing Cancer Patients' Experiences with Embedding-based Topic Modeling and LLMs<div class="title-zh">结合嵌入主题建模与大语言模型分析癌症患者体验</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">neural topic modeling</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">clinical embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">BERTopic</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">topic labeling</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">patient narratives</span></div>
+  <div class="item-summary">The study applies neural topic modeling to 13 transcribed interviews with cancer patients (132,722 words), comparing BERTopic and Top2Vec and using GPT-4 for topic labeling. Domain-specific clinical embeddings improved topic precision and interpretability, with BioClinicalBERT giving the most consistent results; the authors note the text was machine-translated from Dutch and that clinicians were not involved in the evaluation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.12154v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-improvement metacognitive reflection instruction optimization self-evolving agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.11974</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Learn Like Humans: Use Meta-cognitive Reflection for Efficient Self-Improvement<div class="title-zh">像人类一样学习：利用元认知反思实现高效自我改进</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-improvement</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">metacognitive reflection</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">instruction optimization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-evolving agents</span></div>
+  <div class="item-summary">MARS is a self-improvement framework that updates an agent's instructions within a single recurrence cycle by combining principle-based reflection, which abstracts rules that avoid errors, with procedural reflection, which derives step-by-step strategies. Across six benchmarks it is reported to outperform state-of-the-art self-evolving systems while significantly reducing computational overhead.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.11974v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent workflow supervisor agent task routing">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.12607</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Cloud-based Multi-Agentic Workflow for Science<div class="title-zh">面向科学的云端多智能体工作流</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent workflow</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">supervisor agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task routing</span></div>
+  <div class="item-summary">The paper presents a domain-agnostic, model-independent cloud workflow in which a supervisor agent coordinates specialized agents for literature review, data analysis, and simulation. In a catalyst-focused proof of concept, it routed tasks to the correct agent 90% of the time and completed 97.5% of synthetic tasks and 91% of real-world tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.12607v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning traces multi-agent systems disagreement detection semantic similarity">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.12618</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Disagreement as Data: Reasoning Trace Analytics in Multi-Agent Systems<div class="title-zh">把分歧当作数据：多智能体系统中的推理轨迹分析</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reasoning traces</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">disagreement detection</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">semantic similarity</span></div>
+  <div class="item-summary">The study treats reasoning traces from multi-agent LLM systems as process data for qualitative coding and uses cosine similarity to detect disagreement across nearly 10,000 agent-pair coding instances. It finds that semantic reasoning similarity separates consensus from disagreement and correlates with human coding reliability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.12618v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt injection detection embedding drift zero-shot defense adversarial prompts">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.12359</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Zero-Shot Embedding Drift Detection: A Lightweight Defense Against Prompt Injections in LLMs<div class="title-zh">零样本嵌入漂移检测：抵御大语言模型提示注入的轻量防御</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection detection</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding drift</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">zero-shot defense</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial prompts</span></div>
+  <div class="item-summary">ZEDD detects direct and indirect prompt injection by measuring semantic drift in embedding space between benign and suspect inputs, using adversarial-clean prompt pairs and cosine similarity without model internals or attack-specific training. On a re-annotated LLMail-Inject dataset it reports over 93% classification accuracy across Llama 3, Qwen 2, and Mistral with a false positive rate below 3%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.12359v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool retrieval query planning dense retrieval reinforcement learning multi-step retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.07782</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Single-Shot: Multi-step Tool Retrieval via Query Planning<div class="title-zh">超越单次检索：通过查询规划实现多步工具检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">tool retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">query planning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">dense retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-step retrieval</span></div>
+  <div class="item-summary">TOOLQP models tool retrieval as iterative query planning, decomposing an instruction into sub-tasks and dynamically generating queries instead of relying on single-shot dense matching. It is trained on synthetic query trajectories with reinforcement learning from verifiable rewards and reports state-of-the-art performance, zero-shot generalization and downstream agentic gains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.07782v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="executive memory dependency-aware memory context budget sub-trajectory folding tool-augmented agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08079</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MemoBrain: Executive Memory as an Agentic Brain for Reasoning<div class="title-zh">MemoBrain：作为推理代理大脑的执行记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">executive memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">dependency-aware memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context budget</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">sub-trajectory folding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-augmented agents</span></div>
+  <div class="item-summary">MemoBrain is proposed as an executive memory layer for agents that use tools, maintaining a dependency-aware record of reasoning steps while discarding invalid ones and collapsing finished sub-trajectories so the core reasoning trace fits a fixed context budget. The authors report gains over strong baselines on GAIA, WebWalker and BrowseComp-Plus.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08079v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal RAG spreadsheet understanding hybrid retrieval reciprocal rank fusion enterprise documents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.08741</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Rows to Reasoning: A Retrieval-Augmented Multimodal Framework for Spreadsheet Understanding<div class="title-zh">从行到推理：面向电子表格理解的多模态检索增强框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal RAG</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">spreadsheet understanding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">reciprocal rank fusion</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">enterprise documents</span></div>
+  <div class="item-summary">The authors introduce FRTR-Bench, a benchmark of 30 enterprise Excel workbooks spanning nearly four million cells and more than 50 embedded images, and propose FRTR, a multimodal RAG framework that decomposes workbooks into row, column and block embeddings with hybrid lexical-dense retrieval and reciprocal rank fusion. FRTR reaches 74% answer accuracy with Claude Sonnet 4.5 versus 24% for prior state-of-the-art approaches, and 87% on SpreadsheetLLM with GPT-5 while cutting token usage by roughly half.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.08741v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="neuro-symbolic memory vector index long-horizon agents INT8 quantization episodic graph">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.15311</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Aeon: High-Performance Neuro-Symbolic Memory Management for Long-Horizon LLM Agents<div class="title-zh">Aeon：面向长时程 LLM 智能体的高性能神经符号记忆管理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">neuro-symbolic memory</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector index</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">INT8 quantization</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">episodic graph</span></div>
+  <div class="item-summary">Aeon is a neuro-symbolic cognitive operating system that treats memory as a managed resource, organizing it into a Memory Palace spatial index built on a SIMD-accelerated page-clustered vector index and a neuro-symbolic episodic graph called the Trace. It introduces symmetric INT8 scalar quantization for 3.1x spatial compression, a write-ahead log for crash recoverability, and a semantic lookaside buffer designed to exploit conversational locality, with benchmarks run on Apple M4 Max.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.15311v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="parametric forgetting logic-fact decoupling regenerative unlearning chain-of-thought neural logic core">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.10810</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Digital Metabolism: Decoupling Logic from Facts via Regenerative Unlearning -- Towards a Pure Neural Logic Core<div class="title-zh">数字代谢：通过再生式遗忘将逻辑与事实解耦——迈向纯神经逻辑核心</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">parametric forgetting</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">logic-fact decoupling</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">regenerative unlearning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">neural logic core</span></div>
+  <div class="item-summary">The authors propose "digital metabolism," a thermodynamic hypothesis that targeted forgetting is needed to distill a pure neural logic core by decoupling reasoning from factual knowledge in shared weights. Applying their Regenerative Logic-Core Protocol to Qwen2.5-0.5B produced near-zero retention of targeted facts (accuracy below 7%) and behavior the authors interpret as spontaneous chain-of-thought scaffolding on GSM8K, though they say the causal mechanism needs further study.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.10810v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge synthesis biomedical evidence hybrid retrieval Neo4j PICOS">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.11825</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AI Co-Scientist for Knowledge Synthesis in Medical Contexts: A Proof of Concept<div class="title-zh">面向医学场景知识合成的 AI 联合科学家：概念验证</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge synthesis</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">biomedical evidence</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">Neo4j</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">PICOS</span></div>
+  <div class="item-summary">The authors describe an AI co-scientist that helps synthesize biomedical evidence by formalizing PICOS and combining relational storage, vector search and a Neo4j knowledge graph inside a RAG pipeline. Their PubMedBERT classifier identified study designs with 95.7% accuracy, and a Bi-LSTM detected PICOS compliance at 87%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.11825v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-head latent attention KV-cache compression vision-language models parameter-efficient fine-tuning">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2601.11464</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MHA2MLA-VLM: Enabling DeepSeek's Economical Multi-Head Latent Attention across Vision-Language Models<div class="title-zh">MHA2MLA-VLM：将 DeepSeek 的经济型多头潜在注意力引入视觉语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multi-head latent attention</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">KV-cache compression</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">vision-language models</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">parameter-efficient fine-tuning</span></div>
+  <div class="item-summary">MHA2MLA-VLM is a parameter-efficient, multimodal-aware framework for converting off-the-shelf vision-language models to Multi-Head Latent Attention, using a modality-adaptive partial-RoPE strategy and modality-decoupled low-rank approximation of visual and textual KV spaces. Experiments on three representative VLMs show it restores original model performance with minimal supervised data while significantly reducing KV-cache footprint and integrating with KV quantization.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.11464v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="temporal knowledge open-domain QA semantic-lexical paradox benchmark reliability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.11165</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Assessing LLM Reliability on Temporally Recent Open-Domain Questions<div class="title-zh">评估大语言模型在时效性开放域问题上的可靠性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">temporal knowledge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">open-domain QA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">semantic-lexical paradox</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark reliability</span></div>
+  <div class="item-summary">RECOM is a benchmark of 15,000 recent Reddit questions from September 2025 paired with community-derived reference answers, used to evaluate four open-source LLMs. The authors report a semantic-lexical paradox, with over 99% cosine similarity despite under 8% BLEU-1 overlap, and find that scale did not predict performance, as Mistral-7B outperformed GPT-OSS-20B on all metrics.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.11165v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="parametric knowledge retrieval arbitration activation steering mechanistic interpretability context copying">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.12075</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">To Copy or Not to Copy: Copying Is Easier to Induce Than Recall<div class="title-zh">复制还是不复制：复制比回忆更容易被诱发</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parametric knowledge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval arbitration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">activation steering</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mechanistic interpretability</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">context copying</span></div>
+  <div class="item-summary">Extracting an arbitration vector from model activations across 27 relations, the authors steer whether retrieval-augmented models rely on parametric knowledge or copy from context in three architectures and two open-domain QA benchmarks. They find an asymmetry: inducing copying is an easy reactivation that can be triggered from different input locations, while restoring recall is a more fragile suppression tied to object-token interventions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.12075v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent taxonomy MCP inference-time reasoning evaluation practices">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2601.12560</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Artificial Intelligence (AI): Architectures, Taxonomies, and Evaluation of Large Language Model Agents<div class="title-zh">智能体 AI：大语言模型智能体的架构、分类与评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent taxonomy</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">inference-time reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation practices</span></div>
+  <div class="item-summary">The paper proposes a unified taxonomy for agentic AI that decomposes agents into perception, brain, planning, action, tool use, and collaboration, and traces the shift from linear reasoning to inference-time reasoning models and from fixed API calls to standards such as MCP. It also groups operating environments and reviews evaluation practices, flagging challenges including hallucination in action, infinite loops, and prompt injection.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2601.12560v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hierarchical multimodal RAG knowledge trees ColVBERT embeddings OODA loop disaster response">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2602.00030</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RAPTOR-AI for Disaster OODA Loop: Hierarchical Multimodal RAG with Experience-Driven Agentic Decision-Making<div class="title-zh">RAPTOR-AI：面向灾害 OODA 回路的层次化多模态 RAG 与经验驱动智能体决策</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hierarchical multimodal RAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge trees</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">ColVBERT embeddings</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">OODA loop</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">disaster response</span></div>
+  <div class="item-summary">RAPTOR-AI is an agentic multimodal RAG framework for disaster response that builds hierarchical knowledge trees from 46 tsunami-related PDFs (2,378 pages) using BLIP image understanding, ColVBERT embeddings, and long-context summarization inside an OODA loop. It reports 23% better retrieval precision, 31% better situational grounding, and 27% improved task decomposition, scaling to 3,000 document chunks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2602.00030v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="code knowledge graph coding agents local indexing token efficiency">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">colbymchenry/codegraph<div class="title-zh">colbymchenry/codegraph：面向编程智能体的本地代码知识图谱</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">code knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">local indexing</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">token efficiency</span></div>
+  <div class="item-summary">codegraph is a C project that provides a pre-indexed code knowledge graph which syncs automatically when code changes, aimed at coding agents such as Claude Code, Codex, Gemini, Cursor, and OpenCode. It is described as fully local and as reducing token use and tool calls.</div>
+  <a class="item-link" href="https://github.com/colbymchenry/codegraph" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="multi-agent platform long-term memory agent sandbox coding agents">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">felinics/Memoh<div class="title-zh">felinics/Memoh：为每个智能体提供独立计算机与长期记忆的多智能体平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent platform</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent sandbox</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span></div>
+  <div class="item-summary">Memoh is an open-source multi-agent platform written in Go in which each agent gets a separate computer, desktop, network and long-term memory. It supports bring-your-own-key setups and can host coding agents including Claude Code and Codex.</div>
+  <a class="item-link" href="https://github.com/felinics/Memoh" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="desktop agent MCP tools agent skills sandbox isolation">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OpenCoworkAI/open-cowork<div class="title-zh">OpenCoworkAI/open-cowork：一键安装 Claude Code 与 MCP 工具的桌面智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">desktop agent</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP tools</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandbox isolation</span></div>
+  <div class="item-summary">open-cowork is an open-source desktop agent application for Windows and macOS that can set up Claude Code, MCP tools and Skills with a single click. It adds sandbox isolation, support for multiple models, and Feishu/Slack integration.</div>
+  <a class="item-link" href="https://github.com/OpenCoworkAI/open-cowork" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent OS self-evolution staged evaluation MCP server">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Q00/ouroboros<div class="title-zh">Q00/ouroboros：可自我进化的 Agent OS</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent OS</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">staged evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP server</span></div>
+  <div class="item-summary">Ouroboros calls itself an "agent OS" and describes an evolution loop that is gated by an interview, evaluated in stages and run under a budget. It includes an MCP server that works with 14 runtimes, among them Claude Code, Codex CLI, Gemini CLI and OpenCode.</div>
+  <a class="item-link" href="https://github.com/Q00/ouroboros" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="multi-agent orchestration OpenCode task delegation">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">alvinunreal/oh-my-opencode-slim<div class="title-zh">alvinunreal/oh-my-opencode-slim：精简的 OpenCode 多代理套件</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">OpenCode</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task delegation</span></div>
+  <div class="item-summary">oh-my-opencode-slim is described as a lean, fine-tuned multi-agent suite for OpenCode that can mix any models and automatically delegate tasks; GitHub lists TypeScript as the repository language.</div>
+  <a class="item-link" href="https://github.com/alvinunreal/oh-my-opencode-slim" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="coding agents autonomous loop PRD automation agent orchestration">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">michaelshimeles/ralphy<div class="title-zh">michaelshimeles/ralphy：循环调用编码代理直到 PRD 完成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">autonomous loop</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">PRD automation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span></div>
+  <div class="item-summary">Ralphy is an autonomous Bash script that loops Claude Code, Codex, OpenCode, Cursor's agent, Qwen, and Droid until a product requirements document is finished; GitHub lists TypeScript for the repository.</div>
+  <a class="item-link" href="https://github.com/michaelshimeles/ralphy" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skills skill catalog MCP server control plane">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">sickn33/agentic-awesome-skills<div class="title-zh">sickn33/agentic-awesome-skills：Agent 技能控制平面</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">skill catalog</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP server</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">control plane</span></div>
+  <div class="item-summary">AAS Core describes itself as a local, agent-first control plane that covers catalog discovery, agent-owned skill selection, stack validation and planning. It draws on more than 2,750 agentic skills and ships with a CLI, a local MCP server and a Workbench.</div>
+  <a class="item-link" href="https://github.com/sickn33/agentic-awesome-skills" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="vector search filesystem tools retrieval architecture">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Jan 13, 2026 Product Engineering Did Filesystem Tools Kill Vector Search? Read<div class="title-zh">文件系统工具是否终结了向量搜索？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">vector search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">filesystem tools</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval architecture</span></div>
+  <div class="item-summary">LlamaIndex published a product-engineering blog post titled "Did Filesystem Tools Kill Vector Search?"; the fetched content contains only the headline, so no further details are available.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/did-filesystem-tools-kill-vector-search" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+<div class="item-card" data-keywords="local RAG vector databases knowledge graphs semantic search">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Ask HN: How are you doing RAG locally?<div class="title-zh">Ask HN：你如何在本地运行 RAG？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">local RAG</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector databases</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graphs</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic search</span></div>
+  <div class="item-summary">A Hacker News Ask HN discussion asks developers how they run RAG on their own machines with few dependencies for internal code or complicated documents, and which backends they choose: vector databases, semantic search, knowledge graphs or hypergraphs.</div>
+  <a class="item-link" href="https://news.ycombinator.com/item?id=46616529" target="_blank" rel="noopener">&rarr; news.ycombinator.com</a>
+</div>
+<div class="item-card" data-keywords="agent design tool design guardrails multi-agent patterns">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Practical Guide to Building AI Agents<div class="title-zh">构建 AI 智能体的实用指南</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent design</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool design</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">guardrails</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent patterns</span></div>
+  <div class="item-summary">OpenAI published a guide to designing, orchestrating, and deploying AI agents that covers use cases, model selection, tool design, guardrails, and multi-agent patterns.</div>
+  <a class="item-link" href="https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="Responses API prompt tuning agent design model steering AI workflows">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Building with the GPT-5 Model Series: A Practical Guide<div class="title-zh">使用 GPT-5 模型系列构建应用：实用指南</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Responses API</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt tuning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent design</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">model steering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI workflows</span></div>
+  <div class="item-summary">OpenAI published a practical guide for startups on migrating to the Responses API, designing agents, tuning prompts, steering GPT-5 models, and building reliable AI workflows.</div>
+  <a class="item-link" href="https://openai.com/business/guides-and-resources/a-practical-guide-to-building-with-ai" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="file-based knowledge LlamaIndex agent knowledge files">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Jan 15, 2026 Product Engineering Files Are All You Need Read<div class="title-zh">2026 年 1 月 15 日产品工程：文件就是你所需要的一切</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">file-based knowledge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">LlamaIndex</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent knowledge files</span></div>
+  <div class="item-summary">LlamaIndex published a product-engineering blog post titled "Files Are All You Need"; the fetched content contains only the headline, so no further details are available.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/files-are-all-you-need" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://www.llamaindex.ai" target="_blank" rel="noopener">LlamaIndex Blog</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:42 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-01-12", "week_number": 3, "stats": {"total_items": 40, "unique_items": 40, "sources_count": 5, "links_verified_count": 40, "links_failed_count": 0, "section_counts": {"research_papers": 28, "tools_frameworks": 7, "blogs_insights": 5}}, "daily_keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "long-horizon agents", "domain": "agent-memory"}, {"text": "self-evolving agents", "domain": "agent-architecture"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "MCP server", "domain": "agent-architecture"}, {"text": "agent design", "domain": "agent-architecture"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}, {"text": "agentic RAG", "domain": "rag-retrieval"}, {"text": "data synthesis", "domain": "knowledge-lifecycle"}, {"text": "adversarial distractors", "domain": "rag-retrieval"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "RAGShaper: Eliciting Sophisticated Agentic RAG Skills via Automated Data Synthesis", "title_zh": "RAGShaper：通过自动化数据合成激发复杂的智能体 RAG 技能", "url": "http://arxiv.org/abs/2601.08699v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08699", "summary": "RAGShaper is a data-synthesis framework for agentic RAG that builds dense information trees with adversarial distractors at perception and cognition levels, then uses constrained navigation to force a teacher agent to demonstrate error correction and noise rejection. Models trained on the synthesized corpus reportedly outperform existing baselines and show greater robustness on noise-intensive and complex retrieval tasks.", "keywords": [{"text": "agentic RAG", "domain": "rag-retrieval"}, {"text": "data synthesis", "domain": "knowledge-lifecycle"}, {"text": "adversarial distractors", "domain": "rag-retrieval"}, {"text": "error correction", "domain": "agent-architecture"}, {"text": "retrieval robustness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-13"}, {"title": "colbymchenry/codegraph", "title_zh": "colbymchenry/codegraph：面向编程智能体的本地代码知识图谱", "url": "https://github.com/colbymchenry/codegraph", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "codegraph is a C project that provides a pre-indexed code knowledge graph which syncs automatically when code changes, aimed at coding agents such as Claude Code, Codex, Gemini, Cursor, and OpenCode. It is described as fully local and as reducing token use and tool calls.", "keywords": [{"text": "code knowledge graph", "domain": "knowledge-graph"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "local indexing", "domain": "knowledge-graph"}, {"text": "token efficiency", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-18"}, {"title": "Grounding Agent Memory in Contextual Intent", "title_zh": "将智能体记忆锚定于情境意图", "url": "http://arxiv.org/abs/2601.10702v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.10702", "summary": "STITCH indexes each step of a long-horizon agent trajectory with a structured \"contextual intent\" cue—latent goal, action type, and salient entity types—and retrieves history by matching the current step's intent. Across the new CAME-Bench and LongMemEval it reports state-of-the-art results, beating the strongest baseline by 35.6%, with gains growing as trajectories lengthen.", "keywords": [{"text": "contextual intent", "domain": "agent-memory"}, {"text": "intent-aware retrieval", "domain": "rag-retrieval"}, {"text": "long-horizon memory", "domain": "agent-memory"}, {"text": "CAME-Bench", "domain": "evaluation-benchmark"}, {"text": "retrieval noise", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-15"}, {"title": "BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature", "title_zh": "BibAgent：面向科学文献可追溯错误引用检测的智能体框架", "url": "http://arxiv.org/abs/2601.16993v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.16993", "summary": "BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.", "keywords": [{"text": "citation verification", "domain": "knowledge-lifecycle"}, {"text": "knowledge integrity", "domain": "ai-knowledge"}, {"text": "evidence aggregation", "domain": "rag-retrieval"}, {"text": "miscitation taxonomy", "domain": "evaluation-benchmark"}, {"text": "agentic retrieval", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-12"}, {"title": "LSTM-MAS: A Long Short-Term Memory Inspired Multi-Agent System for Long-Context Understanding", "title_zh": "LSTM-MAS：受长短期记忆启发的长上下文多智能体系统", "url": "http://arxiv.org/abs/2601.11913v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.11913", "summary": "LSTM-MAS is a chained multi-agent system inspired by LSTM gates for long-context understanding, with worker, filter, judge, and manager agents controlling information flow between segments. Compared with the prior CoA multi-agent approach, it reports gains of 97.97%, 65.75%, 122.19%, 39.61%, and 10.80% on NarrativeQA, Qasper, HotpotQA, 2WikiMQA, and MuSiQue.", "keywords": [{"text": "long-context understanding", "domain": "context-prompting"}, {"text": "gated memory", "domain": "agent-memory"}, {"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "error accumulation", "domain": "knowledge-lifecycle"}, {"text": "hallucination propagation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true, "_day": "2026-01-17"}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "RAGShaper: Eliciting Sophisticated Agentic RAG Skills via Automated Data Synthesis", "title_zh": "RAGShaper：通过自动化数据合成激发复杂的智能体 RAG 技能", "url": "http://arxiv.org/abs/2601.08699v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08699", "summary": "RAGShaper is a data-synthesis framework for agentic RAG that builds dense information trees with adversarial distractors at perception and cognition levels, then uses constrained navigation to force a teacher agent to demonstrate error correction and noise rejection. Models trained on the synthesized corpus reportedly outperform existing baselines and show greater robustness on noise-intensive and complex retrieval tasks.", "keywords": [{"text": "agentic RAG", "domain": "rag-retrieval"}, {"text": "data synthesis", "domain": "knowledge-lifecycle"}, {"text": "adversarial distractors", "domain": "rag-retrieval"}, {"text": "error correction", "domain": "agent-architecture"}, {"text": "retrieval robustness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Grounding Agent Memory in Contextual Intent", "title_zh": "将智能体记忆锚定于情境意图", "url": "http://arxiv.org/abs/2601.10702v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.10702", "summary": "STITCH indexes each step of a long-horizon agent trajectory with a structured \"contextual intent\" cue—latent goal, action type, and salient entity types—and retrieves history by matching the current step's intent. Across the new CAME-Bench and LongMemEval it reports state-of-the-art results, beating the strongest baseline by 35.6%, with gains growing as trajectories lengthen.", "keywords": [{"text": "contextual intent", "domain": "agent-memory"}, {"text": "intent-aware retrieval", "domain": "rag-retrieval"}, {"text": "long-horizon memory", "domain": "agent-memory"}, {"text": "CAME-Bench", "domain": "evaluation-benchmark"}, {"text": "retrieval noise", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "BibAgent: An Agentic Framework for Traceable Miscitation Detection in Scientific Literature", "title_zh": "BibAgent：面向科学文献可追溯错误引用检测的智能体框架", "url": "http://arxiv.org/abs/2601.16993v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.16993", "summary": "BibAgent is an end-to-end agentic framework for citation verification that combines retrieval, reasoning and adaptive evidence aggregation, using an Evidence Committee mechanism to infer citation validity for paywalled references. The authors contribute a five-category miscitation taxonomy and MisciteBench, a cross-disciplinary benchmark of 6,350 miscitation samples spanning 254 fields, and report better accuracy and interpretability than LLM baselines.", "keywords": [{"text": "citation verification", "domain": "knowledge-lifecycle"}, {"text": "knowledge integrity", "domain": "ai-knowledge"}, {"text": "evidence aggregation", "domain": "rag-retrieval"}, {"text": "miscitation taxonomy", "domain": "evaluation-benchmark"}, {"text": "agentic retrieval", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "LSTM-MAS: A Long Short-Term Memory Inspired Multi-Agent System for Long-Context Understanding", "title_zh": "LSTM-MAS：受长短期记忆启发的长上下文多智能体系统", "url": "http://arxiv.org/abs/2601.11913v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.11913", "summary": "LSTM-MAS is a chained multi-agent system inspired by LSTM gates for long-context understanding, with worker, filter, judge, and manager agents controlling information flow between segments. Compared with the prior CoA multi-agent approach, it reports gains of 97.97%, 65.75%, 122.19%, 39.61%, and 10.80% on NarrativeQA, Qasper, HotpotQA, 2WikiMQA, and MuSiQue.", "keywords": [{"text": "long-context understanding", "domain": "context-prompting"}, {"text": "gated memory", "domain": "agent-memory"}, {"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "error accumulation", "domain": "knowledge-lifecycle"}, {"text": "hallucination propagation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Benchmarking Small Language Models and Small Reasoning Language Models on System Log Severity Classification", "title_zh": "小语言模型与小推理模型在系统日志严重性分类上的基准测试", "url": "http://arxiv.org/abs/2601.07790v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.07790", "summary": "Using real journalctl data from Linux production servers, the authors evaluate nine models drawn from small language models and small reasoning language models under zero-shot, few-shot and RAG prompting, treating severity classification as a probe of runtime log comprehension. Qwen3-4B reaches 95.64% with RAG and Gemma3-1B improves from 20.25% to 85.28%, while several small reasoning models degrade substantially when paired with retrieval.", "keywords": [{"text": "RAG prompting", "domain": "rag-retrieval"}, {"text": "small language models", "domain": "ai-knowledge"}, {"text": "retrieval integration", "domain": "context-prompting"}, {"text": "log comprehension", "domain": "evaluation-benchmark"}, {"text": "model efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Exploring the Meta-level Reasoning of Large Language Models via a Tool-based Multi-hop Tabular Question Answering Task", "title_zh": "通过基于工具的多跳表格问答任务探索大语言模型的元级推理", "url": "http://arxiv.org/abs/2601.07696v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.07696", "summary": "The authors distinguish meta-level reasoning, or reasoning about the intermediate steps needed for a task, from object-level execution, and design a tool-based multi-hop tabular QA task over geopolitical indicators with \"essential actions\" for comparing tool calls. They find LLMs show good meta-level reasoning but flawed task understanding, that n-shot prompting has little effect on accuracy, and provide further evidence of poor numeracy.", "keywords": [{"text": "meta-level reasoning", "domain": "cognition-reasoning"}, {"text": "tool selection", "domain": "agent-architecture"}, {"text": "tabular QA", "domain": "rag-retrieval"}, {"text": "task decomposition", "domain": "cognition-reasoning"}, {"text": "numeracy", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ART: Action-based Reasoning Task Benchmarking for Medical AI Agents", "title_zh": "ART：面向医疗 AI 智能体的基于行动的推理任务基准", "url": "http://arxiv.org/abs/2601.08988v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08988", "summary": "ART is an action-based reasoning benchmark for medical AI agents that mines real electronic health record data into tasks targeting threshold evaluation, temporal aggregation and conditional logic. On 600 tasks, GPT-4o-mini and Claude 3.5 Sonnet show near-perfect retrieval after prompt refinement but substantial gaps in aggregation (28% to 64%) and threshold reasoning (32% to 38%).", "keywords": [{"text": "clinical agents", "domain": "agent-architecture"}, {"text": "EHR reasoning", "domain": "cognition-reasoning"}, {"text": "action-based benchmark", "domain": "evaluation-benchmark"}, {"text": "aggregation errors", "domain": "evaluation-benchmark"}, {"text": "retrieval failures", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "OpenDecoder: Open Large Language Model Decoding to Incorporate Document Quality in RAG", "title_zh": "OpenDecoder：在 RAG 中引入文档质量的开放大模型解码", "url": "http://arxiv.org/abs/2601.09028v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.09028", "summary": "OpenDecoder passes explicit signals about retrieved documents, such as relevance, ranking and query-performance-prediction scores, into the LLM's generation step. The authors report improved robustness and results over baselines on five benchmark datasets.", "keywords": [{"text": "document quality", "domain": "rag-retrieval"}, {"text": "decoding", "domain": "context-prompting"}, {"text": "query performance prediction", "domain": "evaluation-benchmark"}, {"text": "retrieval signals", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Continuum Memory Architectures for Long-Horizon LLM Agents", "title_zh": "面向长时程 LLM 智能体的连续记忆架构", "url": "http://arxiv.org/abs/2601.09913v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.09913", "summary": "The paper characterizes Continuum Memory Architecture as a family of systems that maintain and revise internal state using persistent storage, selective retention, associative routing, temporal chaining and consolidation. Its argument is that the stateless lookup approach of RAG is inadequate for agents operating over long horizons.", "keywords": [{"text": "continuum memory", "domain": "agent-memory"}, {"text": "persistent state", "domain": "agent-memory"}, {"text": "consolidation", "domain": "knowledge-lifecycle"}, {"text": "stateless RAG", "domain": "rag-retrieval"}, {"text": "long-horizon agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Patient-Similarity Cohort Reasoning in Clinical Text-to-SQL", "title_zh": "临床 Text-to-SQL 中的患者相似性队列推理", "url": "http://arxiv.org/abs/2601.09876v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.09876", "summary": "CLINSQL is a new benchmark of 633 tasks annotated by experts on MIMIC-IV v3.1, where success requires multi-table joins, clinically meaningful filters and runnable SQL over time windows and patient-similarity groups. Across 22 models, results remain short of clinical reliability: GPT-5-mini scores 74.7% on execution, DeepSeek-R1 is the best open-source model at 69.2%, and Gemini-2.5-Pro falls from 85.5% on Easy to 67.2% on Hard.", "keywords": [{"text": "clinical text-to-SQL", "domain": "rag-retrieval"}, {"text": "cohort reasoning", "domain": "cognition-reasoning"}, {"text": "schema grounding", "domain": "knowledge-graph"}, {"text": "execution evaluation", "domain": "evaluation-benchmark"}, {"text": "EHR analytics", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "A self-evolving multi-role collaborative framework with fine-grained difficulty guidance for innovative mathematical problem generation", "title_zh": "面向创新数学问题生成的自进化多角色协作框架与细粒度难度引导", "url": "http://arxiv.org/abs/2601.11792v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.11792", "summary": "The paper proposes innovative math problem generation and a self-evolving multi-role framework with a sampler, generator, evaluator, state machine and memory, using iterative self-assessment and external feedback. It adds a difficulty model with association-guided path sampling and a multi-stage training pipeline, reporting improved innovation while maintaining a high correctness rate.", "keywords": [{"text": "self-evolving agents", "domain": "agent-architecture"}, {"text": "problem generation", "domain": "knowledge-lifecycle"}, {"text": "multi-role collaboration", "domain": "agent-architecture"}, {"text": "difficulty modeling", "domain": "evaluation-benchmark"}, {"text": "distillation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "How Much Would a Clinician Edit This Draft? Evaluating LLM Alignment for Patient Message Response Drafting", "title_zh": "临床医生会如何修改这份草稿？评估 LLM 在患者消息回复起草中的对齐", "url": "http://arxiv.org/abs/2601.11344v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.11344", "summary": "The authors develop a taxonomy of thematic elements in clinician responses and an evaluation framework for assessing clinician editing load of LLM-drafted patient portal messages at content and theme levels. Testing thematic prompting, retrieval-augmented generation, supervised fine-tuning and direct preference optimization, they find substantial epistemic uncertainty in aligning drafts with individual clinicians, with particular difficulty in question asking to elicit further information.", "keywords": [{"text": "clinician alignment", "domain": "ai-knowledge"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "preference optimization", "domain": "knowledge-lifecycle"}, {"text": "evaluation framework", "domain": "evaluation-benchmark"}, {"text": "patient messaging", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Analyzing Cancer Patients' Experiences with Embedding-based Topic Modeling and LLMs", "title_zh": "结合嵌入主题建模与大语言模型分析癌症患者体验", "url": "http://arxiv.org/abs/2601.12154v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.12154", "summary": "The study applies neural topic modeling to 13 transcribed interviews with cancer patients (132,722 words), comparing BERTopic and Top2Vec and using GPT-4 for topic labeling. Domain-specific clinical embeddings improved topic precision and interpretability, with BioClinicalBERT giving the most consistent results; the authors note the text was machine-translated from Dutch and that clinicians were not involved in the evaluation.", "keywords": [{"text": "neural topic modeling", "domain": "embeddings-vectors"}, {"text": "clinical embeddings", "domain": "embeddings-vectors"}, {"text": "BERTopic", "domain": "ai-knowledge"}, {"text": "topic labeling", "domain": "ai-knowledge"}, {"text": "patient narratives", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Learn Like Humans: Use Meta-cognitive Reflection for Efficient Self-Improvement", "title_zh": "像人类一样学习：利用元认知反思实现高效自我改进", "url": "http://arxiv.org/abs/2601.11974v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.11974", "summary": "MARS is a self-improvement framework that updates an agent's instructions within a single recurrence cycle by combining principle-based reflection, which abstracts rules that avoid errors, with procedural reflection, which derives step-by-step strategies. Across six benchmarks it is reported to outperform state-of-the-art self-evolving systems while significantly reducing computational overhead.", "keywords": [{"text": "self-improvement", "domain": "knowledge-lifecycle"}, {"text": "metacognitive reflection", "domain": "cognition-reasoning"}, {"text": "instruction optimization", "domain": "context-prompting"}, {"text": "self-evolving agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "A Cloud-based Multi-Agentic Workflow for Science", "title_zh": "面向科学的云端多智能体工作流", "url": "http://arxiv.org/abs/2601.12607v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.12607", "summary": "The paper presents a domain-agnostic, model-independent cloud workflow in which a supervisor agent coordinates specialized agents for literature review, data analysis, and simulation. In a catalyst-focused proof of concept, it routed tasks to the correct agent 90% of the time and completed 97.5% of synthetic tasks and 91% of real-world tasks.", "keywords": [{"text": "multi-agent workflow", "domain": "agent-architecture"}, {"text": "supervisor agent", "domain": "agent-architecture"}, {"text": "task routing", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Disagreement as Data: Reasoning Trace Analytics in Multi-Agent Systems", "title_zh": "把分歧当作数据：多智能体系统中的推理轨迹分析", "url": "http://arxiv.org/abs/2601.12618v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.12618", "summary": "The study treats reasoning traces from multi-agent LLM systems as process data for qualitative coding and uses cosine similarity to detect disagreement across nearly 10,000 agent-pair coding instances. It finds that semantic reasoning similarity separates consensus from disagreement and correlates with human coding reliability.", "keywords": [{"text": "reasoning traces", "domain": "evaluation-benchmark"}, {"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "disagreement detection", "domain": "cognition-reasoning"}, {"text": "semantic similarity", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "Zero-Shot Embedding Drift Detection: A Lightweight Defense Against Prompt Injections in LLMs", "title_zh": "零样本嵌入漂移检测：抵御大语言模型提示注入的轻量防御", "url": "http://arxiv.org/abs/2601.12359v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.12359", "summary": "ZEDD detects direct and indirect prompt injection by measuring semantic drift in embedding space between benign and suspect inputs, using adversarial-clean prompt pairs and cosine similarity without model internals or attack-specific training. On a re-annotated LLMail-Inject dataset it reports over 93% classification accuracy across Llama 3, Qwen 2, and Mistral with a false positive rate below 3%.", "keywords": [{"text": "prompt injection detection", "domain": "context-prompting"}, {"text": "embedding drift", "domain": "embeddings-vectors"}, {"text": "zero-shot defense", "domain": "agent-architecture"}, {"text": "adversarial prompts", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Beyond Single-Shot: Multi-step Tool Retrieval via Query Planning", "title_zh": "超越单次检索：通过查询规划实现多步工具检索", "url": "http://arxiv.org/abs/2601.07782v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.07782", "summary": "TOOLQP models tool retrieval as iterative query planning, decomposing an instruction into sub-tasks and dynamically generating queries instead of relying on single-shot dense matching. It is trained on synthetic query trajectories with reinforcement learning from verifiable rewards and reports state-of-the-art performance, zero-shot generalization and downstream agentic gains.", "keywords": [{"text": "tool retrieval", "domain": "rag-retrieval"}, {"text": "query planning", "domain": "cognition-reasoning"}, {"text": "dense retrieval", "domain": "embeddings-vectors"}, {"text": "reinforcement learning", "domain": "agent-architecture"}, {"text": "multi-step retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "MemoBrain: Executive Memory as an Agentic Brain for Reasoning", "title_zh": "MemoBrain：作为推理代理大脑的执行记忆", "url": "http://arxiv.org/abs/2601.08079v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08079", "summary": "MemoBrain is proposed as an executive memory layer for agents that use tools, maintaining a dependency-aware record of reasoning steps while discarding invalid ones and collapsing finished sub-trajectories so the core reasoning trace fits a fixed context budget. The authors report gains over strong baselines on GAIA, WebWalker and BrowseComp-Plus.", "keywords": [{"text": "executive memory", "domain": "agent-memory"}, {"text": "dependency-aware memory", "domain": "agent-memory"}, {"text": "context budget", "domain": "context-prompting"}, {"text": "sub-trajectory folding", "domain": "knowledge-lifecycle"}, {"text": "tool-augmented agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "From Rows to Reasoning: A Retrieval-Augmented Multimodal Framework for Spreadsheet Understanding", "title_zh": "从行到推理：面向电子表格理解的多模态检索增强框架", "url": "http://arxiv.org/abs/2601.08741v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.08741", "summary": "The authors introduce FRTR-Bench, a benchmark of 30 enterprise Excel workbooks spanning nearly four million cells and more than 50 embedded images, and propose FRTR, a multimodal RAG framework that decomposes workbooks into row, column and block embeddings with hybrid lexical-dense retrieval and reciprocal rank fusion. FRTR reaches 74% answer accuracy with Claude Sonnet 4.5 versus 24% for prior state-of-the-art approaches, and 87% on SpreadsheetLLM with GPT-5 while cutting token usage by roughly half.", "keywords": [{"text": "multimodal RAG", "domain": "rag-retrieval"}, {"text": "spreadsheet understanding", "domain": "ai-knowledge"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}, {"text": "reciprocal rank fusion", "domain": "embeddings-vectors"}, {"text": "enterprise documents", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Aeon: High-Performance Neuro-Symbolic Memory Management for Long-Horizon LLM Agents", "title_zh": "Aeon：面向长时程 LLM 智能体的高性能神经符号记忆管理", "url": "http://arxiv.org/abs/2601.15311v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.15311", "summary": "Aeon is a neuro-symbolic cognitive operating system that treats memory as a managed resource, organizing it into a Memory Palace spatial index built on a SIMD-accelerated page-clustered vector index and a neuro-symbolic episodic graph called the Trace. It introduces symmetric INT8 scalar quantization for 3.1x spatial compression, a write-ahead log for crash recoverability, and a semantic lookaside buffer designed to exploit conversational locality, with benchmarks run on Apple M4 Max.", "keywords": [{"text": "neuro-symbolic memory", "domain": "agent-memory"}, {"text": "vector index", "domain": "embeddings-vectors"}, {"text": "long-horizon agents", "domain": "agent-memory"}, {"text": "INT8 quantization", "domain": "embeddings-vectors"}, {"text": "episodic graph", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": false}, {"title": "Digital Metabolism: Decoupling Logic from Facts via Regenerative Unlearning -- Towards a Pure Neural Logic Core", "title_zh": "数字代谢：通过再生式遗忘将逻辑与事实解耦——迈向纯神经逻辑核心", "url": "http://arxiv.org/abs/2601.10810v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.10810", "summary": "The authors propose \"digital metabolism,\" a thermodynamic hypothesis that targeted forgetting is needed to distill a pure neural logic core by decoupling reasoning from factual knowledge in shared weights. Applying their Regenerative Logic-Core Protocol to Qwen2.5-0.5B produced near-zero retention of targeted facts (accuracy below 7%) and behavior the authors interpret as spontaneous chain-of-thought scaffolding on GSM8K, though they say the causal mechanism needs further study.", "keywords": [{"text": "parametric forgetting", "domain": "knowledge-lifecycle"}, {"text": "logic-fact decoupling", "domain": "cognition-reasoning"}, {"text": "regenerative unlearning", "domain": "knowledge-lifecycle"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "neural logic core", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "AI Co-Scientist for Knowledge Synthesis in Medical Contexts: A Proof of Concept", "title_zh": "面向医学场景知识合成的 AI 联合科学家：概念验证", "url": "http://arxiv.org/abs/2601.11825v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.11825", "summary": "The authors describe an AI co-scientist that helps synthesize biomedical evidence by formalizing PICOS and combining relational storage, vector search and a Neo4j knowledge graph inside a RAG pipeline. Their PubMedBERT classifier identified study designs with 95.7% accuracy, and a Bi-LSTM detected PICOS compliance at 87%.", "keywords": [{"text": "knowledge synthesis", "domain": "ai-knowledge"}, {"text": "biomedical evidence", "domain": "knowledge-graph"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}, {"text": "Neo4j", "domain": "knowledge-graph"}, {"text": "PICOS", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "MHA2MLA-VLM: Enabling DeepSeek's Economical Multi-Head Latent Attention across Vision-Language Models", "title_zh": "MHA2MLA-VLM：将 DeepSeek 的经济型多头潜在注意力引入视觉语言模型", "url": "http://arxiv.org/abs/2601.11464v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2601.11464", "summary": "MHA2MLA-VLM is a parameter-efficient, multimodal-aware framework for converting off-the-shelf vision-language models to Multi-Head Latent Attention, using a modality-adaptive partial-RoPE strategy and modality-decoupled low-rank approximation of visual and textual KV spaces. Experiments on three representative VLMs show it restores original model performance with minimal supervised data while significantly reducing KV-cache footprint and integrating with KV quantization.", "keywords": [{"text": "multi-head latent attention", "domain": "ai-knowledge"}, {"text": "KV-cache compression", "domain": "embeddings-vectors"}, {"text": "vision-language models", "domain": "ai-knowledge"}, {"text": "parameter-efficient fine-tuning", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Assessing LLM Reliability on Temporally Recent Open-Domain Questions", "title_zh": "评估大语言模型在时效性开放域问题上的可靠性", "url": "http://arxiv.org/abs/2602.11165v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.11165", "summary": "RECOM is a benchmark of 15,000 recent Reddit questions from September 2025 paired with community-derived reference answers, used to evaluate four open-source LLMs. The authors report a semantic-lexical paradox, with over 99% cosine similarity despite under 8% BLEU-1 overlap, and find that scale did not predict performance, as Mistral-7B outperformed GPT-OSS-20B on all metrics.", "keywords": [{"text": "temporal knowledge", "domain": "ai-knowledge"}, {"text": "open-domain QA", "domain": "rag-retrieval"}, {"text": "semantic-lexical paradox", "domain": "evaluation-benchmark"}, {"text": "benchmark reliability", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "To Copy or Not to Copy: Copying Is Easier to Induce Than Recall", "title_zh": "复制还是不复制：复制比回忆更容易被诱发", "url": "http://arxiv.org/abs/2601.12075v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.12075", "summary": "Extracting an arbitration vector from model activations across 27 relations, the authors steer whether retrieval-augmented models rely on parametric knowledge or copy from context in three architectures and two open-domain QA benchmarks. They find an asymmetry: inducing copying is an easy reactivation that can be triggered from different input locations, while restoring recall is a more fragile suppression tied to object-token interventions.", "keywords": [{"text": "parametric knowledge", "domain": "ai-knowledge"}, {"text": "retrieval arbitration", "domain": "rag-retrieval"}, {"text": "activation steering", "domain": "context-prompting"}, {"text": "mechanistic interpretability", "domain": "cognition-reasoning"}, {"text": "context copying", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic Artificial Intelligence (AI): Architectures, Taxonomies, and Evaluation of Large Language Model Agents", "title_zh": "智能体 AI：大语言模型智能体的架构、分类与评估", "url": "http://arxiv.org/abs/2601.12560v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2601.12560", "summary": "The paper proposes a unified taxonomy for agentic AI that decomposes agents into perception, brain, planning, action, tool use, and collaboration, and traces the shift from linear reasoning to inference-time reasoning models and from fixed API calls to standards such as MCP. It also groups operating environments and reviews evaluation practices, flagging challenges including hallucination in action, infinite loops, and prompt injection.", "keywords": [{"text": "agent taxonomy", "domain": "agent-architecture"}, {"text": "MCP", "domain": "agent-architecture"}, {"text": "inference-time reasoning", "domain": "cognition-reasoning"}, {"text": "evaluation practices", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "RAPTOR-AI for Disaster OODA Loop: Hierarchical Multimodal RAG with Experience-Driven Agentic Decision-Making", "title_zh": "RAPTOR-AI：面向灾害 OODA 回路的层次化多模态 RAG 与经验驱动智能体决策", "url": "http://arxiv.org/abs/2602.00030v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2602.00030", "summary": "RAPTOR-AI is an agentic multimodal RAG framework for disaster response that builds hierarchical knowledge trees from 46 tsunami-related PDFs (2,378 pages) using BLIP image understanding, ColVBERT embeddings, and long-context summarization inside an OODA loop. It reports 23% better retrieval precision, 31% better situational grounding, and 27% improved task decomposition, scaling to 3,000 document chunks.", "keywords": [{"text": "hierarchical multimodal RAG", "domain": "rag-retrieval"}, {"text": "knowledge trees", "domain": "knowledge-graph"}, {"text": "ColVBERT embeddings", "domain": "embeddings-vectors"}, {"text": "OODA loop", "domain": "cognition-reasoning"}, {"text": "disaster response", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "colbymchenry/codegraph", "title_zh": "colbymchenry/codegraph：面向编程智能体的本地代码知识图谱", "url": "https://github.com/colbymchenry/codegraph", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "codegraph is a C project that provides a pre-indexed code knowledge graph which syncs automatically when code changes, aimed at coding agents such as Claude Code, Codex, Gemini, Cursor, and OpenCode. It is described as fully local and as reducing token use and tool calls.", "keywords": [{"text": "code knowledge graph", "domain": "knowledge-graph"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "local indexing", "domain": "knowledge-graph"}, {"text": "token efficiency", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "felinics/Memoh", "title_zh": "felinics/Memoh：为每个智能体提供独立计算机与长期记忆的多智能体平台", "url": "https://github.com/felinics/Memoh", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Memoh is an open-source multi-agent platform written in Go in which each agent gets a separate computer, desktop, network and long-term memory. It supports bring-your-own-key setups and can host coding agents including Claude Code and Codex.", "keywords": [{"text": "multi-agent platform", "domain": "agent-architecture"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "agent sandbox", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "OpenCoworkAI/open-cowork", "title_zh": "OpenCoworkAI/open-cowork：一键安装 Claude Code 与 MCP 工具的桌面智能体", "url": "https://github.com/OpenCoworkAI/open-cowork", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "open-cowork is an open-source desktop agent application for Windows and macOS that can set up Claude Code, MCP tools and Skills with a single click. It adds sandbox isolation, support for multiple models, and Feishu/Slack integration.", "keywords": [{"text": "desktop agent", "domain": "agent-architecture"}, {"text": "MCP tools", "domain": "agent-architecture"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "sandbox isolation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Q00/ouroboros", "title_zh": "Q00/ouroboros：可自我进化的 Agent OS", "url": "https://github.com/Q00/ouroboros", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Ouroboros calls itself an \"agent OS\" and describes an evolution loop that is gated by an interview, evaluated in stages and run under a budget. It includes an MCP server that works with 14 runtimes, among them Claude Code, Codex CLI, Gemini CLI and OpenCode.", "keywords": [{"text": "agent OS", "domain": "agent-architecture"}, {"text": "self-evolution", "domain": "knowledge-lifecycle"}, {"text": "staged evaluation", "domain": "evaluation-benchmark"}, {"text": "MCP server", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "alvinunreal/oh-my-opencode-slim", "title_zh": "alvinunreal/oh-my-opencode-slim：精简的 OpenCode 多代理套件", "url": "https://github.com/alvinunreal/oh-my-opencode-slim", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "oh-my-opencode-slim is described as a lean, fine-tuned multi-agent suite for OpenCode that can mix any models and automatically delegate tasks; GitHub lists TypeScript as the repository language.", "keywords": [{"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "OpenCode", "domain": "agent-architecture"}, {"text": "task delegation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "michaelshimeles/ralphy", "title_zh": "michaelshimeles/ralphy：循环调用编码代理直到 PRD 完成", "url": "https://github.com/michaelshimeles/ralphy", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Ralphy is an autonomous Bash script that loops Claude Code, Codex, OpenCode, Cursor's agent, Qwen, and Droid until a product requirements document is finished; GitHub lists TypeScript for the repository.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "autonomous loop", "domain": "agent-architecture"}, {"text": "PRD automation", "domain": "agent-architecture"}, {"text": "agent orchestration", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "sickn33/agentic-awesome-skills", "title_zh": "sickn33/agentic-awesome-skills：Agent 技能控制平面", "url": "https://github.com/sickn33/agentic-awesome-skills", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "AAS Core describes itself as a local, agent-first control plane that covers catalog discovery, agent-owned skill selection, stack validation and planning. It draws on more than 2,750 agentic skills and ships with a CLI, a local MCP server and a Workbench.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "skill catalog", "domain": "ai-knowledge"}, {"text": "MCP server", "domain": "agent-architecture"}, {"text": "control plane", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Jan 13, 2026 Product Engineering Did Filesystem Tools Kill Vector Search? Read", "title_zh": "文件系统工具是否终结了向量搜索？", "url": "https://www.llamaindex.ai/blog/did-filesystem-tools-kill-vector-search", "source": "LlamaIndex Blog", "section": "blogs_insights", "organization": "LlamaIndex", "language": "en", "arxiv_id": "", "summary": "LlamaIndex published a product-engineering blog post titled \"Did Filesystem Tools Kill Vector Search?\"; the fetched content contains only the headline, so no further details are available.", "keywords": [{"text": "vector search", "domain": "rag-retrieval"}, {"text": "filesystem tools", "domain": "agent-architecture"}, {"text": "retrieval architecture", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Ask HN: How are you doing RAG locally?", "title_zh": "Ask HN：你如何在本地运行 RAG？", "url": "https://news.ycombinator.com/item?id=46616529", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A Hacker News Ask HN discussion asks developers how they run RAG on their own machines with few dependencies for internal code or complicated documents, and which backends they choose: vector databases, semantic search, knowledge graphs or hypergraphs.", "keywords": [{"text": "local RAG", "domain": "rag-retrieval"}, {"text": "vector databases", "domain": "embeddings-vectors"}, {"text": "knowledge graphs", "domain": "knowledge-graph"}, {"text": "semantic search", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "A Practical Guide to Building AI Agents", "title_zh": "构建 AI 智能体的实用指南", "url": "https://openai.com/business/guides-and-resources/a-practical-guide-to-building-ai-agents", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI published a guide to designing, orchestrating, and deploying AI agents that covers use cases, model selection, tool design, guardrails, and multi-agent patterns.", "keywords": [{"text": "agent design", "domain": "agent-architecture"}, {"text": "tool design", "domain": "agent-architecture"}, {"text": "guardrails", "domain": "agent-architecture"}, {"text": "multi-agent patterns", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Building with the GPT-5 Model Series: A Practical Guide", "title_zh": "使用 GPT-5 模型系列构建应用：实用指南", "url": "https://openai.com/business/guides-and-resources/a-practical-guide-to-building-with-ai", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI published a practical guide for startups on migrating to the Responses API, designing agents, tuning prompts, steering GPT-5 models, and building reliable AI workflows.", "keywords": [{"text": "Responses API", "domain": "agent-architecture"}, {"text": "prompt tuning", "domain": "context-prompting"}, {"text": "agent design", "domain": "agent-architecture"}, {"text": "model steering", "domain": "context-prompting"}, {"text": "AI workflows", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Jan 15, 2026 Product Engineering Files Are All You Need Read", "title_zh": "2026 年 1 月 15 日产品工程：文件就是你所需要的一切", "url": "https://www.llamaindex.ai/blog/files-are-all-you-need", "source": "LlamaIndex Blog", "section": "blogs_insights", "organization": "LlamaIndex", "language": "en", "arxiv_id": "", "summary": "LlamaIndex published a product-engineering blog post titled \"Files Are All You Need\"; the fetched content contains only the headline, so no further details are available.", "keywords": [{"text": "file-based knowledge", "domain": "ai-knowledge"}, {"text": "LlamaIndex", "domain": "rag-retrieval"}, {"text": "agent knowledge files", "domain": "agent-memory"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
