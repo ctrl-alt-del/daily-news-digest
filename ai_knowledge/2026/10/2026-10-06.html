@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-10-06</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:28%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">constraint-aware planning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">preference optimization</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">knowledge memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology grounding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">visual document retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">tool-use benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark validity</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise knowledge</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">computer-use agents</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal embeddings open-weight models privacy-first AI retrieval">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EmbeddingGemma 2: an open, lightweight multimodal embedding model<div class="title-zh">EmbeddingGemma 2：开源轻量级多模态嵌入模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-weight models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">privacy-first AI</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval</span></div>
+  <div class="item-summary">Google DeepMind introduced EmbeddingGemma 2, an open, lightweight multimodal embedding model optimized for privacy-first use cases.</div>
+  <a class="item-link" href="https://deepmind.google/blog/embeddinggemma-2-an-open-lightweight-multimodal-embedding-model/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+<div class="item-card" data-keywords="constraint-aware planning preference optimization symbolic verification LLM planning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09219</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CM-DPO: Constraint-Margin Direct Preference Optimization for LLM Planning<div class="title-zh">CM-DPO：面向 LLM 规划的约束边际直接偏好优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">constraint-aware planning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">preference optimization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">symbolic verification</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">LLM planning</span></div>
+  <div class="item-summary">CM-DPO replaces DPO's binary preference signal with a continuous margin derived from a deterministic symbolic verifier and scaled by violation severity, separating hard and soft constraints through a lexicographic objective. An 8B model fine-tuned with CM-DPO reports an 89.2% pass rate and 93.4% solve rate on TravelPlanner, NaturalPlan and out-of-distribution PlanBench, matching multi-agent systems at 13x lower latency while outperforming GPT-4o on unseen Blocksworld by 9.2 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09219v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning knowledge memory medical AI deployment adaptation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09146</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Frozen Models, Evolving Expertise: Model-Agnostic Learning from Deployment Experience for Multimodal Medical AI<div class="title-zh">冻结的模型，演进的专长：面向多模态医疗 AI 的模型无关部署经验学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">knowledge memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">medical AI</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">deployment adaptation</span></div>
+  <div class="item-summary">The framework lets frozen LLMs and VLMs learn from deployment experience through three forms of external expertise: a Skill guiding reasoning and tool use, a Knowledge Memory of reliable facts, and a Multimodal Knowledge Base of visual examples. Across six benchmarks and four open-weight and closed-source base models, it improves online deployment performance by up to 34.2% on medical tasks without updating model weights.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09146v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="constraint-aware planning preference optimization symbolic verification LLM planning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09219</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CM-DPO: Constraint-Margin Direct Preference Optimization for LLM Planning<div class="title-zh">CM-DPO：面向 LLM 规划的约束边际直接偏好优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">constraint-aware planning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">preference optimization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">symbolic verification</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">LLM planning</span></div>
+  <div class="item-summary">CM-DPO replaces DPO's binary preference signal with a continuous margin derived from a deterministic symbolic verifier and scaled by violation severity, separating hard and soft constraints through a lexicographic objective. An 8B model fine-tuned with CM-DPO reports an 89.2% pass rate and 93.4% solve rate on TravelPlanner, NaturalPlan and out-of-distribution PlanBench, matching multi-agent systems at 13x lower latency while outperforming GPT-4o on unseen Blocksworld by 9.2 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09219v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning knowledge memory medical AI deployment adaptation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09146</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Frozen Models, Evolving Expertise: Model-Agnostic Learning from Deployment Experience for Multimodal Medical AI<div class="title-zh">冻结的模型，演进的专长：面向多模态医疗 AI 的模型无关部署经验学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">knowledge memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">medical AI</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">deployment adaptation</span></div>
+  <div class="item-summary">The framework lets frozen LLMs and VLMs learn from deployment experience through three forms of external expertise: a Skill guiding reasoning and tool use, a Knowledge Memory of reliable facts, and a Multimodal Knowledge Base of visual examples. Across six benchmarks and four open-weight and closed-source base models, it improves online deployment performance by up to 34.2% on medical tasks without updating model weights.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09146v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory conflict resolution benchmark validity last-write semantics">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09193</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Bookkeeping, Composition, or Unreachable Gold? Reading MemoryAgentBench's Conflict-Resolution Scores Against a Frozen Last-Write Resolver<div class="title-zh">记账、组合，还是不可达的标注？以冻结的最后写入解析器解读 MemoryAgentBench 的冲突解决分数</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">conflict resolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark validity</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">last-write semantics</span></div>
+  <div class="item-summary">The authors execute MemoryAgentBench's own newest-statement-wins rule as a zero-learning resolver frozen on one of four fact lists, finding it answers 80.25% of Conflict Resolution questions under the official metric (74.5% on the three held-out lists). They identify 67 items whose released gold answers cannot be reached by the last-write graph, and two long-context models score 84.7% and 82.6% on rule-solvable items but only 10.4% and 11.9% on those 67.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09193v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool-using agents MCP agent evaluation geospatial AI">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2610.09112</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GeoNatureAgent (GNA): A Framework and Benchmark for Pre-Production Evaluation of Tool-Using Agents on Geospatial and Environmental Tasks<div class="title-zh">GeoNatureAgent（GNA）：面向地理空间与环境任务工具型智能体的预生产评估框架与基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-using agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">geospatial AI</span></div>
+  <div class="item-summary">GeoNatureAgent is a pre-production evaluation framework for tool-using agents built on a fixed sixteen-tool geospatial interface published as an MCP server, plus a 103-task benchmark. Across nine LLMs, Claude Sonnet 4 reaches the highest capability at 61.7%, DeepSeek V3.2 follows at 57.9% with 11.3x lower list-price cost, and strict all-checks scoring leaves the best model 24-36 points below figures reported on general-purpose GIS benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09112v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="GraphRAG clinical knowledge ontology evidence grounding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09026</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BEACON-SP: Ontology-Grounded GraphRAG Framework for Clinical Suicide Risk Assessment<div class="title-zh">BEACON-SP：面向临床自杀风险评估的本体驱动 GraphRAG 框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical knowledge</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence grounding</span></div>
+  <div class="item-summary">BEACON-SP combines patient knowledge graphs with ontology-guided retrieval to support multi-hop reasoning across diagnoses, medications, risk and protective factors, life events and temporal relationships in clinician-facing suicide-prevention support. On a 1,500-query benchmark spanning 15 clinical categories and 100 patients, it improves completeness, clinical relevance and evidence grounding over a vector RAG baseline, with GraphRAG preferred in 76.4% of paired criterion-level comparisons.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09026v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="scratchpads arithmetic reasoning curriculum learning tiny transformers">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09003</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Algorithmic Scratchpads and Curriculum Staging for Arithmetic Reasoning in Tiny Transformers<div class="title-zh">面向微型 Transformer 算术推理的算法草稿纸与课程分级</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">scratchpads</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">arithmetic reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">curriculum learning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">tiny transformers</span></div>
+  <div class="item-summary">The study trains Tiny Transformers of about 10.6M non-embedding parameters on step-by-step arithmetic scratchpads and finds that sequence padding creates a severe gradient-starvation artifact, while linguistic pretraining is an essential prerequisite. A digit-by-digit long-division scratchpad within a four-stage curriculum raises single-digit division accuracy from 4.0% to 86.7%, but performance collapses to 0.00% on unseen four-digit operands.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09003v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="visual document retrieval knowledge distillation hard negatives ViDoRe">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.09177</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">What Transfers from a VLM Teacher? Comparing Supervision Signals for Visual Document Retrieval<div class="title-zh">VLM 教师能迁移什么？比较视觉文档检索中的监督信号</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">visual document retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">hard negatives</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">ViDoRe</span></div>
+  <div class="item-summary">The study asks whether a vision-language teacher is better spent judging the candidates a visual document retriever mines as negatives rather than enriching its labelled positives. With student, data, optimizer and evaluation fixed, teacher-judged hard negatives and score distillation raise ViDoRe v2 nDCG@5 from 55.2 to 62.6 and 63.0, while description alignment gains 2.6 points and attention grounding shows nothing measurable.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.09177v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal embeddings open-weight models privacy-first AI retrieval">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EmbeddingGemma 2: an open, lightweight multimodal embedding model<div class="title-zh">EmbeddingGemma 2：开源轻量级多模态嵌入模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-weight models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">privacy-first AI</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval</span></div>
+  <div class="item-summary">Google DeepMind introduced EmbeddingGemma 2, an open, lightweight multimodal embedding model optimized for privacy-first use cases.</div>
+  <a class="item-link" href="https://deepmind.google/blog/embeddinggemma-2-an-open-lightweight-multimodal-embedding-model/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="computer-use agents contract workflows enterprise automation agent evaluation">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Advancing computer use with Ironclad<div class="title-zh">推进 Ironclad 的计算机使用能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">computer-use agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">contract workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise automation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span></div>
+  <div class="item-summary">OpenAI describes how it and Ironclad are training and evaluating AI agents on complex contracting workflows to advance computer use for professional work.</div>
+  <a class="item-link" href="https://openai.com/index/advancing-computer-use-with-ironclad" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="enterprise knowledge knowledge activation frontier models partnership">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Atlassian and OpenAI expand partnership to turn enterprise knowledge into action<div class="title-zh">Atlassian 与 OpenAI 扩大合作，将企业知识转化为行动</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise knowledge</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge activation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">frontier models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">partnership</span></div>
+  <div class="item-summary">Atlassian and OpenAI are expanding their partnership to connect frontier models with enterprise knowledge and help teams plan, build, and deliver work.</div>
+  <a class="item-link" href="https://openai.com/index/atlassian-partnership" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://deepmind.google" target="_blank" rel="noopener">Google DeepMind</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-10-06", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 3, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 7, "models_embeddings": 1, "industry_applications": 2}}, "daily_keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "constraint-aware planning", "domain": "agent-architecture"}, {"text": "preference optimization", "domain": "cognition-reasoning"}, {"text": "knowledge memory", "domain": "agent-memory"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "GraphRAG", "domain": "knowledge-graph"}, {"text": "ontology grounding", "domain": "knowledge-graph"}, {"text": "visual document retrieval", "domain": "rag-retrieval"}, {"text": "tool-use benchmark", "domain": "evaluation-benchmark"}, {"text": "benchmark validity", "domain": "evaluation-benchmark"}, {"text": "enterprise knowledge", "domain": "ai-knowledge"}, {"text": "computer-use agents", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "EmbeddingGemma 2: an open, lightweight multimodal embedding model", "title_zh": "EmbeddingGemma 2：开源轻量级多模态嵌入模型", "url": "https://deepmind.google/blog/embeddinggemma-2-an-open-lightweight-multimodal-embedding-model/", "source": "Google DeepMind", "date": "2026-10-06", "language": "en", "section": "models_embeddings", "organization": "Google DeepMind", "arxiv_id": "", "summary": "Google DeepMind introduced EmbeddingGemma 2, an open, lightweight multimodal embedding model optimized for privacy-first use cases.", "keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "open-weight models", "domain": "ai-knowledge"}, {"text": "privacy-first AI", "domain": "ai-knowledge"}, {"text": "retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "CM-DPO: Constraint-Margin Direct Preference Optimization for LLM Planning", "title_zh": "CM-DPO：面向 LLM 规划的约束边际直接偏好优化", "url": "http://arxiv.org/abs/2610.09219v1", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09219", "summary": "CM-DPO replaces DPO's binary preference signal with a continuous margin derived from a deterministic symbolic verifier and scaled by violation severity, separating hard and soft constraints through a lexicographic objective. An 8B model fine-tuned with CM-DPO reports an 89.2% pass rate and 93.4% solve rate on TravelPlanner, NaturalPlan and out-of-distribution PlanBench, matching multi-agent systems at 13x lower latency while outperforming GPT-4o on unseen Blocksworld by 9.2 points.", "keywords": [{"text": "constraint-aware planning", "domain": "agent-architecture"}, {"text": "preference optimization", "domain": "cognition-reasoning"}, {"text": "symbolic verification", "domain": "evaluation-benchmark"}, {"text": "LLM planning", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Frozen Models, Evolving Expertise: Model-Agnostic Learning from Deployment Experience for Multimodal Medical AI", "title_zh": "冻结的模型，演进的专长：面向多模态医疗 AI 的模型无关部署经验学习", "url": "http://arxiv.org/abs/2610.09146v2", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09146", "summary": "The framework lets frozen LLMs and VLMs learn from deployment experience through three forms of external expertise: a Skill guiding reasoning and tool use, a Knowledge Memory of reliable facts, and a Multimodal Knowledge Base of visual examples. Across six benchmarks and four open-weight and closed-source base models, it improves online deployment performance by up to 34.2% on medical tasks without updating model weights.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "knowledge memory", "domain": "agent-memory"}, {"text": "medical AI", "domain": "ai-knowledge"}, {"text": "deployment adaptation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "CM-DPO: Constraint-Margin Direct Preference Optimization for LLM Planning", "title_zh": "CM-DPO：面向 LLM 规划的约束边际直接偏好优化", "url": "http://arxiv.org/abs/2610.09219v1", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09219", "summary": "CM-DPO replaces DPO's binary preference signal with a continuous margin derived from a deterministic symbolic verifier and scaled by violation severity, separating hard and soft constraints through a lexicographic objective. An 8B model fine-tuned with CM-DPO reports an 89.2% pass rate and 93.4% solve rate on TravelPlanner, NaturalPlan and out-of-distribution PlanBench, matching multi-agent systems at 13x lower latency while outperforming GPT-4o on unseen Blocksworld by 9.2 points.", "keywords": [{"text": "constraint-aware planning", "domain": "agent-architecture"}, {"text": "preference optimization", "domain": "cognition-reasoning"}, {"text": "symbolic verification", "domain": "evaluation-benchmark"}, {"text": "LLM planning", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Frozen Models, Evolving Expertise: Model-Agnostic Learning from Deployment Experience for Multimodal Medical AI", "title_zh": "冻结的模型，演进的专长：面向多模态医疗 AI 的模型无关部署经验学习", "url": "http://arxiv.org/abs/2610.09146v2", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09146", "summary": "The framework lets frozen LLMs and VLMs learn from deployment experience through three forms of external expertise: a Skill guiding reasoning and tool use, a Knowledge Memory of reliable facts, and a Multimodal Knowledge Base of visual examples. Across six benchmarks and four open-weight and closed-source base models, it improves online deployment performance by up to 34.2% on medical tasks without updating model weights.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "knowledge memory", "domain": "agent-memory"}, {"text": "medical AI", "domain": "ai-knowledge"}, {"text": "deployment adaptation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Bookkeeping, Composition, or Unreachable Gold? Reading MemoryAgentBench's Conflict-Resolution Scores Against a Frozen Last-Write Resolver", "title_zh": "记账、组合，还是不可达的标注？以冻结的最后写入解析器解读 MemoryAgentBench 的冲突解决分数", "url": "http://arxiv.org/abs/2610.09193v1", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09193", "summary": "The authors execute MemoryAgentBench's own newest-statement-wins rule as a zero-learning resolver frozen on one of four fact lists, finding it answers 80.25% of Conflict Resolution questions under the official metric (74.5% on the three held-out lists). They identify 67 items whose released gold answers cannot be reached by the last-write graph, and two long-context models score 84.7% and 82.6% on rule-solvable items but only 10.4% and 11.9% on those 67.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "conflict resolution", "domain": "knowledge-lifecycle"}, {"text": "benchmark validity", "domain": "evaluation-benchmark"}, {"text": "last-write semantics", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "GeoNatureAgent (GNA): A Framework and Benchmark for Pre-Production Evaluation of Tool-Using Agents on Geospatial and Environmental Tasks", "title_zh": "GeoNatureAgent（GNA）：面向地理空间与环境任务工具型智能体的预生产评估框架与基准", "url": "http://arxiv.org/abs/2610.09112v1", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "DeepSeek", "arxiv_id": "2610.09112", "summary": "GeoNatureAgent is a pre-production evaluation framework for tool-using agents built on a fixed sixteen-tool geospatial interface published as an MCP server, plus a 103-task benchmark. Across nine LLMs, Claude Sonnet 4 reaches the highest capability at 61.7%, DeepSeek V3.2 follows at 57.9% with 11.3x lower list-price cost, and strict all-checks scoring leaves the best model 24-36 points below figures reported on general-purpose GIS benchmarks.", "keywords": [{"text": "tool-using agents", "domain": "agent-architecture"}, {"text": "MCP", "domain": "agent-architecture"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "geospatial AI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "BEACON-SP: Ontology-Grounded GraphRAG Framework for Clinical Suicide Risk Assessment", "title_zh": "BEACON-SP：面向临床自杀风险评估的本体驱动 GraphRAG 框架", "url": "http://arxiv.org/abs/2610.09026v1", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09026", "summary": "BEACON-SP combines patient knowledge graphs with ontology-guided retrieval to support multi-hop reasoning across diagnoses, medications, risk and protective factors, life events and temporal relationships in clinician-facing suicide-prevention support. On a 1,500-query benchmark spanning 15 clinical categories and 100 patients, it improves completeness, clinical relevance and evidence grounding over a vector RAG baseline, with GraphRAG preferred in 76.4% of paired criterion-level comparisons.", "keywords": [{"text": "GraphRAG", "domain": "knowledge-graph"}, {"text": "clinical knowledge", "domain": "ai-knowledge"}, {"text": "ontology", "domain": "knowledge-graph"}, {"text": "evidence grounding", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Algorithmic Scratchpads and Curriculum Staging for Arithmetic Reasoning in Tiny Transformers", "title_zh": "面向微型 Transformer 算术推理的算法草稿纸与课程分级", "url": "http://arxiv.org/abs/2610.09003v1", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09003", "summary": "The study trains Tiny Transformers of about 10.6M non-embedding parameters on step-by-step arithmetic scratchpads and finds that sequence padding creates a severe gradient-starvation artifact, while linguistic pretraining is an essential prerequisite. A digit-by-digit long-division scratchpad within a four-stage curriculum raises single-digit division accuracy from 4.0% to 86.7%, but performance collapses to 0.00% on unseen four-digit operands.", "keywords": [{"text": "scratchpads", "domain": "cognition-reasoning"}, {"text": "arithmetic reasoning", "domain": "cognition-reasoning"}, {"text": "curriculum learning", "domain": "knowledge-lifecycle"}, {"text": "tiny transformers", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "What Transfers from a VLM Teacher? Comparing Supervision Signals for Visual Document Retrieval", "title_zh": "VLM 教师能迁移什么？比较视觉文档检索中的监督信号", "url": "http://arxiv.org/abs/2610.09177v1", "source": "arXiv", "date": "2026-10-06", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.09177", "summary": "The study asks whether a vision-language teacher is better spent judging the candidates a visual document retriever mines as negatives rather than enriching its labelled positives. With student, data, optimizer and evaluation fixed, teacher-judged hard negatives and score distillation raise ViDoRe v2 nDCG@5 from 55.2 to 62.6 and 63.0, while description alignment gains 2.6 points and attention grounding shows nothing measurable.", "keywords": [{"text": "visual document retrieval", "domain": "rag-retrieval"}, {"text": "knowledge distillation", "domain": "knowledge-lifecycle"}, {"text": "hard negatives", "domain": "embeddings-vectors"}, {"text": "ViDoRe", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "EmbeddingGemma 2: an open, lightweight multimodal embedding model", "title_zh": "EmbeddingGemma 2：开源轻量级多模态嵌入模型", "url": "https://deepmind.google/blog/embeddinggemma-2-an-open-lightweight-multimodal-embedding-model/", "source": "Google DeepMind", "date": "2026-10-06", "language": "en", "section": "models_embeddings", "organization": "Google DeepMind", "arxiv_id": "", "summary": "Google DeepMind introduced EmbeddingGemma 2, an open, lightweight multimodal embedding model optimized for privacy-first use cases.", "keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "open-weight models", "domain": "ai-knowledge"}, {"text": "privacy-first AI", "domain": "ai-knowledge"}, {"text": "retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Advancing computer use with Ironclad", "title_zh": "推进 Ironclad 的计算机使用能力", "url": "https://openai.com/index/advancing-computer-use-with-ironclad", "source": "OpenAI", "date": "2026-10-06", "language": "en", "section": "industry_applications", "organization": "OpenAI", "arxiv_id": "", "summary": "OpenAI describes how it and Ironclad are training and evaluating AI agents on complex contracting workflows to advance computer use for professional work.", "keywords": [{"text": "computer-use agents", "domain": "agent-architecture"}, {"text": "contract workflows", "domain": "ai-knowledge"}, {"text": "enterprise automation", "domain": "ai-knowledge"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Atlassian and OpenAI expand partnership to turn enterprise knowledge into action", "title_zh": "Atlassian 与 OpenAI 扩大合作，将企业知识转化为行动", "url": "https://openai.com/index/atlassian-partnership", "source": "OpenAI", "date": "2026-10-06", "language": "en", "section": "industry_applications", "organization": "OpenAI", "arxiv_id": "", "summary": "Atlassian and OpenAI are expanding their partnership to connect frontier models with enterprise knowledge and help teams plan, build, and deliver work.", "keywords": [{"text": "enterprise knowledge", "domain": "ai-knowledge"}, {"text": "knowledge activation", "domain": "knowledge-lifecycle"}, {"text": "frontier models", "domain": "ai-knowledge"}, {"text": "partnership", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Google DeepMind", "url": "https://deepmind.google"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

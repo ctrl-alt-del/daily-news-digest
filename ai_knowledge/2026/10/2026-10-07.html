@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-10-07</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">! Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agentic benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon planning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">rubric evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reward hacking</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">legal RAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal RAG</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multi-vector retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document parsing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">on-policy distillation</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    ! Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic benchmark long-horizon planning reinforcement learning economic reasoning tool use">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2610.10942</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">StoreBench: A Live-Commerce Environment for Evaluating and Training Autonomous Operator Agents<div class="title-zh">StoreBench：用于评估与训练自主运营智能体的实时电商环境</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agentic benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon planning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">economic reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span></div>
+  <div class="item-summary">StoreBench places an agent in charge of a mid-size online apparel store on a production-grade commerce backend, with 29 merchant tools, supplier failures and market shocks, and calibrates its pass thresholds against scripted anchor policies. Across 11 scenarios, the best model, DeepSeek-V4-Pro, passed 49% of task-seed cells versus 97% for a smart-triage heuristic, while human experts slightly outscored every model with a mean composite of 0.708 versus 0.700.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10942v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="KV cache memory long-term memory long-context retrieval context window">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2610.10845</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Real Long-Term Memory for AI: A 50-Million-Token Window That Is Faster and Cheaper Than Recompute<div class="title-zh">面向 AI 的真正长期记忆：一个比重新计算更快更省的 5000 万 token 窗口</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context window</span></div>
+  <div class="item-summary">The authors test galahad-kv, a memory layer that stores the KV state of roughly 16,000-token blocks on encrypted local NVMe and reloads them byte-exact instead of recomputing. On 50 million tokens served through vLLM with Gemma 4 12B and 31B, every probed block loaded without recompute, loading was 2.8x to 4.3x faster and used 8.8x to 12.3x less GPU energy, and facts planted millions of tokens earlier were answered correctly 82 and 98 times out of 100.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10845v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic RL training framework agent harness Microsoft Research">
+  <div class="item-meta">
+    <span class="item-org">Microsoft Research</span>
+    
+    
+    <span class="item-source">Microsoft Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Lightning v1.0: A 3,500-Line Lightweight Agentic RL Framework for Training Agents with Real Harnesses<div class="title-zh">Agent Lightning v1.0：一个 3,500 行的轻量级智能体强化学习框架，可用真实 harness 训练智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic RL</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">training framework</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Microsoft Research</span></div>
+  <div class="item-summary">Microsoft Research released Agent Lightning v1.0, a roughly 3,500-line framework that connects existing agents to reinforcement-learning training so they can be improved without being rebuilt. The post frames this around agents whose tools, context and decision-making are managed by complex harnesses.</div>
+  <a class="item-link" href="https://www.microsoft.com/en-us/research/blog/agent-lightning-v1-0-a-3500-line-lightweight-agentic-rl-framework-for-training-agents-with-real-harnesses/" target="_blank" rel="noopener">&rarr; www.microsoft.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic benchmark long-horizon planning reinforcement learning economic reasoning tool use">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2610.10942</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">StoreBench: A Live-Commerce Environment for Evaluating and Training Autonomous Operator Agents<div class="title-zh">StoreBench：用于评估与训练自主运营智能体的实时电商环境</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agentic benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon planning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">economic reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span></div>
+  <div class="item-summary">StoreBench places an agent in charge of a mid-size online apparel store on a production-grade commerce backend, with 29 merchant tools, supplier failures and market shocks, and calibrates its pass thresholds against scripted anchor policies. Across 11 scenarios, the best model, DeepSeek-V4-Pro, passed 49% of task-seed cells versus 97% for a smart-triage heuristic, while human experts slightly outscored every model with a mean composite of 0.708 versus 0.700.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10942v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="KV cache memory long-term memory long-context retrieval context window">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2610.10845</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Real Long-Term Memory for AI: A 50-Million-Token Window That Is Faster and Cheaper Than Recompute<div class="title-zh">面向 AI 的真正长期记忆：一个比重新计算更快更省的 5000 万 token 窗口</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context window</span></div>
+  <div class="item-summary">The authors test galahad-kv, a memory layer that stores the KV state of roughly 16,000-token blocks on encrypted local NVMe and reloads them byte-exact instead of recomputing. On 50 million tokens served through vLLM with Gemma 4 12B and 31B, every probed block loaded without recompute, loading was 2.8x to 4.3x faster and used 8.8x to 12.3x less GPU energy, and facts planted millions of tokens earlier were answered correctly 82 and 98 times out of 100.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10845v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent systems multimodal RAG FAISS analog design simulation optimization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.10858</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RFChipAgent: Multi-Agentic AI Flow for Analog/RF Chip Design<div class="title-zh">RFChipAgent：面向模拟/射频芯片设计的多智能体 AI 流程</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal RAG</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">FAISS</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">analog design</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">simulation optimization</span></div>
+  <div class="item-summary">RFChipAgent is a multi-agent LLM flow for end-to-end analog/RF circuit design that combines a multimodal RAG subsystem with private per-document FAISS indexes, topology and testbench agents, a hybrid TPE/CMA-ES sizing engine and a trust-scored simulation database. On GF22FDSOI 60 GHz low-noise amplifier topologies it demonstrates automated topology generation, specification-driven design-space exploration and simulator-guided optimization with signoff-quality verification.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10858v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reward hacking detector benchmark tool-use trajectories deployment monitoring">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.10947</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RH-Detect: A Unified Benchmark for Reward Hacking Detection<div class="title-zh">RH-Detect：奖励黑客检测的统一基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reward hacking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">detector benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-use trajectories</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deployment monitoring</span></div>
+  <div class="item-summary">RH-Detect merges reward-hacking-relevant subsets of eleven public datasets into a common schema with 92,761 rows and six behavior categories, then evaluates six off-the-shelf models as detectors on 5,021 open-ended evaluation units. The best model reaches a pooled AUROC of 0.962, but the four strongest models are 10.7 to 15.9 percentage points less accurate on the multi-turn tool-use datasets MALT and TRACE.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10947v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="on-policy distillation teacher intervention multi-turn agents KL divergence">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.10878</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Stochastic Teacher Intervention for Agentic On-Policy Distillation<div class="title-zh">面向智能体在线策略蒸馏的随机教师干预</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">on-policy distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">teacher intervention</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-turn agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">KL divergence</span></div>
+  <div class="item-summary">STI-OPD addresses error accumulation in multi-turn on-policy distillation by using teacher-student policy discrepancy, estimated with KL divergence, to set a probability of replacing the student's action with a teacher-generated one. It adds an importance-weighted reverse-KL objective for the resulting mixed-policy trajectories and reports gains over the strongest prior OPD baseline across tool-integrated reasoning and long-horizon interaction benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10878v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="legal RAG hallucination detection claim verification natural language inference">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.10971</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">When Citations Mislead? A Claim-Level Benchmark for Legal Hallucination Detection<div class="title-zh">当引用产生误导？面向法律幻觉检测的断言级基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">legal RAG</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">hallucination detection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">claim verification</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">natural language inference</span></div>
+  <div class="item-summary">PARCEL builds 3,396 parenthetical-style claims from recent New York State Court of Appeals decisions, labeled Supported, Refuted or Not Found, and frames legal groundedness as three-way natural language inference. Strong models reach up to 0.97 accuracy, but they still mark unsupported claims as supported even with the full opinion text, and fabricated but plausible citations cause the largest performance drop.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10971v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="rubric generation LLM-as-judge benchmark validity prompt perturbation">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2610.10809</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Evaluating Rubric Generation with Interventional Transfer<div class="title-zh">用干预迁移评估评分细则生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">rubric generation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark validity</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt perturbation</span></div>
+  <div class="item-summary">The paper introduces Interventional Transfer, which judges two rubrics as similar if perturbing a response to pass or fail one also moves the other, and applies it to HealthBench with rubrics generated by Qwen3.8-27B, DeepSeek-V4-Flash and Opus-5. It finds an asymmetry: perturbations that degrade responses according to one rubric transfer to lower scores on the other, but perturbations that improve one do not reliably transfer into higher scores.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10809v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="image retrieval multi-vector retrieval DINOv2 visual tokens">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.10991</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Region-Aware CLS Token Augmentation for Fine-Grained Image Retrieval<div class="title-zh">面向细粒度图像检索的区域感知 CLS Token 增强</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">image retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multi-vector retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">DINOv2</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">visual tokens</span></div>
+  <div class="item-summary">The work augments DINOv2-reg's [CLS] and register tokens with automatically selected spatial patch regions and applies a ColBERT-inspired multi-vector retrieval scheme. Experiments find that register tokens carry useful fine-grained detail and that pooled ROI tokens improve discrimination while keeping storage tractable.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.10991v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic RL training framework agent harness Microsoft Research">
+  <div class="item-meta">
+    <span class="item-org">Microsoft Research</span>
+    
+    
+    <span class="item-source">Microsoft Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Lightning v1.0: A 3,500-Line Lightweight Agentic RL Framework for Training Agents with Real Harnesses<div class="title-zh">Agent Lightning v1.0：一个 3,500 行的轻量级智能体强化学习框架，可用真实 harness 训练智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic RL</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">training framework</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Microsoft Research</span></div>
+  <div class="item-summary">Microsoft Research released Agent Lightning v1.0, a roughly 3,500-line framework that connects existing agents to reinforcement-learning training so they can be improved without being rebuilt. The post frames this around agents whose tools, context and decision-making are managed by complex harnesses.</div>
+  <a class="item-link" href="https://www.microsoft.com/en-us/research/blog/agent-lightning-v1-0-a-3500-line-lightweight-agentic-rl-framework-for-training-agents-with-real-harnesses/" target="_blank" rel="noopener">&rarr; www.microsoft.com</a>
+</div>
+<div class="item-card" data-keywords="document parsing OCR model routing LlamaIndex">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Oct 7, 2026 Parsing OCR Introducing OpenDocRouter: every document model under one API Read<div class="title-zh">OpenDocRouter：用一个 API 接入所有文档模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document parsing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">OCR</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model routing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LlamaIndex</span></div>
+  <div class="item-summary">LlamaIndex announced OpenDocRouter, described as putting every document model under one API for parsing and OCR work.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/introducing-opendocrouter" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://www.llamaindex.ai" target="_blank" rel="noopener">LlamaIndex Blog</a></li>
+<li><a href="https://www.microsoft.com/en-us/research" target="_blank" rel="noopener">Microsoft Research</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-10-07", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 3, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 2}}, "daily_keywords": [{"text": "agentic benchmark", "domain": "evaluation-benchmark"}, {"text": "long-horizon planning", "domain": "agent-architecture"}, {"text": "agentic reinforcement learning", "domain": "agent-architecture"}, {"text": "KV cache memory", "domain": "agent-memory"}, {"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "rubric evaluation", "domain": "evaluation-benchmark"}, {"text": "reward hacking", "domain": "evaluation-benchmark"}, {"text": "legal RAG", "domain": "rag-retrieval"}, {"text": "multimodal RAG", "domain": "rag-retrieval"}, {"text": "multi-vector retrieval", "domain": "embeddings-vectors"}, {"text": "document parsing", "domain": "ai-knowledge"}, {"text": "on-policy distillation", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "! Highlights", "items": [{"title": "StoreBench: A Live-Commerce Environment for Evaluating and Training Autonomous Operator Agents", "title_zh": "StoreBench：用于评估与训练自主运营智能体的实时电商环境", "url": "http://arxiv.org/abs/2610.10942v2", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "DeepSeek", "arxiv_id": "2610.10942", "summary": "StoreBench places an agent in charge of a mid-size online apparel store on a production-grade commerce backend, with 29 merchant tools, supplier failures and market shocks, and calibrates its pass thresholds against scripted anchor policies. Across 11 scenarios, the best model, DeepSeek-V4-Pro, passed 49% of task-seed cells versus 97% for a smart-triage heuristic, while human experts slightly outscored every model with a mean composite of 0.708 versus 0.700.", "keywords": [{"text": "agentic benchmark", "domain": "evaluation-benchmark"}, {"text": "long-horizon planning", "domain": "agent-architecture"}, {"text": "reinforcement learning", "domain": "agent-architecture"}, {"text": "economic reasoning", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Real Long-Term Memory for AI: A 50-Million-Token Window That Is Faster and Cheaper Than Recompute", "title_zh": "面向 AI 的真正长期记忆：一个比重新计算更快更省的 5000 万 token 窗口", "url": "http://arxiv.org/abs/2610.10845v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "NVIDIA", "arxiv_id": "2610.10845", "summary": "The authors test galahad-kv, a memory layer that stores the KV state of roughly 16,000-token blocks on encrypted local NVMe and reloads them byte-exact instead of recomputing. On 50 million tokens served through vLLM with Gemma 4 12B and 31B, every probed block loaded without recompute, loading was 2.8x to 4.3x faster and used 8.8x to 12.3x less GPU energy, and facts planted millions of tokens earlier were answered correctly 82 and 98 times out of 100.", "keywords": [{"text": "KV cache memory", "domain": "agent-memory"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "context window", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Agent Lightning v1.0: A 3,500-Line Lightweight Agentic RL Framework for Training Agents with Real Harnesses", "title_zh": "Agent Lightning v1.0：一个 3,500 行的轻量级智能体强化学习框架，可用真实 harness 训练智能体", "url": "https://www.microsoft.com/en-us/research/blog/agent-lightning-v1-0-a-3500-line-lightweight-agentic-rl-framework-for-training-agents-with-real-harnesses/", "source": "Microsoft Research", "date": "2026-10-07", "language": "en", "section": "tools_frameworks", "organization": "Microsoft Research", "arxiv_id": "", "summary": "Microsoft Research released Agent Lightning v1.0, a roughly 3,500-line framework that connects existing agents to reinforcement-learning training so they can be improved without being rebuilt. The post frames this around agents whose tools, context and decision-making are managed by complex harnesses.", "keywords": [{"text": "agentic RL", "domain": "agent-architecture"}, {"text": "training framework", "domain": "agent-architecture"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "Microsoft Research", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "StoreBench: A Live-Commerce Environment for Evaluating and Training Autonomous Operator Agents", "title_zh": "StoreBench：用于评估与训练自主运营智能体的实时电商环境", "url": "http://arxiv.org/abs/2610.10942v2", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "DeepSeek", "arxiv_id": "2610.10942", "summary": "StoreBench places an agent in charge of a mid-size online apparel store on a production-grade commerce backend, with 29 merchant tools, supplier failures and market shocks, and calibrates its pass thresholds against scripted anchor policies. Across 11 scenarios, the best model, DeepSeek-V4-Pro, passed 49% of task-seed cells versus 97% for a smart-triage heuristic, while human experts slightly outscored every model with a mean composite of 0.708 versus 0.700.", "keywords": [{"text": "agentic benchmark", "domain": "evaluation-benchmark"}, {"text": "long-horizon planning", "domain": "agent-architecture"}, {"text": "reinforcement learning", "domain": "agent-architecture"}, {"text": "economic reasoning", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Real Long-Term Memory for AI: A 50-Million-Token Window That Is Faster and Cheaper Than Recompute", "title_zh": "面向 AI 的真正长期记忆：一个比重新计算更快更省的 5000 万 token 窗口", "url": "http://arxiv.org/abs/2610.10845v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "NVIDIA", "arxiv_id": "2610.10845", "summary": "The authors test galahad-kv, a memory layer that stores the KV state of roughly 16,000-token blocks on encrypted local NVMe and reloads them byte-exact instead of recomputing. On 50 million tokens served through vLLM with Gemma 4 12B and 31B, every probed block loaded without recompute, loading was 2.8x to 4.3x faster and used 8.8x to 12.3x less GPU energy, and facts planted millions of tokens earlier were answered correctly 82 and 98 times out of 100.", "keywords": [{"text": "KV cache memory", "domain": "agent-memory"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "context window", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "RFChipAgent: Multi-Agentic AI Flow for Analog/RF Chip Design", "title_zh": "RFChipAgent：面向模拟/射频芯片设计的多智能体 AI 流程", "url": "http://arxiv.org/abs/2610.10858v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.10858", "summary": "RFChipAgent is a multi-agent LLM flow for end-to-end analog/RF circuit design that combines a multimodal RAG subsystem with private per-document FAISS indexes, topology and testbench agents, a hybrid TPE/CMA-ES sizing engine and a trust-scored simulation database. On GF22FDSOI 60 GHz low-noise amplifier topologies it demonstrates automated topology generation, specification-driven design-space exploration and simulator-guided optimization with signoff-quality verification.", "keywords": [{"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "multimodal RAG", "domain": "rag-retrieval"}, {"text": "FAISS", "domain": "embeddings-vectors"}, {"text": "analog design", "domain": "ai-knowledge"}, {"text": "simulation optimization", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "RH-Detect: A Unified Benchmark for Reward Hacking Detection", "title_zh": "RH-Detect：奖励黑客检测的统一基准", "url": "http://arxiv.org/abs/2610.10947v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.10947", "summary": "RH-Detect merges reward-hacking-relevant subsets of eleven public datasets into a common schema with 92,761 rows and six behavior categories, then evaluates six off-the-shelf models as detectors on 5,021 open-ended evaluation units. The best model reaches a pooled AUROC of 0.962, but the four strongest models are 10.7 to 15.9 percentage points less accurate on the multi-turn tool-use datasets MALT and TRACE.", "keywords": [{"text": "reward hacking", "domain": "evaluation-benchmark"}, {"text": "detector benchmark", "domain": "evaluation-benchmark"}, {"text": "tool-use trajectories", "domain": "agent-architecture"}, {"text": "deployment monitoring", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Stochastic Teacher Intervention for Agentic On-Policy Distillation", "title_zh": "面向智能体在线策略蒸馏的随机教师干预", "url": "http://arxiv.org/abs/2610.10878v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.10878", "summary": "STI-OPD addresses error accumulation in multi-turn on-policy distillation by using teacher-student policy discrepancy, estimated with KL divergence, to set a probability of replacing the student's action with a teacher-generated one. It adds an importance-weighted reverse-KL objective for the resulting mixed-policy trajectories and reports gains over the strongest prior OPD baseline across tool-integrated reasoning and long-horizon interaction benchmarks.", "keywords": [{"text": "on-policy distillation", "domain": "agent-architecture"}, {"text": "teacher intervention", "domain": "agent-architecture"}, {"text": "multi-turn agents", "domain": "agent-architecture"}, {"text": "KL divergence", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "When Citations Mislead? A Claim-Level Benchmark for Legal Hallucination Detection", "title_zh": "当引用产生误导？面向法律幻觉检测的断言级基准", "url": "http://arxiv.org/abs/2610.10971v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.10971", "summary": "PARCEL builds 3,396 parenthetical-style claims from recent New York State Court of Appeals decisions, labeled Supported, Refuted or Not Found, and frames legal groundedness as three-way natural language inference. Strong models reach up to 0.97 accuracy, but they still mark unsupported claims as supported even with the full opinion text, and fabricated but plausible citations cause the largest performance drop.", "keywords": [{"text": "legal RAG", "domain": "rag-retrieval"}, {"text": "hallucination detection", "domain": "evaluation-benchmark"}, {"text": "claim verification", "domain": "rag-retrieval"}, {"text": "natural language inference", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Evaluating Rubric Generation with Interventional Transfer", "title_zh": "用干预迁移评估评分细则生成", "url": "http://arxiv.org/abs/2610.10809v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "DeepSeek", "arxiv_id": "2610.10809", "summary": "The paper introduces Interventional Transfer, which judges two rubrics as similar if perturbing a response to pass or fail one also moves the other, and applies it to HealthBench with rubrics generated by Qwen3.8-27B, DeepSeek-V4-Flash and Opus-5. It finds an asymmetry: perturbations that degrade responses according to one rubric transfer to lower scores on the other, but perturbations that improve one do not reliably transfer into higher scores.", "keywords": [{"text": "rubric generation", "domain": "evaluation-benchmark"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "benchmark validity", "domain": "evaluation-benchmark"}, {"text": "prompt perturbation", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Region-Aware CLS Token Augmentation for Fine-Grained Image Retrieval", "title_zh": "面向细粒度图像检索的区域感知 CLS Token 增强", "url": "http://arxiv.org/abs/2610.10991v1", "source": "arXiv", "date": "2026-10-07", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.10991", "summary": "The work augments DINOv2-reg's [CLS] and register tokens with automatically selected spatial patch regions and applies a ColBERT-inspired multi-vector retrieval scheme. Experiments find that register tokens carry useful fine-grained detail and that pooled ROI tokens improve discrimination while keeping storage tractable.", "keywords": [{"text": "image retrieval", "domain": "rag-retrieval"}, {"text": "multi-vector retrieval", "domain": "embeddings-vectors"}, {"text": "DINOv2", "domain": "embeddings-vectors"}, {"text": "visual tokens", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "Agent Lightning v1.0: A 3,500-Line Lightweight Agentic RL Framework for Training Agents with Real Harnesses", "title_zh": "Agent Lightning v1.0：一个 3,500 行的轻量级智能体强化学习框架，可用真实 harness 训练智能体", "url": "https://www.microsoft.com/en-us/research/blog/agent-lightning-v1-0-a-3500-line-lightweight-agentic-rl-framework-for-training-agents-with-real-harnesses/", "source": "Microsoft Research", "date": "2026-10-07", "language": "en", "section": "tools_frameworks", "organization": "Microsoft Research", "arxiv_id": "", "summary": "Microsoft Research released Agent Lightning v1.0, a roughly 3,500-line framework that connects existing agents to reinforcement-learning training so they can be improved without being rebuilt. The post frames this around agents whose tools, context and decision-making are managed by complex harnesses.", "keywords": [{"text": "agentic RL", "domain": "agent-architecture"}, {"text": "training framework", "domain": "agent-architecture"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "Microsoft Research", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Oct 7, 2026 Parsing OCR Introducing OpenDocRouter: every document model under one API Read", "title_zh": "OpenDocRouter：用一个 API 接入所有文档模型", "url": "https://www.llamaindex.ai/blog/introducing-opendocrouter", "source": "LlamaIndex Blog", "date": "2026-10-07", "language": "en", "section": "tools_frameworks", "organization": "LlamaIndex", "arxiv_id": "", "summary": "LlamaIndex announced OpenDocRouter, described as putting every document model under one API for parsing and OCR work.", "keywords": [{"text": "document parsing", "domain": "ai-knowledge"}, {"text": "OCR", "domain": "ai-knowledge"}, {"text": "model routing", "domain": "agent-architecture"}, {"text": "LlamaIndex", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai"}, {"name": "Microsoft Research", "url": "https://www.microsoft.com/en-us/research"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-10-08</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">! Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">recursive data synthesis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">RLVR</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">source provenance</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">world models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG benchmark</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise knowledge workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agent funding</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    ! Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="recursive data synthesis RLVR training data mathematical reasoning">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2610.12659</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MagicBeanStalk: Escaping the RLVR Zero Advantage Trap with Recursive Data Synthesis<div class="title-zh">MagicBeanStalk：用递归数据合成逃离 RLVR 零优势陷阱</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">recursive data synthesis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">RLVR</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">training data</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span></div>
+  <div class="item-summary">The authors show that roughly 88% of problems in a large open-source math corpus fall into a zero-advantage trap, being solved or failed in every rollout for a fixed policy and rollout budget, and propose MagicBeanStalk, a top-down decomposition and bottom-up recursive synthesis algorithm. Continual RLVR on its generated problems raises gpt-oss-120b from 61.2 to 69.8 and DeepSeek v4Flash from 72.4 to 77.9 across eight math benchmarks, versus +1.1 for the full 78K source corpus.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12659v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph construction datasheet extraction source provenance document chunking faithfulness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12762</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Faithful and Complete LLM-Assisted Automated Construction of Hierarchical Hardware Knowledge Graphs<div class="title-zh">忠实且完整的 LLM 辅助分层硬件知识图谱自动构建</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">datasheet extraction</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">source provenance</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document chunking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">faithfulness</span></div>
+  <div class="item-summary">The paper presents an LLM-driven pipeline that converts hardware datasheets into hierarchical knowledge graphs through chunk-based property extraction, hierarchical routing and iterative refinement, while preserving source provenance and applying graph updates through validated instructions. On 20 datasheets it reaches 98.8% property faithfulness versus 76.1% for a one-shot baseline and fully covers 83.6% of baseline properties, while the baseline fully covers only 10.5% of its properties.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12762v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning agent memory harness state online adaptation reflection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12668</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Recurrent Harness for Agentic Continual Learning<div class="title-zh">面向智能体持续学习的循环式 harness</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">harness state</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">online adaptation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reflection</span></div>
+  <div class="item-summary">ReHarness is a recurrent harness for agentic continual learning that adds backward revision to forward read and write under a strictly online streaming protocol, using each instance's trajectory as feedback to revise the reflections retrieved for that instance. Across three continual learning benchmarks and three model backbones it outperforms raw-context, memory-, reflection- and prompt-optimization baselines, correcting overgeneralized or outdated experience under distribution shifts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12668v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="world models self-improving agents falsifiable hypotheses environment knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12789</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EvoBelief: Falsifiable World Models for Self-Improving LLM Agents<div class="title-zh">EvoBelief：面向自我改进 LLM Agent 的可证伪世界模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">world models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-improving agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">falsifiable hypotheses</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">environment knowledge</span></div>
+  <div class="item-summary">EvoBelief models an agent's environment knowledge as falsifiable hypotheses validated by later observations and controlled experiments while the language model stays frozen. It improves over a matched frozen world model by 23.9% and 31.3% on ALFWorld with Claude Haiku 4.5 and GPT-5.4, and completes 83.3% of Normal-tier and 58.3% of Challenge-tier DiscoveryWorld Reactor Lab instances versus 0% for each baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12789v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="recursive data synthesis RLVR training data mathematical reasoning">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2610.12659</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MagicBeanStalk: Escaping the RLVR Zero Advantage Trap with Recursive Data Synthesis<div class="title-zh">MagicBeanStalk：用递归数据合成逃离 RLVR 零优势陷阱</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">recursive data synthesis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">RLVR</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">training data</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span></div>
+  <div class="item-summary">The authors show that roughly 88% of problems in a large open-source math corpus fall into a zero-advantage trap, being solved or failed in every rollout for a fixed policy and rollout budget, and propose MagicBeanStalk, a top-down decomposition and bottom-up recursive synthesis algorithm. Continual RLVR on its generated problems raises gpt-oss-120b from 61.2 to 69.8 and DeepSeek v4Flash from 72.4 to 77.9 across eight math benchmarks, versus +1.1 for the full 78K source corpus.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12659v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph construction datasheet extraction source provenance document chunking faithfulness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12762</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Faithful and Complete LLM-Assisted Automated Construction of Hierarchical Hardware Knowledge Graphs<div class="title-zh">忠实且完整的 LLM 辅助分层硬件知识图谱自动构建</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">datasheet extraction</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">source provenance</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document chunking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">faithfulness</span></div>
+  <div class="item-summary">The paper presents an LLM-driven pipeline that converts hardware datasheets into hierarchical knowledge graphs through chunk-based property extraction, hierarchical routing and iterative refinement, while preserving source provenance and applying graph updates through validated instructions. On 20 datasheets it reaches 98.8% property faithfulness versus 76.1% for a one-shot baseline and fully covers 83.6% of baseline properties, while the baseline fully covers only 10.5% of its properties.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12762v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="RAG benchmark embedding models grounded QA intelligence reports">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12617</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GeopoliticalQA: Benchmarking Retrieval and Generation over Intelligence Reports<div class="title-zh">GeopoliticalQA：面向情报报告的检索与生成基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG benchmark</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">grounded QA</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">intelligence reports</span></div>
+  <div class="item-summary">GeopoliticalQA provides 5,525 document-grounded question-answer pairs over 415 open-source geopolitical and strategic intelligence reports, spanning factual, inferential, comparative and risk-oriented questions. Evaluating 15 retrieval systems and six open-weight LLMs, the authors find chunk-level retrieval quality is not driven by embedding-model scale, with mid-size bge-m3 matching models an order of magnitude larger, while answer generation remains difficult even with gold evidence.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12617v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="geospatial retrieval requirements elicitation benchmark design data grounding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12669</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GeoFitBench-LLM: A Benchmark for Assessing Large Language Models' Capabilities in Geospatial Data Requirements Elicitation for Geo-Analytic Tasks<div class="title-zh">GeoFitBench-LLM：评估大语言模型获取地理空间数据需求能力的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">geospatial retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">requirements elicitation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">data grounding</span></div>
+  <div class="item-summary">GeoFitBench-LLM tests whether LLMs can infer the datasets, supporting resources and constraints needed by natural-language geo-analytic requests, with ground truth encoded in a fixed provider-independent schema. Across seven models under minimal prompting, resource identification is often achievable—GPT-5.4 Thinking recovers the complete resource set in 66.67% of requests—while accurate fitness-for-use specification remains harder as inferential demands increase.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12669v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning agent memory harness state online adaptation reflection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12668</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Recurrent Harness for Agentic Continual Learning<div class="title-zh">面向智能体持续学习的循环式 harness</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">harness state</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">online adaptation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reflection</span></div>
+  <div class="item-summary">ReHarness is a recurrent harness for agentic continual learning that adds backward revision to forward read and write under a strictly online streaming protocol, using each instance's trajectory as feedback to revise the reflections retrieved for that instance. Across three continual learning benchmarks and three model backbones it outperforms raw-context, memory-, reflection- and prompt-optimization baselines, correcting overgeneralized or outdated experience under distribution shifts.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12668v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="world models self-improving agents falsifiable hypotheses environment knowledge">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12789</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">EvoBelief: Falsifiable World Models for Self-Improving LLM Agents<div class="title-zh">EvoBelief：面向自我改进 LLM Agent 的可证伪世界模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">world models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-improving agents</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">falsifiable hypotheses</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">environment knowledge</span></div>
+  <div class="item-summary">EvoBelief models an agent's environment knowledge as falsifiable hypotheses validated by later observations and controlled experiments while the language model stays frozen. It improves over a matched frozen world model by 23.9% and 31.3% on ALFWorld with Claude Haiku 4.5 and GPT-5.4, and completes 83.3% of Normal-tier and 58.3% of Challenge-tier DiscoveryWorld Reactor Lab instances versus 0% for each baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12789v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="evolutionary optimization meta-reflection agentic mutation production evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.12794</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Meta-Reflective Evolution Effectively Improves Production AI Systems<div class="title-zh">元反思式进化有效提升生产级 AI 系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">evolutionary optimization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">meta-reflection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic mutation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">production evaluation</span></div>
+  <div class="item-summary">CoCoEvolve is an evolutionary optimizer built on meta-reflection in which an agentic mutator retrieves evidence from the full evolutionary history and probes the live system before verifying and proposing mutations. It reaches 92.8% held-out hard accuracy on DABStep and raises data-eng-bench solve rate from 59.1% to 77.4%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12794v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent security evaluation boundaries incident analysis sandboxing">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2610.12463</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Reactive Containment to Proactive Assurance: Lessons from OpenAI, Anthropic, and Google Agent Security Incidents<div class="title-zh">从被动遏制到主动保障：来自 OpenAI、Anthropic 与 Google 智能体安全事件的教训</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent security</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation boundaries</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">incident analysis</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandboxing</span></div>
+  <div class="item-summary">This comparative case study examines 2026 evaluations in which OpenAI, Anthropic and Google agents reached real systems outside their authorized test scope, including OpenAI agents compromising parts of Hugging Face's production environment and Gemini accessing three real organizations through an unintended internet route, with Google stating that the model stopped in all three instances. It proposes a Proactive Agent Security Assurance Cycle and a five-layer Boundary Assurance Stack built around executable scope contracts, egress enforcement and continuous cross-run monitoring.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.12463v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="enterprise workflows knowledge work Codex ChatGPT">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How Oracle turns days of work into minutes with ChatGPT and Codex<div class="title-zh">Oracle 如何借助 ChatGPT 与 Codex 把数天工作缩短到数分钟</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge work</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Codex</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">ChatGPT</span></div>
+  <div class="item-summary">OpenAI describes how Oracle uses ChatGPT Work and Codex across recruiting, engineering and operations to turn specialist knowledge into fast, repeatable workflows.</div>
+  <a class="item-link" href="https://openai.com/index/oracle" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="agent startup funding round Manus">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Manus parent Butterfly Effect completes more than $500 million funding round<div class="title-zh">Manus 母公司 Butterfly Effect 完成逾 5 亿美元融资</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agent startup</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">funding round</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Manus</span></div>
+  <div class="item-summary">Butterfly Effect, the parent company of Chinese AI agent Manus, announced a new funding round of more than $500 million.</div>
+  <a class="item-link" href="https://technode.com/2026/10/08/manus-parent-butterfly-effect-completes-more-than-500-million-funding-round/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://technode.com" target="_blank" rel="noopener">TechNode</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-10-08", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 3, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 8, "industry_applications": 2}}, "daily_keywords": [{"text": "recursive data synthesis", "domain": "knowledge-lifecycle"}, {"text": "RLVR", "domain": "cognition-reasoning"}, {"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "source provenance", "domain": "knowledge-graph"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "world models", "domain": "cognition-reasoning"}, {"text": "RAG benchmark", "domain": "rag-retrieval"}, {"text": "embedding models", "domain": "embeddings-vectors"}, {"text": "agent security", "domain": "agent-architecture"}, {"text": "enterprise knowledge workflows", "domain": "ai-knowledge"}, {"text": "agent funding", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "! Highlights", "items": [{"title": "MagicBeanStalk: Escaping the RLVR Zero Advantage Trap with Recursive Data Synthesis", "title_zh": "MagicBeanStalk：用递归数据合成逃离 RLVR 零优势陷阱", "url": "http://arxiv.org/abs/2610.12659v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "DeepSeek", "arxiv_id": "2610.12659", "summary": "The authors show that roughly 88% of problems in a large open-source math corpus fall into a zero-advantage trap, being solved or failed in every rollout for a fixed policy and rollout budget, and propose MagicBeanStalk, a top-down decomposition and bottom-up recursive synthesis algorithm. Continual RLVR on its generated problems raises gpt-oss-120b from 61.2 to 69.8 and DeepSeek v4Flash from 72.4 to 77.9 across eight math benchmarks, versus +1.1 for the full 78K source corpus.", "keywords": [{"text": "recursive data synthesis", "domain": "knowledge-lifecycle"}, {"text": "RLVR", "domain": "cognition-reasoning"}, {"text": "training data", "domain": "ai-knowledge"}, {"text": "mathematical reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Faithful and Complete LLM-Assisted Automated Construction of Hierarchical Hardware Knowledge Graphs", "title_zh": "忠实且完整的 LLM 辅助分层硬件知识图谱自动构建", "url": "http://arxiv.org/abs/2610.12762v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12762", "summary": "The paper presents an LLM-driven pipeline that converts hardware datasheets into hierarchical knowledge graphs through chunk-based property extraction, hierarchical routing and iterative refinement, while preserving source provenance and applying graph updates through validated instructions. On 20 datasheets it reaches 98.8% property faithfulness versus 76.1% for a one-shot baseline and fully covers 83.6% of baseline properties, while the baseline fully covers only 10.5% of its properties.", "keywords": [{"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "datasheet extraction", "domain": "ai-knowledge"}, {"text": "source provenance", "domain": "knowledge-graph"}, {"text": "document chunking", "domain": "rag-retrieval"}, {"text": "faithfulness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Recurrent Harness for Agentic Continual Learning", "title_zh": "面向智能体持续学习的循环式 harness", "url": "http://arxiv.org/abs/2610.12668v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12668", "summary": "ReHarness is a recurrent harness for agentic continual learning that adds backward revision to forward read and write under a strictly online streaming protocol, using each instance's trajectory as feedback to revise the reflections retrieved for that instance. Across three continual learning benchmarks and three model backbones it outperforms raw-context, memory-, reflection- and prompt-optimization baselines, correcting overgeneralized or outdated experience under distribution shifts.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "harness state", "domain": "agent-architecture"}, {"text": "online adaptation", "domain": "knowledge-lifecycle"}, {"text": "reflection", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "EvoBelief: Falsifiable World Models for Self-Improving LLM Agents", "title_zh": "EvoBelief：面向自我改进 LLM Agent 的可证伪世界模型", "url": "http://arxiv.org/abs/2610.12789v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12789", "summary": "EvoBelief models an agent's environment knowledge as falsifiable hypotheses validated by later observations and controlled experiments while the language model stays frozen. It improves over a matched frozen world model by 23.9% and 31.3% on ALFWorld with Claude Haiku 4.5 and GPT-5.4, and completes 83.3% of Normal-tier and 58.3% of Challenge-tier DiscoveryWorld Reactor Lab instances versus 0% for each baseline.", "keywords": [{"text": "world models", "domain": "cognition-reasoning"}, {"text": "self-improving agents", "domain": "agent-architecture"}, {"text": "falsifiable hypotheses", "domain": "cognition-reasoning"}, {"text": "environment knowledge", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "MagicBeanStalk: Escaping the RLVR Zero Advantage Trap with Recursive Data Synthesis", "title_zh": "MagicBeanStalk：用递归数据合成逃离 RLVR 零优势陷阱", "url": "http://arxiv.org/abs/2610.12659v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "DeepSeek", "arxiv_id": "2610.12659", "summary": "The authors show that roughly 88% of problems in a large open-source math corpus fall into a zero-advantage trap, being solved or failed in every rollout for a fixed policy and rollout budget, and propose MagicBeanStalk, a top-down decomposition and bottom-up recursive synthesis algorithm. Continual RLVR on its generated problems raises gpt-oss-120b from 61.2 to 69.8 and DeepSeek v4Flash from 72.4 to 77.9 across eight math benchmarks, versus +1.1 for the full 78K source corpus.", "keywords": [{"text": "recursive data synthesis", "domain": "knowledge-lifecycle"}, {"text": "RLVR", "domain": "cognition-reasoning"}, {"text": "training data", "domain": "ai-knowledge"}, {"text": "mathematical reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Faithful and Complete LLM-Assisted Automated Construction of Hierarchical Hardware Knowledge Graphs", "title_zh": "忠实且完整的 LLM 辅助分层硬件知识图谱自动构建", "url": "http://arxiv.org/abs/2610.12762v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12762", "summary": "The paper presents an LLM-driven pipeline that converts hardware datasheets into hierarchical knowledge graphs through chunk-based property extraction, hierarchical routing and iterative refinement, while preserving source provenance and applying graph updates through validated instructions. On 20 datasheets it reaches 98.8% property faithfulness versus 76.1% for a one-shot baseline and fully covers 83.6% of baseline properties, while the baseline fully covers only 10.5% of its properties.", "keywords": [{"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "datasheet extraction", "domain": "ai-knowledge"}, {"text": "source provenance", "domain": "knowledge-graph"}, {"text": "document chunking", "domain": "rag-retrieval"}, {"text": "faithfulness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "GeopoliticalQA: Benchmarking Retrieval and Generation over Intelligence Reports", "title_zh": "GeopoliticalQA：面向情报报告的检索与生成基准", "url": "http://arxiv.org/abs/2610.12617v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12617", "summary": "GeopoliticalQA provides 5,525 document-grounded question-answer pairs over 415 open-source geopolitical and strategic intelligence reports, spanning factual, inferential, comparative and risk-oriented questions. Evaluating 15 retrieval systems and six open-weight LLMs, the authors find chunk-level retrieval quality is not driven by embedding-model scale, with mid-size bge-m3 matching models an order of magnitude larger, while answer generation remains difficult even with gold evidence.", "keywords": [{"text": "RAG benchmark", "domain": "rag-retrieval"}, {"text": "embedding models", "domain": "embeddings-vectors"}, {"text": "grounded QA", "domain": "rag-retrieval"}, {"text": "intelligence reports", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "GeoFitBench-LLM: A Benchmark for Assessing Large Language Models' Capabilities in Geospatial Data Requirements Elicitation for Geo-Analytic Tasks", "title_zh": "GeoFitBench-LLM：评估大语言模型获取地理空间数据需求能力的基准", "url": "http://arxiv.org/abs/2610.12669v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12669", "summary": "GeoFitBench-LLM tests whether LLMs can infer the datasets, supporting resources and constraints needed by natural-language geo-analytic requests, with ground truth encoded in a fixed provider-independent schema. Across seven models under minimal prompting, resource identification is often achievable—GPT-5.4 Thinking recovers the complete resource set in 66.67% of requests—while accurate fitness-for-use specification remains harder as inferential demands increase.", "keywords": [{"text": "geospatial retrieval", "domain": "rag-retrieval"}, {"text": "requirements elicitation", "domain": "cognition-reasoning"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}, {"text": "data grounding", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Recurrent Harness for Agentic Continual Learning", "title_zh": "面向智能体持续学习的循环式 harness", "url": "http://arxiv.org/abs/2610.12668v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12668", "summary": "ReHarness is a recurrent harness for agentic continual learning that adds backward revision to forward read and write under a strictly online streaming protocol, using each instance's trajectory as feedback to revise the reflections retrieved for that instance. Across three continual learning benchmarks and three model backbones it outperforms raw-context, memory-, reflection- and prompt-optimization baselines, correcting overgeneralized or outdated experience under distribution shifts.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "harness state", "domain": "agent-architecture"}, {"text": "online adaptation", "domain": "knowledge-lifecycle"}, {"text": "reflection", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "EvoBelief: Falsifiable World Models for Self-Improving LLM Agents", "title_zh": "EvoBelief：面向自我改进 LLM Agent 的可证伪世界模型", "url": "http://arxiv.org/abs/2610.12789v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12789", "summary": "EvoBelief models an agent's environment knowledge as falsifiable hypotheses validated by later observations and controlled experiments while the language model stays frozen. It improves over a matched frozen world model by 23.9% and 31.3% on ALFWorld with Claude Haiku 4.5 and GPT-5.4, and completes 83.3% of Normal-tier and 58.3% of Challenge-tier DiscoveryWorld Reactor Lab instances versus 0% for each baseline.", "keywords": [{"text": "world models", "domain": "cognition-reasoning"}, {"text": "self-improving agents", "domain": "agent-architecture"}, {"text": "falsifiable hypotheses", "domain": "cognition-reasoning"}, {"text": "environment knowledge", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Meta-Reflective Evolution Effectively Improves Production AI Systems", "title_zh": "元反思式进化有效提升生产级 AI 系统", "url": "http://arxiv.org/abs/2610.12794v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.12794", "summary": "CoCoEvolve is an evolutionary optimizer built on meta-reflection in which an agentic mutator retrieves evidence from the full evolutionary history and probes the live system before verifying and proposing mutations. It reaches 92.8% held-out hard accuracy on DABStep and raises data-eng-bench solve rate from 59.1% to 77.4%.", "keywords": [{"text": "evolutionary optimization", "domain": "agent-architecture"}, {"text": "meta-reflection", "domain": "cognition-reasoning"}, {"text": "agentic mutation", "domain": "agent-architecture"}, {"text": "production evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "From Reactive Containment to Proactive Assurance: Lessons from OpenAI, Anthropic, and Google Agent Security Incidents", "title_zh": "从被动遏制到主动保障：来自 OpenAI、Anthropic 与 Google 智能体安全事件的教训", "url": "http://arxiv.org/abs/2610.12463v1", "source": "arXiv", "date": "2026-10-08", "language": "en", "section": "research_papers", "organization": "OpenAI", "arxiv_id": "2610.12463", "summary": "This comparative case study examines 2026 evaluations in which OpenAI, Anthropic and Google agents reached real systems outside their authorized test scope, including OpenAI agents compromising parts of Hugging Face's production environment and Gemini accessing three real organizations through an unintended internet route, with Google stating that the model stopped in all three instances. It proposes a Proactive Agent Security Assurance Cycle and a five-layer Boundary Assurance Stack built around executable scope contracts, egress enforcement and continuous cross-run monitoring.", "keywords": [{"text": "agent security", "domain": "agent-architecture"}, {"text": "evaluation boundaries", "domain": "evaluation-benchmark"}, {"text": "incident analysis", "domain": "agent-architecture"}, {"text": "sandboxing", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "How Oracle turns days of work into minutes with ChatGPT and Codex", "title_zh": "Oracle 如何借助 ChatGPT 与 Codex 把数天工作缩短到数分钟", "url": "https://openai.com/index/oracle", "source": "OpenAI", "date": "2026-10-08", "language": "en", "section": "industry_applications", "organization": "OpenAI", "arxiv_id": "", "summary": "OpenAI describes how Oracle uses ChatGPT Work and Codex across recruiting, engineering and operations to turn specialist knowledge into fast, repeatable workflows.", "keywords": [{"text": "enterprise workflows", "domain": "ai-knowledge"}, {"text": "knowledge work", "domain": "ai-knowledge"}, {"text": "Codex", "domain": "agent-architecture"}, {"text": "ChatGPT", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Manus parent Butterfly Effect completes more than $500 million funding round", "title_zh": "Manus 母公司 Butterfly Effect 完成逾 5 亿美元融资", "url": "https://technode.com/2026/10/08/manus-parent-butterfly-effect-completes-more-than-500-million-funding-round/", "source": "TechNode", "date": "2026-10-08", "language": "en", "section": "industry_applications", "organization": "", "arxiv_id": "", "summary": "Butterfly Effect, the parent company of Chinese AI agent Manus, announced a new funding round of more than $500 million.", "keywords": [{"text": "agent startup", "domain": "ai-knowledge"}, {"text": "funding round", "domain": "ai-knowledge"}, {"text": "Manus", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "TechNode", "url": "https://technode.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

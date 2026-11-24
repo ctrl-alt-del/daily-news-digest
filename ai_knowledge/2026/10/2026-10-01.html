@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-10-01</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">! Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">13 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>5 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">13/13 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">agentic context management</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parametric knowledge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector index</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">activation probes</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">symbolic verification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document extraction</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark design</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    ! Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="context management long-context reasoning agent harness OOLONG-synth">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02404</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Trained Agentic Context Management<div class="title-zh">训练式智能体上下文管理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-context reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">OOLONG-synth</span></div>
+  <div class="item-summary">The paper fine-tunes Qwen3.6-35B-A3B over a minimal harness with a tool to call itself and a tool to read token ranges, instead of training long context natively or building a long-context scaffold. With only 8,000 tokens of context, the model matches GPT-5.4 with 1M tokens of context on OOLONG-synth when document length exceeds 40K tokens.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02404v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory progressive disclosure long-term memory LongMemEval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02472</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">APDMem: Agent-Controlled Progressive Disclosure for Query-Adaptive Long-Term Memory<div class="title-zh">APDMem：面向查询自适应长期记忆的智能体控制渐进披露</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">progressive disclosure</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LongMemEval</span></div>
+  <div class="item-summary">APDMem represents conversation history as four progressively detailed layers and uses a controller that reads high-level summaries first, drilling into finer evidence only when a query needs it. On LongMemEval it reports strong long-context memory reasoning while accessing only 8% of the total conversations.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02472v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation world models parametric knowledge hybrid memory agent planning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02542</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How To Train Your World Model: Fine-tuning vs RAG for LM-based World Modeling<div class="title-zh">如何训练你的世界模型：基于语言模型的世界建模中微调与 RAG 的对比</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">world models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parametric knowledge</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hybrid memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent planning</span></div>
+  <div class="item-summary">A systematic comparison across five text environments finds that fine-tuned world models let agents obtain higher rewards in 15 of 20 settings, while retrieval-based world models are more data-efficient. The authors propose a hybrid system that captures core environment dynamics parametrically and relies on retrieval from an actively maintained memory store.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02542v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="counterexample generation symbolic verification RLVR theorem proving training environments">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02444</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Counterexample Generation via Per-Theorem Symbolic Verifiers: When Imitation Hurts and Reinforcement Repairs<div class="title-zh">通过逐定理符号验证器生成反例：模仿有害而强化学习可修复</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">counterexample generation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">symbolic verification</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">RLVR</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theorem proving</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">training environments</span></div>
+  <div class="item-summary">The authors release SymCE, a corpus of 4,707 false undergraduate-algebra and real-analysis conjectures each paired with an executable per-theorem Python verifier that also serves as a reward function. Training Qwen3-4B shows counterexample-only SFT collapses true-theorem recognition from 0.27 to 0.00, while RLVR repairs it to 0.66 and the 4B model outperforms every evaluated 7B open-weights math specialist.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02444v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="context management long-context reasoning agent harness OOLONG-synth">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02404</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Trained Agentic Context Management<div class="title-zh">训练式智能体上下文管理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">long-context reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">OOLONG-synth</span></div>
+  <div class="item-summary">The paper fine-tunes Qwen3.6-35B-A3B over a minimal harness with a tool to call itself and a tool to read token ranges, instead of training long context natively or building a long-context scaffold. With only 8,000 tokens of context, the model matches GPT-5.4 with 1M tokens of context on OOLONG-synth when document length exceeds 40K tokens.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02404v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory progressive disclosure long-term memory LongMemEval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02472</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">APDMem: Agent-Controlled Progressive Disclosure for Query-Adaptive Long-Term Memory<div class="title-zh">APDMem：面向查询自适应长期记忆的智能体控制渐进披露</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">progressive disclosure</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LongMemEval</span></div>
+  <div class="item-summary">APDMem represents conversation history as four progressively detailed layers and uses a controller that reads high-level summaries first, drilling into finer evidence only when a query needs it. On LongMemEval it reports strong long-context memory reasoning while accessing only 8% of the total conversations.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02472v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation world models parametric knowledge hybrid memory agent planning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02542</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How To Train Your World Model: Fine-tuning vs RAG for LM-based World Modeling<div class="title-zh">如何训练你的世界模型：基于语言模型的世界建模中微调与 RAG 的对比</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">world models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parametric knowledge</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hybrid memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent planning</span></div>
+  <div class="item-summary">A systematic comparison across five text environments finds that fine-tuned world models let agents obtain higher rewards in 15 of 20 settings, while retrieval-based world models are more data-efficient. The authors propose a hybrid system that captures core environment dynamics parametrically and relies on retrieval from an actively maintained memory store.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02542v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="counterexample generation symbolic verification RLVR theorem proving training environments">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02444</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Counterexample Generation via Per-Theorem Symbolic Verifiers: When Imitation Hurts and Reinforcement Repairs<div class="title-zh">通过逐定理符号验证器生成反例：模仿有害而强化学习可修复</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">counterexample generation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">symbolic verification</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">RLVR</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theorem proving</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">training environments</span></div>
+  <div class="item-summary">The authors release SymCE, a corpus of 4,707 false undergraduate-algebra and real-analysis conjectures each paired with an executable per-theorem Python verifier that also serves as a reward function. Training Qwen3-4B shows counterexample-only SFT collapses true-theorem recognition from 0.27 to 0.00, while RLVR repairs it to 0.66 and the 4B model outperforms every evaluated 7B open-weights math specialist.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02444v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="parametric knowledge code retrieval benchmark prompt augmentation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02438</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Are you Synthesizing or Recalling? Evaluating LLMs on Algorithmic Code Retrieval<div class="title-zh">你是在综合还是回忆？评估 LLM 的算法代码检索能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">parametric knowledge</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">code retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt augmentation</span></div>
+  <div class="item-summary">AlgoREval is a 599-problem benchmark spanning 77 classical algorithms, 14 domains, 7 programming languages and 4 graph-input representations, designed to measure code generation as parametric retrieval of known algorithms. Testing 15 models zero-shot reveals substantial variation in retrieval accuracy across languages and input representations, even for widely documented algorithms, and shows that retrieved code snippets or structured hints help on complex algorithms.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02438v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="task routing knowledge distillation embeddings evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02516</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Student-Guided Teacher Distillation for Efficient LLM Task Routing: Positioning Against Jev-Style System-1 Classifiers<div class="title-zh">面向高效 LLM 任务路由的学生引导教师蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">task routing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embeddings</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span></div>
+  <div class="item-summary">A compact ModernBERT student predicts a full distribution over 60 task categories in one forward pass and retrieves a small top-k set for a larger zero-shot NLI teacher to rerank, cutting the cost of scoring every request against every label. The best student checkpoint reaches 77.5% teacher agreement, with preliminary Coverage@16 measurements of 91-100%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02516v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="activation probes runtime monitoring prompt suffixes out-of-distribution detection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02413</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Prompted to Discriminate: Generalizing Malicious-Input Probes in the Wild<div class="title-zh">被提示去判别：在真实环境中泛化恶意输入探针</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">activation probes</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">runtime monitoring</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt suffixes</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">out-of-distribution detection</span></div>
+  <div class="item-summary">Across 13 safety benchmarks and three open-weight model families under leave-one-dataset-out evaluation, appending a short classification suffix to the user turn improves out-of-distribution detection for activation probes by up to about 4 AUC points. The gain appears to come from the classification format rather than the named criterion, and which suffix helps depends on the model and readout.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02413v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="terminal agents verifier design training data GRPO">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.02405</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">When Terminal-Agent Training Stalls: Demystifying Data Generation and Verification Challenge<div class="title-zh">当终端智能体训练停滞：揭开数据生成与验证挑战</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">terminal agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifier design</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">training data</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">The authors build a pipeline that generates containerized terminal tasks and executable verifiers, then separate structural validity, verifier faithfulness, policy solvability and infrastructure reliability as distinct requirements that are often conflated. In a GRPO run, Qwen3.5-9B overfits a relatively easy dataset within 20 steps, while adding hard tasks lowers mean rollout pass@2 from 81.3% to 20.6% and restores informative failures.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.02405v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="code execution sandboxing agent infrastructure">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">perplexityai/SPACE<div class="title-zh">perplexityai/SPACE：面向智能体代码执行的沙箱平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code execution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sandboxing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agent infrastructure</span></div>
+  <div class="item-summary">SPACE is a sandboxed platform for agentic code execution whose pluggable-runtime sandboxes are designed to run agent and user code in isolation, according to its GitHub description.</div>
+  <a class="item-link" href="https://github.com/perplexityai/SPACE" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="document extraction LlamaIndex data ingestion">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Oct 1, 2026 Product Engineering Introducing Extract v2.5 Read<div class="title-zh">LlamaIndex 推出 Extract v2.5</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document extraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LlamaIndex</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">data ingestion</span></div>
+  <div class="item-summary">LlamaIndex announced Extract v2.5, a new version of its document extraction product, in a brief product-engineering post.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/introducing-extract-v2-5" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="decision models open weights fine-tuning Workers AI">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Clef: Open-weight decision models, and new RL fine-tuning platform<div class="title-zh">Cloudflare 发布 Clef 开放权重决策模型与全新强化学习微调平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">decision models</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open weights</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">fine-tuning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Workers AI</span></div>
+  <div class="item-summary">Cloudflare unveiled Clef and Clef-flash, a pair of open-source decision models served through Workers AI for fast classification and agentic workflows. It also launched a reinforcement learning platform that lets developers fine-tune such models on their own data.</div>
+  <a class="item-link" href="https://blog.cloudflare.com/clef-decision-models/" target="_blank" rel="noopener">&rarr; blog.cloudflare.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="vector index storage architecture search infrastructure">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RIP, vector database<div class="title-zh">RIP，向量数据库</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">vector index</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">storage architecture</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">search infrastructure</span></div>
+  <div class="item-summary">Turbopuffer says it is redesigning its storage architecture so that the vector index is no longer primary, describing the change as necessary to push the frontier of search.</div>
+  <a class="item-link" href="https://turbopuffer.com/blog/rip-vector-database" target="_blank" rel="noopener">&rarr; turbopuffer.com</a>
+</div>
+<div class="item-card" data-keywords="AI for science LLM capabilities scientific tooling">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    
+    
+    <span class="item-source">Anthropic Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Claude-shaped science<div class="title-zh">Claude 形状的科学</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI for science</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">LLM capabilities</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific tooling</span></div>
+  <div class="item-summary">Guest author Prof. Matthew Schwartz describes moving from fighting Claude to letting it find "Claude-shaped" problems suited to the current generation of LLM tools. This led him to build BootLoops, a toolkit for exact calculations in quantitative science, which he has applied across scientific fields alongside experts.</div>
+  <a class="item-link" href="https://www.anthropic.com/research/claude-shaped-science" target="_blank" rel="noopener">&rarr; www.anthropic.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://www.llamaindex.ai" target="_blank" rel="noopener">LlamaIndex Blog</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li>
+<li><a href="https://www.anthropic.com" target="_blank" rel="noopener">Anthropic Research</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-10-01", "stats": {"total_items": 13, "unique_items": 13, "sources_count": 5, "links_verified_count": 13, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 2, "models_embeddings": 1, "blogs_insights": 2}}, "daily_keywords": [{"text": "agentic context management", "domain": "context-prompting"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "parametric knowledge", "domain": "ai-knowledge"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "vector index", "domain": "embeddings-vectors"}, {"text": "knowledge distillation", "domain": "ai-knowledge"}, {"text": "activation probes", "domain": "agent-architecture"}, {"text": "symbolic verification", "domain": "cognition-reasoning"}, {"text": "document extraction", "domain": "ai-knowledge"}, {"text": "benchmark design", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "! Highlights", "items": [{"title": "Trained Agentic Context Management", "title_zh": "训练式智能体上下文管理", "url": "http://arxiv.org/abs/2610.02404v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02404", "summary": "The paper fine-tunes Qwen3.6-35B-A3B over a minimal harness with a tool to call itself and a tool to read token ranges, instead of training long context natively or building a long-context scaffold. With only 8,000 tokens of context, the model matches GPT-5.4 with 1M tokens of context on OOLONG-synth when document length exceeds 40K tokens.", "keywords": [{"text": "context management", "domain": "context-prompting"}, {"text": "long-context reasoning", "domain": "cognition-reasoning"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "OOLONG-synth", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "APDMem: Agent-Controlled Progressive Disclosure for Query-Adaptive Long-Term Memory", "title_zh": "APDMem：面向查询自适应长期记忆的智能体控制渐进披露", "url": "http://arxiv.org/abs/2610.02472v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02472", "summary": "APDMem represents conversation history as four progressively detailed layers and uses a controller that reads high-level summaries first, drilling into finer evidence only when a query needs it. On LongMemEval it reports strong long-context memory reasoning while accessing only 8% of the total conversations.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "progressive disclosure", "domain": "agent-memory"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "LongMemEval", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "How To Train Your World Model: Fine-tuning vs RAG for LM-based World Modeling", "title_zh": "如何训练你的世界模型：基于语言模型的世界建模中微调与 RAG 的对比", "url": "http://arxiv.org/abs/2610.02542v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02542", "summary": "A systematic comparison across five text environments finds that fine-tuned world models let agents obtain higher rewards in 15 of 20 settings, while retrieval-based world models are more data-efficient. The authors propose a hybrid system that captures core environment dynamics parametrically and relies on retrieval from an actively maintained memory store.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "world models", "domain": "cognition-reasoning"}, {"text": "parametric knowledge", "domain": "ai-knowledge"}, {"text": "hybrid memory", "domain": "agent-memory"}, {"text": "agent planning", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Counterexample Generation via Per-Theorem Symbolic Verifiers: When Imitation Hurts and Reinforcement Repairs", "title_zh": "通过逐定理符号验证器生成反例：模仿有害而强化学习可修复", "url": "http://arxiv.org/abs/2610.02444v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02444", "summary": "The authors release SymCE, a corpus of 4,707 false undergraduate-algebra and real-analysis conjectures each paired with an executable per-theorem Python verifier that also serves as a reward function. Training Qwen3-4B shows counterexample-only SFT collapses true-theorem recognition from 0.27 to 0.00, while RLVR repairs it to 0.66 and the 4B model outperforms every evaluated 7B open-weights math specialist.", "keywords": [{"text": "counterexample generation", "domain": "cognition-reasoning"}, {"text": "symbolic verification", "domain": "cognition-reasoning"}, {"text": "RLVR", "domain": "cognition-reasoning"}, {"text": "theorem proving", "domain": "cognition-reasoning"}, {"text": "training environments", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Trained Agentic Context Management", "title_zh": "训练式智能体上下文管理", "url": "http://arxiv.org/abs/2610.02404v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02404", "summary": "The paper fine-tunes Qwen3.6-35B-A3B over a minimal harness with a tool to call itself and a tool to read token ranges, instead of training long context natively or building a long-context scaffold. With only 8,000 tokens of context, the model matches GPT-5.4 with 1M tokens of context on OOLONG-synth when document length exceeds 40K tokens.", "keywords": [{"text": "context management", "domain": "context-prompting"}, {"text": "long-context reasoning", "domain": "cognition-reasoning"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "OOLONG-synth", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "APDMem: Agent-Controlled Progressive Disclosure for Query-Adaptive Long-Term Memory", "title_zh": "APDMem：面向查询自适应长期记忆的智能体控制渐进披露", "url": "http://arxiv.org/abs/2610.02472v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02472", "summary": "APDMem represents conversation history as four progressively detailed layers and uses a controller that reads high-level summaries first, drilling into finer evidence only when a query needs it. On LongMemEval it reports strong long-context memory reasoning while accessing only 8% of the total conversations.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "progressive disclosure", "domain": "agent-memory"}, {"text": "long-term memory", "domain": "agent-memory"}, {"text": "LongMemEval", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "How To Train Your World Model: Fine-tuning vs RAG for LM-based World Modeling", "title_zh": "如何训练你的世界模型：基于语言模型的世界建模中微调与 RAG 的对比", "url": "http://arxiv.org/abs/2610.02542v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02542", "summary": "A systematic comparison across five text environments finds that fine-tuned world models let agents obtain higher rewards in 15 of 20 settings, while retrieval-based world models are more data-efficient. The authors propose a hybrid system that captures core environment dynamics parametrically and relies on retrieval from an actively maintained memory store.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "world models", "domain": "cognition-reasoning"}, {"text": "parametric knowledge", "domain": "ai-knowledge"}, {"text": "hybrid memory", "domain": "agent-memory"}, {"text": "agent planning", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Counterexample Generation via Per-Theorem Symbolic Verifiers: When Imitation Hurts and Reinforcement Repairs", "title_zh": "通过逐定理符号验证器生成反例：模仿有害而强化学习可修复", "url": "http://arxiv.org/abs/2610.02444v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02444", "summary": "The authors release SymCE, a corpus of 4,707 false undergraduate-algebra and real-analysis conjectures each paired with an executable per-theorem Python verifier that also serves as a reward function. Training Qwen3-4B shows counterexample-only SFT collapses true-theorem recognition from 0.27 to 0.00, while RLVR repairs it to 0.66 and the 4B model outperforms every evaluated 7B open-weights math specialist.", "keywords": [{"text": "counterexample generation", "domain": "cognition-reasoning"}, {"text": "symbolic verification", "domain": "cognition-reasoning"}, {"text": "RLVR", "domain": "cognition-reasoning"}, {"text": "theorem proving", "domain": "cognition-reasoning"}, {"text": "training environments", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Are you Synthesizing or Recalling? Evaluating LLMs on Algorithmic Code Retrieval", "title_zh": "你是在综合还是回忆？评估 LLM 的算法代码检索能力", "url": "http://arxiv.org/abs/2610.02438v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02438", "summary": "AlgoREval is a 599-problem benchmark spanning 77 classical algorithms, 14 domains, 7 programming languages and 4 graph-input representations, designed to measure code generation as parametric retrieval of known algorithms. Testing 15 models zero-shot reveals substantial variation in retrieval accuracy across languages and input representations, even for widely documented algorithms, and shows that retrieved code snippets or structured hints help on complex algorithms.", "keywords": [{"text": "parametric knowledge", "domain": "ai-knowledge"}, {"text": "code retrieval", "domain": "rag-retrieval"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "prompt augmentation", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Student-Guided Teacher Distillation for Efficient LLM Task Routing: Positioning Against Jev-Style System-1 Classifiers", "title_zh": "面向高效 LLM 任务路由的学生引导教师蒸馏", "url": "http://arxiv.org/abs/2610.02516v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02516", "summary": "A compact ModernBERT student predicts a full distribution over 60 task categories in one forward pass and retrieves a small top-k set for a larger zero-shot NLI teacher to rerank, cutting the cost of scoring every request against every label. The best student checkpoint reaches 77.5% teacher agreement, with preliminary Coverage@16 measurements of 91-100%.", "keywords": [{"text": "task routing", "domain": "agent-architecture"}, {"text": "knowledge distillation", "domain": "ai-knowledge"}, {"text": "embeddings", "domain": "embeddings-vectors"}, {"text": "evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Prompted to Discriminate: Generalizing Malicious-Input Probes in the Wild", "title_zh": "被提示去判别：在真实环境中泛化恶意输入探针", "url": "http://arxiv.org/abs/2610.02413v1", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02413", "summary": "Across 13 safety benchmarks and three open-weight model families under leave-one-dataset-out evaluation, appending a short classification suffix to the user turn improves out-of-distribution detection for activation probes by up to about 4 AUC points. The gain appears to come from the classification format rather than the named criterion, and which suffix helps depends on the model and readout.", "keywords": [{"text": "activation probes", "domain": "agent-architecture"}, {"text": "runtime monitoring", "domain": "agent-architecture"}, {"text": "prompt suffixes", "domain": "context-prompting"}, {"text": "out-of-distribution detection", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "When Terminal-Agent Training Stalls: Demystifying Data Generation and Verification Challenge", "title_zh": "当终端智能体训练停滞：揭开数据生成与验证挑战", "url": "http://arxiv.org/abs/2610.02405v2", "source": "arXiv", "date": "2026-10-01", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.02405", "summary": "The authors build a pipeline that generates containerized terminal tasks and executable verifiers, then separate structural validity, verifier faithfulness, policy solvability and infrastructure reliability as distinct requirements that are often conflated. In a GRPO run, Qwen3.5-9B overfits a relatively easy dataset within 20 steps, while adding hard tasks lowers mean rollout pass@2 from 81.3% to 20.6% and restores informative failures.", "keywords": [{"text": "terminal agents", "domain": "agent-architecture"}, {"text": "verifier design", "domain": "evaluation-benchmark"}, {"text": "training data", "domain": "knowledge-lifecycle"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "perplexityai/SPACE", "title_zh": "perplexityai/SPACE：面向智能体代码执行的沙箱平台", "url": "https://github.com/perplexityai/SPACE", "source": "GitHub Trending", "date": "2026-10-01", "language": "en", "section": "tools_frameworks", "organization": "", "arxiv_id": "", "summary": "SPACE is a sandboxed platform for agentic code execution whose pluggable-runtime sandboxes are designed to run agent and user code in isolation, according to its GitHub description.", "keywords": [{"text": "code execution", "domain": "agent-architecture"}, {"text": "sandboxing", "domain": "agent-architecture"}, {"text": "agent infrastructure", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Oct 1, 2026 Product Engineering Introducing Extract v2.5 Read", "title_zh": "LlamaIndex 推出 Extract v2.5", "url": "https://www.llamaindex.ai/blog/introducing-extract-v2-5", "source": "LlamaIndex Blog", "date": "2026-10-01", "language": "en", "section": "tools_frameworks", "organization": "LlamaIndex", "arxiv_id": "", "summary": "LlamaIndex announced Extract v2.5, a new version of its document extraction product, in a brief product-engineering post.", "keywords": [{"text": "document extraction", "domain": "ai-knowledge"}, {"text": "LlamaIndex", "domain": "ai-knowledge"}, {"text": "data ingestion", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Clef: Open-weight decision models, and new RL fine-tuning platform", "title_zh": "Cloudflare 发布 Clef 开放权重决策模型与全新强化学习微调平台", "url": "https://blog.cloudflare.com/clef-decision-models/", "source": "Hacker News", "date": "2026-10-01", "language": "en", "section": "models_embeddings", "organization": "", "arxiv_id": "", "summary": "Cloudflare unveiled Clef and Clef-flash, a pair of open-source decision models served through Workers AI for fast classification and agentic workflows. It also launched a reinforcement learning platform that lets developers fine-tune such models on their own data.", "keywords": [{"text": "decision models", "domain": "agent-architecture"}, {"text": "open weights", "domain": "ai-knowledge"}, {"text": "fine-tuning", "domain": "ai-knowledge"}, {"text": "Workers AI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "RIP, vector database", "title_zh": "RIP，向量数据库", "url": "https://turbopuffer.com/blog/rip-vector-database", "source": "Hacker News", "date": "2026-10-01", "language": "en", "section": "blogs_insights", "organization": "", "arxiv_id": "", "summary": "Turbopuffer says it is redesigning its storage architecture so that the vector index is no longer primary, describing the change as necessary to push the frontier of search.", "keywords": [{"text": "vector index", "domain": "embeddings-vectors"}, {"text": "storage architecture", "domain": "embeddings-vectors"}, {"text": "search infrastructure", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "Claude-shaped science", "title_zh": "Claude 形状的科学", "url": "https://www.anthropic.com/research/claude-shaped-science", "source": "Anthropic Research", "date": "2026-10-01", "language": "en", "section": "blogs_insights", "organization": "Anthropic", "arxiv_id": "", "summary": "Guest author Prof. Matthew Schwartz describes moving from fighting Claude to letting it find \"Claude-shaped\" problems suited to the current generation of LLM tools. This led him to build BootLoops, a toolkit for exact calculations in quantitative science, which he has applied across scientific fields alongside experts.", "keywords": [{"text": "AI for science", "domain": "ai-knowledge"}, {"text": "LLM capabilities", "domain": "cognition-reasoning"}, {"text": "scientific tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}, {"name": "Anthropic Research", "url": "https://www.anthropic.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

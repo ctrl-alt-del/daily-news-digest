@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-10-30</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">! Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge compilation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context management</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context compaction</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context attention</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">sparse attention</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval reranking</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-improving agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">synthetic enterprise data</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic layout reasoning</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    ! Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="knowledge compilation agentic retrieval context engineering navigation hierarchy RAGFlow">
+  <div class="item-meta">
+    <span class="item-org">MiniMax</span>
+    <span class="arxiv-tag">arxiv:2610.41172</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Context as Infrastructure: Knowledge Compilation for Retrieval in Agentic Systems with Harnesses<div class="title-zh">上下文即基础设施：智能体系统中面向检索的知识编译与 Harness</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge compilation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context engineering</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">navigation hierarchy</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">RAGFlow</span></div>
+  <div class="item-summary">The paper argues that agentic retrieval harnesses have largely solved accuracy and that the missing layer is knowledge compilation, an ingestion pipeline in which LLMs enrich documents with navigation hierarchies, entity graphs, timelines, wikis and memory. It reports that a navigation tree of claim-evidence leaves cuts query tokens by 91% when evidence is sufficient and by 38% on average, and it describes RAGFlow's open-source pipeline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.41172v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context compaction long-context agents reinforcement learning note-taking confidence calibration">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.00244</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MEMENTO: Learning Context Management for Long Context Processing Agents<div class="title-zh">MEMENTO：面向长上下文处理智能体的上下文管理学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context compaction</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">note-taking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">confidence calibration</span></div>
+  <div class="item-summary">MEMENTO builds on Qwen3-8B, bootstrapping note-taking from synthetic trajectories annotated with hindsight notes and then reinforcing it with a reward that combines answer correctness, note-quality heuristics and confidence calibration. On book-level QA over inputs of up to 2.5M tokens it raises Qwen3-8B's accuracy from 36.9% to 67.8% while never holding more than 20K tokens, beating a GPT-5.5 agent in the same harness and nearly matching a roughly 100x larger GLM-5.3 agent at one-ninth the cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.00244v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sparse attention hierarchical index long context KV cache subquadratic scaling">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.42112</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Subquadratic Attention with a Hierarchical Tree-Structured Indexer<div class="title-zh">采用分层树状索引器的次二次注意力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">sparse attention</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hierarchical index</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">subquadratic scaling</span></div>
+  <div class="item-summary">Zyphra Hierarchical Attention builds a tree of recursively compressed key summaries over the KV cache that queries traverse from the top down to retrieve a sparse subset of keys, making total cost including routing grow sublinearly in sequence length. It can be applied to pretrained models with a short KL-distillation stage of a billion tokens while preserving long-context retrieval, reasoning, math and agentic coding performance, and it scales far better than competing methods beyond one million tokens.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.42112v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval reranking on-policy distillation decision models ranking retrieval benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.42128</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DecisionRank: On-Policy Distillation for Decision-Model Rerankers<div class="title-zh">DecisionRank：面向决策模型重排器的同策略蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval reranking</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">decision models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">ranking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span></div>
+  <div class="item-summary">DecisionRank transfers a generative LLM's ranking knowledge to a faster decision model through item-space on-policy distillation, sorting the student's document scores into a ranked list that the teacher uses to give conditional feedback on those scores. It reaches state-of-the-art results on TREC DL, BEIR and BRIGHT, and at 1.7B parameters surpasses its 27B generative teacher on TREC DL19–23, while the 8B model runs 24.5x faster than its listwise counterpart on TREC DL.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.42128v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="knowledge compilation agentic retrieval context engineering navigation hierarchy RAGFlow">
+  <div class="item-meta">
+    <span class="item-org">MiniMax</span>
+    <span class="arxiv-tag">arxiv:2610.41172</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Context as Infrastructure: Knowledge Compilation for Retrieval in Agentic Systems with Harnesses<div class="title-zh">上下文即基础设施：智能体系统中面向检索的知识编译与 Harness</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge compilation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context engineering</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">navigation hierarchy</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">RAGFlow</span></div>
+  <div class="item-summary">The paper argues that agentic retrieval harnesses have largely solved accuracy and that the missing layer is knowledge compilation, an ingestion pipeline in which LLMs enrich documents with navigation hierarchies, entity graphs, timelines, wikis and memory. It reports that a navigation tree of claim-evidence leaves cuts query tokens by 91% when evidence is sufficient and by 38% on average, and it describes RAGFlow's open-source pipeline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.41172v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context compaction long-context agents reinforcement learning note-taking confidence calibration">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.00244</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MEMENTO: Learning Context Management for Long Context Processing Agents<div class="title-zh">MEMENTO：面向长上下文处理智能体的上下文管理学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">context compaction</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">note-taking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">confidence calibration</span></div>
+  <div class="item-summary">MEMENTO builds on Qwen3-8B, bootstrapping note-taking from synthetic trajectories annotated with hindsight notes and then reinforcing it with a reward that combines answer correctness, note-quality heuristics and confidence calibration. On book-level QA over inputs of up to 2.5M tokens it raises Qwen3-8B's accuracy from 36.9% to 67.8% while never holding more than 20K tokens, beating a GPT-5.5 agent in the same harness and nearly matching a roughly 100x larger GLM-5.3 agent at one-ninth the cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.00244v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sparse attention hierarchical index long context KV cache subquadratic scaling">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.42112</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Subquadratic Attention with a Hierarchical Tree-Structured Indexer<div class="title-zh">采用分层树状索引器的次二次注意力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">sparse attention</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hierarchical index</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long context</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">KV cache</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">subquadratic scaling</span></div>
+  <div class="item-summary">Zyphra Hierarchical Attention builds a tree of recursively compressed key summaries over the KV cache that queries traverse from the top down to retrieve a sparse subset of keys, making total cost including routing grow sublinearly in sequence length. It can be applied to pretrained models with a short KL-distillation stage of a billion tokens while preserving long-context retrieval, reasoning, math and agentic coding performance, and it scales far better than competing methods beyond one million tokens.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.42112v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval reranking on-policy distillation decision models ranking retrieval benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.42128</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DecisionRank: On-Policy Distillation for Decision-Model Rerankers<div class="title-zh">DecisionRank：面向决策模型重排器的同策略蒸馏</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval reranking</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy distillation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">decision models</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">ranking</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span></div>
+  <div class="item-summary">DecisionRank transfers a generative LLM's ranking knowledge to a faster decision model through item-space on-policy distillation, sorting the student's document scores into a ranked list that the teacher uses to give conditional feedback on those scores. It reaches state-of-the-art results on TREC DL, BEIR and BRIGHT, and at 1.7B parameters surpasses its 27B generative teacher on TREC DL19–23, while the 8B model runs 24.5x faster than its listwise counterpart on TREC DL.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.42128v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agentic layout reasoning self-evolving memory scene generation diffusion priors">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.41260</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SketchDirector: Complex Scene Sketching via Agentic Layout Reasoning and Detail Refinement<div class="title-zh">SketchDirector：通过智能体布局推理与细节精修生成复杂场景素描</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic layout reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scene generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">diffusion priors</span></div>
+  <div class="item-summary">SketchDirector is an agentic framework in which an LLM decomposes a scene prompt into Bézier-curve assets, arranges them through a reasoning loop with self-evolving memory, and refines details using diffusion priors; the authors also release the MCSketch8K dataset.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.41260v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent stack ML lifecycle automated validation model migration experiment orchestration">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.00384</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agent Stack for ML Training Lifecycle: Generation, Validation, and Optimization<div class="title-zh">面向机器学习训练生命周期的智能体栈：生成、验证与优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent stack</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">ML lifecycle</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">automated validation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model migration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">experiment orchestration</span></div>
+  <div class="item-summary">LinkedIn describes a deployed agent stack with two independently usable loops, AutoTorch for model generation and migration and AutoResearch for model optimization, backed by executable validation hooks and an external orchestrator that manages parallel trials, experiment history and candidate selection. AutoTorch completed generation and full-scale training in 92 of 115 workflow runs, 77 of those met post-training quality requirements, and engineering teams estimate end-to-end migration time fell from about eight weeks to two.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.00384v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="sparse attention latent clustering ultra-long context attention efficiency distillation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2610.42147</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Latent Sparse Attention: Towards Subquadratic Ultra-Long Context Attention<div class="title-zh">Latent Sparse Attention：面向次二次超长上下文注意力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">sparse attention</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">latent clustering</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">ultra-long context</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">attention efficiency</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">distillation</span></div>
+  <div class="item-summary">Latent Sparse Attention hierarchically clusters keys in a learned latent space so that queries score clusters rather than every key, with a distilled variant for pretrained models and a variant trained natively on next-token loss. On GLM-5.3-FLASH at 10M tokens the distilled variant speeds up one attention layer by 22.7x in prefill and 4.6x in decode over the original sparse attention while keeping similar accuracy across tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2610.42147v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-improving systems agent harness runtime learning policy activation continual learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2611.00463</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Exo: An Architecture for Self-Improving Systems at Runtime<div class="title-zh">Exo：运行时自我改进系统的架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-improving systems</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">runtime learning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">policy activation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span></div>
+  <div class="item-summary">Exo is an agent runtime that collapses the optimization loop into task execution so agents can revise both their harness policies and their strategies while work continues, with a protected mechanism layer that preserves execution history and governs policy activation through inspectable code changes. On long-running game objectives it cuts model cost 12–53% versus Codex and Pi in standalone runs while matching task completion, and on AppWorld and SREGym it reduces held-out model cost 35–61% with comparable correctness.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2611.00463v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="synthetic data enterprise evaluation Copilot AI confidence">
+  <div class="item-meta">
+    <span class="item-org">Microsoft Research</span>
+    
+    
+    <span class="item-source">Microsoft Research</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From synthetic enterprise data evaluations to real Microsoft Copilot AI confidence<div class="title-zh">从合成企业数据评测到真实 Microsoft Copilot AI 置信度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">synthetic data</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">enterprise evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Copilot</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">AI confidence</span></div>
+  <div class="item-summary">Microsoft Research discusses how evaluating Copilot at enterprise scale requires test data that captures the complexity of real organizations, while sensitive real enterprise data cannot be used for evaluation under any circumstances.</div>
+  <a class="item-link" href="https://www.microsoft.com/en-us/research/blog/from-synthetic-enterprise-data-evaluations-to-real-microsoft-copilot-ai-confidence/" target="_blank" rel="noopener">&rarr; www.microsoft.com</a>
+</div>
+<div class="item-card" data-keywords="acquisition agentic data engineering Apple AI industry">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">9to5Mac</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Apple acquires Ascend․io, an agentic AI engineering startup<div class="title-zh">Apple 收购智能体 AI 工程初创公司 Ascend.io</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">acquisition</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic data engineering</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Apple</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI industry</span></div>
+  <div class="item-summary">Apple has struck a deal to acquire Ascend.io, a startup focused on agentic data engineering, and the purchase became public through acquisition reporting required under the Digital Markets Act.</div>
+  <a class="item-link" href="https://9to5mac.com/2026/10/30/apple-acquires-ascend%e2%80%a4io-an-agentic-ai-engineering-startup/" target="_blank" rel="noopener">&rarr; 9to5mac.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://www.microsoft.com/en-us/research" target="_blank" rel="noopener">Microsoft Research</a></li>
+<li><a href="https://9to5mac.com" target="_blank" rel="noopener">9to5Mac</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 11:56 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-10-30", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 3, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 8, "blogs_insights": 2}}, "daily_keywords": [{"text": "knowledge compilation", "domain": "knowledge-lifecycle"}, {"text": "context management", "domain": "agent-memory"}, {"text": "context compaction", "domain": "agent-memory"}, {"text": "long-context attention", "domain": "context-prompting"}, {"text": "sparse attention", "domain": "context-prompting"}, {"text": "retrieval reranking", "domain": "rag-retrieval"}, {"text": "on-policy distillation", "domain": "knowledge-lifecycle"}, {"text": "self-improving agents", "domain": "agent-architecture"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "synthetic enterprise data", "domain": "evaluation-benchmark"}, {"text": "agentic layout reasoning", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "! Highlights", "items": [{"title": "Context as Infrastructure: Knowledge Compilation for Retrieval in Agentic Systems with Harnesses", "title_zh": "上下文即基础设施：智能体系统中面向检索的知识编译与 Harness", "url": "http://arxiv.org/abs/2610.41172v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "MiniMax", "arxiv_id": "2610.41172", "summary": "The paper argues that agentic retrieval harnesses have largely solved accuracy and that the missing layer is knowledge compilation, an ingestion pipeline in which LLMs enrich documents with navigation hierarchies, entity graphs, timelines, wikis and memory. It reports that a navigation tree of claim-evidence leaves cuts query tokens by 91% when evidence is sufficient and by 38% on average, and it describes RAGFlow's open-source pipeline.", "keywords": [{"text": "knowledge compilation", "domain": "knowledge-lifecycle"}, {"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "context engineering", "domain": "context-prompting"}, {"text": "navigation hierarchy", "domain": "rag-retrieval"}, {"text": "RAGFlow", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "MEMENTO: Learning Context Management for Long Context Processing Agents", "title_zh": "MEMENTO：面向长上下文处理智能体的上下文管理学习", "url": "http://arxiv.org/abs/2611.00244v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2611.00244", "summary": "MEMENTO builds on Qwen3-8B, bootstrapping note-taking from synthetic trajectories annotated with hindsight notes and then reinforcing it with a reward that combines answer correctness, note-quality heuristics and confidence calibration. On book-level QA over inputs of up to 2.5M tokens it raises Qwen3-8B's accuracy from 36.9% to 67.8% while never holding more than 20K tokens, beating a GPT-5.5 agent in the same harness and nearly matching a roughly 100x larger GLM-5.3 agent at one-ninth the cost.", "keywords": [{"text": "context compaction", "domain": "agent-memory"}, {"text": "long-context agents", "domain": "context-prompting"}, {"text": "reinforcement learning", "domain": "knowledge-lifecycle"}, {"text": "note-taking", "domain": "agent-memory"}, {"text": "confidence calibration", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Subquadratic Attention with a Hierarchical Tree-Structured Indexer", "title_zh": "采用分层树状索引器的次二次注意力", "url": "http://arxiv.org/abs/2610.42112v2", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.42112", "summary": "Zyphra Hierarchical Attention builds a tree of recursively compressed key summaries over the KV cache that queries traverse from the top down to retrieve a sparse subset of keys, making total cost including routing grow sublinearly in sequence length. It can be applied to pretrained models with a short KL-distillation stage of a billion tokens while preserving long-context retrieval, reasoning, math and agentic coding performance, and it scales far better than competing methods beyond one million tokens.", "keywords": [{"text": "sparse attention", "domain": "context-prompting"}, {"text": "hierarchical index", "domain": "rag-retrieval"}, {"text": "long context", "domain": "context-prompting"}, {"text": "KV cache", "domain": "agent-memory"}, {"text": "subquadratic scaling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "DecisionRank: On-Policy Distillation for Decision-Model Rerankers", "title_zh": "DecisionRank：面向决策模型重排器的同策略蒸馏", "url": "http://arxiv.org/abs/2610.42128v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.42128", "summary": "DecisionRank transfers a generative LLM's ranking knowledge to a faster decision model through item-space on-policy distillation, sorting the student's document scores into a ranked list that the teacher uses to give conditional feedback on those scores. It reaches state-of-the-art results on TREC DL, BEIR and BRIGHT, and at 1.7B parameters surpasses its 27B generative teacher on TREC DL19–23, while the 8B model runs 24.5x faster than its listwise counterpart on TREC DL.", "keywords": [{"text": "retrieval reranking", "domain": "rag-retrieval"}, {"text": "on-policy distillation", "domain": "knowledge-lifecycle"}, {"text": "decision models", "domain": "agent-architecture"}, {"text": "ranking", "domain": "rag-retrieval"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Context as Infrastructure: Knowledge Compilation for Retrieval in Agentic Systems with Harnesses", "title_zh": "上下文即基础设施：智能体系统中面向检索的知识编译与 Harness", "url": "http://arxiv.org/abs/2610.41172v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "MiniMax", "arxiv_id": "2610.41172", "summary": "The paper argues that agentic retrieval harnesses have largely solved accuracy and that the missing layer is knowledge compilation, an ingestion pipeline in which LLMs enrich documents with navigation hierarchies, entity graphs, timelines, wikis and memory. It reports that a navigation tree of claim-evidence leaves cuts query tokens by 91% when evidence is sufficient and by 38% on average, and it describes RAGFlow's open-source pipeline.", "keywords": [{"text": "knowledge compilation", "domain": "knowledge-lifecycle"}, {"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "context engineering", "domain": "context-prompting"}, {"text": "navigation hierarchy", "domain": "rag-retrieval"}, {"text": "RAGFlow", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "MEMENTO: Learning Context Management for Long Context Processing Agents", "title_zh": "MEMENTO：面向长上下文处理智能体的上下文管理学习", "url": "http://arxiv.org/abs/2611.00244v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2611.00244", "summary": "MEMENTO builds on Qwen3-8B, bootstrapping note-taking from synthetic trajectories annotated with hindsight notes and then reinforcing it with a reward that combines answer correctness, note-quality heuristics and confidence calibration. On book-level QA over inputs of up to 2.5M tokens it raises Qwen3-8B's accuracy from 36.9% to 67.8% while never holding more than 20K tokens, beating a GPT-5.5 agent in the same harness and nearly matching a roughly 100x larger GLM-5.3 agent at one-ninth the cost.", "keywords": [{"text": "context compaction", "domain": "agent-memory"}, {"text": "long-context agents", "domain": "context-prompting"}, {"text": "reinforcement learning", "domain": "knowledge-lifecycle"}, {"text": "note-taking", "domain": "agent-memory"}, {"text": "confidence calibration", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Subquadratic Attention with a Hierarchical Tree-Structured Indexer", "title_zh": "采用分层树状索引器的次二次注意力", "url": "http://arxiv.org/abs/2610.42112v2", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.42112", "summary": "Zyphra Hierarchical Attention builds a tree of recursively compressed key summaries over the KV cache that queries traverse from the top down to retrieve a sparse subset of keys, making total cost including routing grow sublinearly in sequence length. It can be applied to pretrained models with a short KL-distillation stage of a billion tokens while preserving long-context retrieval, reasoning, math and agentic coding performance, and it scales far better than competing methods beyond one million tokens.", "keywords": [{"text": "sparse attention", "domain": "context-prompting"}, {"text": "hierarchical index", "domain": "rag-retrieval"}, {"text": "long context", "domain": "context-prompting"}, {"text": "KV cache", "domain": "agent-memory"}, {"text": "subquadratic scaling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "DecisionRank: On-Policy Distillation for Decision-Model Rerankers", "title_zh": "DecisionRank：面向决策模型重排器的同策略蒸馏", "url": "http://arxiv.org/abs/2610.42128v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.42128", "summary": "DecisionRank transfers a generative LLM's ranking knowledge to a faster decision model through item-space on-policy distillation, sorting the student's document scores into a ranked list that the teacher uses to give conditional feedback on those scores. It reaches state-of-the-art results on TREC DL, BEIR and BRIGHT, and at 1.7B parameters surpasses its 27B generative teacher on TREC DL19–23, while the 8B model runs 24.5x faster than its listwise counterpart on TREC DL.", "keywords": [{"text": "retrieval reranking", "domain": "rag-retrieval"}, {"text": "on-policy distillation", "domain": "knowledge-lifecycle"}, {"text": "decision models", "domain": "agent-architecture"}, {"text": "ranking", "domain": "rag-retrieval"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "SketchDirector: Complex Scene Sketching via Agentic Layout Reasoning and Detail Refinement", "title_zh": "SketchDirector：通过智能体布局推理与细节精修生成复杂场景素描", "url": "http://arxiv.org/abs/2610.41260v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.41260", "summary": "SketchDirector is an agentic framework in which an LLM decomposes a scene prompt into Bézier-curve assets, arranges them through a reasoning loop with self-evolving memory, and refines details using diffusion priors; the authors also release the MCSketch8K dataset.", "keywords": [{"text": "agentic layout reasoning", "domain": "agent-architecture"}, {"text": "self-evolving memory", "domain": "knowledge-lifecycle"}, {"text": "scene generation", "domain": "ai-knowledge"}, {"text": "diffusion priors", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Agent Stack for ML Training Lifecycle: Generation, Validation, and Optimization", "title_zh": "面向机器学习训练生命周期的智能体栈：生成、验证与优化", "url": "http://arxiv.org/abs/2611.00384v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2611.00384", "summary": "LinkedIn describes a deployed agent stack with two independently usable loops, AutoTorch for model generation and migration and AutoResearch for model optimization, backed by executable validation hooks and an external orchestrator that manages parallel trials, experiment history and candidate selection. AutoTorch completed generation and full-scale training in 92 of 115 workflow runs, 77 of those met post-training quality requirements, and engineering teams estimate end-to-end migration time fell from about eight weeks to two.", "keywords": [{"text": "agent stack", "domain": "agent-architecture"}, {"text": "ML lifecycle", "domain": "knowledge-lifecycle"}, {"text": "automated validation", "domain": "evaluation-benchmark"}, {"text": "model migration", "domain": "ai-knowledge"}, {"text": "experiment orchestration", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Latent Sparse Attention: Towards Subquadratic Ultra-Long Context Attention", "title_zh": "Latent Sparse Attention：面向次二次超长上下文注意力", "url": "http://arxiv.org/abs/2610.42147v2", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2610.42147", "summary": "Latent Sparse Attention hierarchically clusters keys in a learned latent space so that queries score clusters rather than every key, with a distilled variant for pretrained models and a variant trained natively on next-token loss. On GLM-5.3-FLASH at 10M tokens the distilled variant speeds up one attention layer by 22.7x in prefill and 4.6x in decode over the original sparse attention while keeping similar accuracy across tasks.", "keywords": [{"text": "sparse attention", "domain": "context-prompting"}, {"text": "latent clustering", "domain": "embeddings-vectors"}, {"text": "ultra-long context", "domain": "context-prompting"}, {"text": "attention efficiency", "domain": "ai-knowledge"}, {"text": "distillation", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "Exo: An Architecture for Self-Improving Systems at Runtime", "title_zh": "Exo：运行时自我改进系统的架构", "url": "http://arxiv.org/abs/2611.00463v1", "source": "arXiv", "date": "2026-10-30", "language": "en", "section": "research_papers", "organization": "", "arxiv_id": "2611.00463", "summary": "Exo is an agent runtime that collapses the optimization loop into task execution so agents can revise both their harness policies and their strategies while work continues, with a protected mechanism layer that preserves execution history and governs policy activation through inspectable code changes. On long-running game objectives it cuts model cost 12–53% versus Codex and Pi in standalone runs while matching task completion, and on AppWorld and SREGym it reduces held-out model cost 35–61% with comparable correctness.", "keywords": [{"text": "self-improving systems", "domain": "knowledge-lifecycle"}, {"text": "agent harness", "domain": "agent-architecture"}, {"text": "runtime learning", "domain": "agent-architecture"}, {"text": "policy activation", "domain": "agent-architecture"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "From synthetic enterprise data evaluations to real Microsoft Copilot AI confidence", "title_zh": "从合成企业数据评测到真实 Microsoft Copilot AI 置信度", "url": "https://www.microsoft.com/en-us/research/blog/from-synthetic-enterprise-data-evaluations-to-real-microsoft-copilot-ai-confidence/", "source": "Microsoft Research", "date": "2026-10-30", "language": "en", "section": "blogs_insights", "organization": "Microsoft Research", "arxiv_id": "", "summary": "Microsoft Research discusses how evaluating Copilot at enterprise scale requires test data that captures the complexity of real organizations, while sensitive real enterprise data cannot be used for evaluation under any circumstances.", "keywords": [{"text": "synthetic data", "domain": "evaluation-benchmark"}, {"text": "enterprise evaluation", "domain": "evaluation-benchmark"}, {"text": "Copilot", "domain": "ai-knowledge"}, {"text": "AI confidence", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Apple acquires Ascend․io, an agentic AI engineering startup", "title_zh": "Apple 收购智能体 AI 工程初创公司 Ascend.io", "url": "https://9to5mac.com/2026/10/30/apple-acquires-ascend%e2%80%a4io-an-agentic-ai-engineering-startup/", "source": "9to5Mac", "date": "2026-10-30", "language": "en", "section": "blogs_insights", "organization": "", "arxiv_id": "", "summary": "Apple has struck a deal to acquire Ascend.io, a startup focused on agentic data engineering, and the purchase became public through acquisition reporting required under the Digital Markets Act.", "keywords": [{"text": "acquisition", "domain": "ai-knowledge"}, {"text": "agentic data engineering", "domain": "agent-architecture"}, {"text": "Apple", "domain": "ai-knowledge"}, {"text": "AI industry", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Microsoft Research", "url": "https://www.microsoft.com/en-us/research"}, {"name": "9to5Mac", "url": "https://9to5mac.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
