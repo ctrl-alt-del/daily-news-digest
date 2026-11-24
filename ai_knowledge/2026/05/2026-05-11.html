@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-11</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory evolution</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">geospatial retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sentence embeddings</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">test-time scaling</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">metacognition</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent simulation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">curriculum learning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM security</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory memory evolution trajectory abstraction survey">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.06716</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Storage to Experience: A Survey on the Evolution of LLM Agent Memory Mechanisms<div class="title-zh">从存储到经验：LLM 智能体记忆机制演化综述</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory evolution</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">trajectory abstraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">survey</span></div>
+  <div class="item-summary">This survey proposes an evolutionary framework for LLM agent memory with three stages: storage for trajectory preservation, reflection for trajectory refinement and experience for trajectory abstraction. Its companion GitHub repository had 58 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.06716" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="prompt injection agentic workflows prompt provenance LLM security GitHub Actions">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.11229</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Comment and Control: Hijacking Agentic Workflows via Context-Grounded Evolution<div class="title-zh">评论与控制：借助上下文锚定演化劫持智能体工作流</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt provenance</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GitHub Actions</span></div>
+  <div class="item-summary">JAW is a detection and exploitation framework that hijacks agentic workflows on automation platforms by evolving crafted inputs under contexts derived from static path-feasibility, dynamic prompt-provenance and capability analysis. The authors report 4,714 GitHub workflows and eight n8n templates could be hijacked, and the findings span 15 widely used GitHub Actions, including official actions for Claude Code, Gemini CLI, Qwen CLI and Cursor CLI.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.11229v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory memory evolution trajectory abstraction survey">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.06716</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Storage to Experience: A Survey on the Evolution of LLM Agent Memory Mechanisms<div class="title-zh">从存储到经验：LLM 智能体记忆机制演化综述</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory evolution</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">trajectory abstraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">survey</span></div>
+  <div class="item-summary">This survey proposes an evolutionary framework for LLM agent memory with three stages: storage for trajectory preservation, reflection for trajectory refinement and experience for trajectory abstraction. Its companion GitHub repository had 58 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.06716" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="prompt injection agentic workflows prompt provenance LLM security GitHub Actions">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.11229</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Comment and Control: Hijacking Agentic Workflows via Context-Grounded Evolution<div class="title-zh">评论与控制：借助上下文锚定演化劫持智能体工作流</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt provenance</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">LLM security</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">GitHub Actions</span></div>
+  <div class="item-summary">JAW is a detection and exploitation framework that hijacks agentic workflows on automation platforms by evolving crafted inputs under contexts derived from static path-feasibility, dynamic prompt-provenance and capability analysis. The authors report 4,714 GitHub workflows and eight n8n templates could be hijacked, and the findings span 15 widely used GitHub Actions, including official actions for Claude Code, Gemini CLI, Qwen CLI and Cursor CLI.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.11229v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="geospatial search sentence embeddings query taxonomy hybrid retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.11336</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Much of Geospatial Web Search Is Beyond Traditional GIS<div class="title-zh">大量地理空间网络搜索已超出传统 GIS 范畴</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">geospatial search</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sentence embeddings</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">query taxonomy</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span></div>
+  <div class="item-summary">Applying dense sentence embeddings, a SetFit classifier and density-based clustering to 1.01 million MS MARCO queries, the authors identify 181,827 geospatial queries (18.0%), nearly three times the 6.17% labelled as Location. They release an 88-category taxonomy and argue that cost, opening-hours and travel lookups fall outside traditional GIS and knowledge-graph coverage.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.11336v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal search parallel retrieval reinforcement learning visual grounding benchmark">
+  <div class="item-meta">
+    <span class="item-org">Xiaohongshu</span>
+    <span class="arxiv-tag">arxiv:2605.07177</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents<div class="title-zh">HyperEyes：面向并行多模态搜索智能体的双粒度效率感知强化学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">parallel retrieval</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">visual grounding</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">HyperEyes is a parallel multimodal search agent that fuses visual grounding and retrieval into a single atomic action so it can query several entities at once. It is trained with dual-grained efficiency-aware reinforcement learning and evaluated on a new benchmark, IMEB.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.07177" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="test-time scaling controller synthesis reasoning trajectories AutoTTS">
+  <div class="item-meta">
+    <span class="item-org">Google</span>
+    <span class="arxiv-tag">arxiv:2605.08083</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LLMs Improving LLMs: Agentic Discovery for Test-Time Scaling<div class="title-zh">LLM 改进 LLM：面向测试时扩展的智能体发现</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">test-time scaling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">controller synthesis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning trajectories</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AutoTTS</span></div>
+  <div class="item-summary">Google researchers introduce AutoTTS, which treats test-time scaling as controller synthesis over reasoning trajectories and probe signals and discovers strategies that beat hand-designed baselines.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.08083" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="curriculum learning metacognition reinforcement fine-tuning reward variance">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.11235</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Internalizing Curriculum Judgment for LLM Reinforcement Fine-Tuning<div class="title-zh">METIS：为 LLM 强化微调内化课程判断</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">curriculum learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">metacognition</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement fine-tuning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reward variance</span></div>
+  <div class="item-summary">METIS internalizes curriculum judgment in LLM reinforcement fine-tuning by predicting within-prompt reward variance from recent training outcomes and jointly optimizing that self-judgment with standard RFT rewards. The authors report up to 2.1x training speedup across mathematical reasoning, code generation and agentic function-calling benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.11235v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation adversarial testing SQL injection chain-of-thought">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.11188</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Adversarial SQL Injection Generation with LLM-Based Architectures<div class="title-zh">基于 LLM 架构的对抗性 SQL 注入生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial testing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">SQL injection</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span></div>
+  <div class="item-summary">The paper introduces RADAGAS, a retrieval-augmented generation system for adversarial SQL injection generation, and RefleXQLi, a reflective chain-of-thought variant, comparing them against ten web application firewalls. RADAGAS-GPT4o achieved a 22.73% bypass rate overall, while the variants were far more successful on AI/ML-based firewalls than on rule-based ones.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.11188v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent simulation LLM behavior benchmark inverse game theory geopolitical reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.22841</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Strategic Coercion Within Alliances: The Greenland Sovereignty Game as an AI Stress Test<div class="title-zh">联盟内的战略胁迫：以格陵兰主权博弈作为 AI 压力测试</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent simulation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM behavior benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">inverse game theory</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">geopolitical reasoning</span></div>
+  <div class="item-summary">Using 3,604 multi-agent games in which eight frontier LLMs play six geopolitical roles, the authors recover structural utility parameters via inverse game theory and find four-action escalation rises from 10.7% to 28.6% under coercion framing. Peaceful US acquisition emerges in only 1.9% of clean games.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.22841v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-agent review Claude Code sub-agents pull-request review">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: adamsreview – better multi-agent PR reviews for Claude Code<div class="title-zh">Show HN：adamsreview——为 Claude Code 提供更强的多智能体 PR 审查</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent review</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Claude Code</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sub-agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">pull-request review</span></div>
+  <div class="item-summary">A developer released adamsreview, a Claude Code plugin with six slash commands that runs multi-stage pull-request review using parallel sub-agents, JSON-persisted state, validation passes and an optional Codex ensemble review. The post drew 85 points and 53 comments on Hacker News.</div>
+  <a class="item-link" href="https://github.com/adamjgmiller/adamsreview" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://huggingface.co/papers" target="_blank" rel="noopener">HuggingFace Papers</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-11", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 3, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 8, "blogs_insights": 1}}, "daily_keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "memory evolution", "domain": "knowledge-lifecycle"}, {"text": "prompt injection", "domain": "context-prompting"}, {"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "geospatial retrieval", "domain": "rag-retrieval"}, {"text": "sentence embeddings", "domain": "embeddings-vectors"}, {"text": "test-time scaling", "domain": "cognition-reasoning"}, {"text": "metacognition", "domain": "cognition-reasoning"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "multi-agent simulation", "domain": "agent-architecture"}, {"text": "curriculum learning", "domain": "knowledge-lifecycle"}, {"text": "LLM security", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "From Storage to Experience: A Survey on the Evolution of LLM Agent Memory Mechanisms", "title_zh": "从存储到经验：LLM 智能体记忆机制演化综述", "url": "https://huggingface.co/papers/2605.06716", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.06716", "summary": "This survey proposes an evolutionary framework for LLM agent memory with three stages: storage for trajectory preservation, reflection for trajectory refinement and experience for trajectory abstraction. Its companion GitHub repository had 58 stars.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "memory evolution", "domain": "knowledge-lifecycle"}, {"text": "trajectory abstraction", "domain": "agent-memory"}, {"text": "survey", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Comment and Control: Hijacking Agentic Workflows via Context-Grounded Evolution", "title_zh": "评论与控制：借助上下文锚定演化劫持智能体工作流", "url": "http://arxiv.org/abs/2605.11229v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.11229", "summary": "JAW is a detection and exploitation framework that hijacks agentic workflows on automation platforms by evolving crafted inputs under contexts derived from static path-feasibility, dynamic prompt-provenance and capability analysis. The authors report 4,714 GitHub workflows and eight n8n templates could be hijacked, and the findings span 15 widely used GitHub Actions, including official actions for Claude Code, Gemini CLI, Qwen CLI and Cursor CLI.", "keywords": [{"text": "prompt injection", "domain": "context-prompting"}, {"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "prompt provenance", "domain": "context-prompting"}, {"text": "LLM security", "domain": "ai-knowledge"}, {"text": "GitHub Actions", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "From Storage to Experience: A Survey on the Evolution of LLM Agent Memory Mechanisms", "title_zh": "从存储到经验：LLM 智能体记忆机制演化综述", "url": "https://huggingface.co/papers/2605.06716", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.06716", "summary": "This survey proposes an evolutionary framework for LLM agent memory with three stages: storage for trajectory preservation, reflection for trajectory refinement and experience for trajectory abstraction. Its companion GitHub repository had 58 stars.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "memory evolution", "domain": "knowledge-lifecycle"}, {"text": "trajectory abstraction", "domain": "agent-memory"}, {"text": "survey", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Comment and Control: Hijacking Agentic Workflows via Context-Grounded Evolution", "title_zh": "评论与控制：借助上下文锚定演化劫持智能体工作流", "url": "http://arxiv.org/abs/2605.11229v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.11229", "summary": "JAW is a detection and exploitation framework that hijacks agentic workflows on automation platforms by evolving crafted inputs under contexts derived from static path-feasibility, dynamic prompt-provenance and capability analysis. The authors report 4,714 GitHub workflows and eight n8n templates could be hijacked, and the findings span 15 widely used GitHub Actions, including official actions for Claude Code, Gemini CLI, Qwen CLI and Cursor CLI.", "keywords": [{"text": "prompt injection", "domain": "context-prompting"}, {"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "prompt provenance", "domain": "context-prompting"}, {"text": "LLM security", "domain": "ai-knowledge"}, {"text": "GitHub Actions", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Much of Geospatial Web Search Is Beyond Traditional GIS", "title_zh": "大量地理空间网络搜索已超出传统 GIS 范畴", "url": "http://arxiv.org/abs/2605.11336v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.11336", "summary": "Applying dense sentence embeddings, a SetFit classifier and density-based clustering to 1.01 million MS MARCO queries, the authors identify 181,827 geospatial queries (18.0%), nearly three times the 6.17% labelled as Location. They release an 88-category taxonomy and argue that cost, opening-hours and travel lookups fall outside traditional GIS and knowledge-graph coverage.", "keywords": [{"text": "geospatial search", "domain": "rag-retrieval"}, {"text": "sentence embeddings", "domain": "embeddings-vectors"}, {"text": "query taxonomy", "domain": "knowledge-graph"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "HyperEyes: Dual-Grained Efficiency-Aware Reinforcement Learning for Parallel Multimodal Search Agents", "title_zh": "HyperEyes：面向并行多模态搜索智能体的双粒度效率感知强化学习", "url": "https://huggingface.co/papers/2605.07177", "source": "HuggingFace Papers", "section": "research_papers", "organization": "Xiaohongshu", "language": "en", "arxiv_id": "2605.07177", "summary": "HyperEyes is a parallel multimodal search agent that fuses visual grounding and retrieval into a single atomic action so it can query several entities at once. It is trained with dual-grained efficiency-aware reinforcement learning and evaluated on a new benchmark, IMEB.", "keywords": [{"text": "multimodal search", "domain": "rag-retrieval"}, {"text": "parallel retrieval", "domain": "rag-retrieval"}, {"text": "reinforcement learning", "domain": "agent-architecture"}, {"text": "visual grounding", "domain": "rag-retrieval"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "LLMs Improving LLMs: Agentic Discovery for Test-Time Scaling", "title_zh": "LLM 改进 LLM：面向测试时扩展的智能体发现", "url": "https://huggingface.co/papers/2605.08083", "source": "HuggingFace Papers", "section": "research_papers", "organization": "Google", "language": "en", "arxiv_id": "2605.08083", "summary": "Google researchers introduce AutoTTS, which treats test-time scaling as controller synthesis over reasoning trajectories and probe signals and discovers strategies that beat hand-designed baselines.", "keywords": [{"text": "test-time scaling", "domain": "cognition-reasoning"}, {"text": "controller synthesis", "domain": "agent-architecture"}, {"text": "reasoning trajectories", "domain": "cognition-reasoning"}, {"text": "AutoTTS", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Internalizing Curriculum Judgment for LLM Reinforcement Fine-Tuning", "title_zh": "METIS：为 LLM 强化微调内化课程判断", "url": "http://arxiv.org/abs/2605.11235v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.11235", "summary": "METIS internalizes curriculum judgment in LLM reinforcement fine-tuning by predicting within-prompt reward variance from recent training outcomes and jointly optimizing that self-judgment with standard RFT rewards. The authors report up to 2.1x training speedup across mathematical reasoning, code generation and agentic function-calling benchmarks.", "keywords": [{"text": "curriculum learning", "domain": "knowledge-lifecycle"}, {"text": "metacognition", "domain": "cognition-reasoning"}, {"text": "reinforcement fine-tuning", "domain": "agent-architecture"}, {"text": "reward variance", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Adversarial SQL Injection Generation with LLM-Based Architectures", "title_zh": "基于 LLM 架构的对抗性 SQL 注入生成", "url": "http://arxiv.org/abs/2605.11188v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.11188", "summary": "The paper introduces RADAGAS, a retrieval-augmented generation system for adversarial SQL injection generation, and RefleXQLi, a reflective chain-of-thought variant, comparing them against ten web application firewalls. RADAGAS-GPT4o achieved a 22.73% bypass rate overall, while the variants were far more successful on AI/ML-based firewalls than on rule-based ones.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "adversarial testing", "domain": "evaluation-benchmark"}, {"text": "SQL injection", "domain": "ai-knowledge"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Strategic Coercion Within Alliances: The Greenland Sovereignty Game as an AI Stress Test", "title_zh": "联盟内的战略胁迫：以格陵兰主权博弈作为 AI 压力测试", "url": "http://arxiv.org/abs/2605.22841v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.22841", "summary": "Using 3,604 multi-agent games in which eight frontier LLMs play six geopolitical roles, the authors recover structural utility parameters via inverse game theory and find four-action escalation rises from 10.7% to 28.6% under coercion framing. Peaceful US acquisition emerges in only 1.9% of clean games.", "keywords": [{"text": "multi-agent simulation", "domain": "agent-architecture"}, {"text": "LLM behavior benchmark", "domain": "evaluation-benchmark"}, {"text": "inverse game theory", "domain": "cognition-reasoning"}, {"text": "geopolitical reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Show HN: adamsreview – better multi-agent PR reviews for Claude Code", "title_zh": "Show HN：adamsreview——为 Claude Code 提供更强的多智能体 PR 审查", "url": "https://github.com/adamjgmiller/adamsreview", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A developer released adamsreview, a Claude Code plugin with six slash commands that runs multi-stage pull-request review using parallel sub-agents, JSON-persisted state, validation passes and an optional Codex ensemble review. The post drew 85 points and 53 comments on Hacker News.", "keywords": [{"text": "multi-agent review", "domain": "agent-architecture"}, {"text": "Claude Code", "domain": "agent-architecture"}, {"text": "sub-agents", "domain": "agent-architecture"}, {"text": "pull-request review", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "HuggingFace Papers", "url": "https://huggingface.co/papers"}, {"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

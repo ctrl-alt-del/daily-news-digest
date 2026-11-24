@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-06-08</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic recommendation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifiable rewards</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">APT detection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent trajectories</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multimodal reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">held-out validation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">personal knowledge base</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI agent partnership</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic recommendation verifiable rewards pass^k reliability multi-turn dialogue">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2606.10156</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">$τ$-Rec: A Verifiable Benchmark for Agentic Recommender Systems<div class="title-zh">τ-Rec：面向 Agent 推荐系统的可验证基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic recommendation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifiable rewards</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">pass^k reliability</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multi-turn dialogue</span></div>
+  <div class="item-summary">$\tau$-Rec replaces subjective LLM-as-a-judge evaluation for agentic recommenders with verifiable rewards and a reveal-tagged elicitation mechanism that controls when task constraints surface during dialogue. Across nine configurations from five model families, even the best model reaches only about 57% at pass^1 and 35% at pass^4, revealing a steep reliability cliff.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10156v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory self-improvement held-out validation event sourcing LongMemEval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.10241</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Regimes: An Auditable, Held-Out-Gated Improvement Loop Demonstrated on LongMemEval with ActiveGraph<div class="title-zh">Regimes：在 LongMemEval 与 ActiveGraph 上演示的可审计、留出集门控改进循环</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-improvement</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">held-out validation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">event sourcing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LongMemEval</span></div>
+  <div class="item-summary">Regimes is an auditable improvement loop on the event-sourced ActiveGraph runtime that diagnoses failed evaluations, proposes repairs at typed pipeline seams, and promotes them only after static checks, sandbox execution, in-sample evaluation, and held-out validation. On LongMemEval-S it finds the dominant failure is reconciliation rather than retrieval, with reader-prompt repairs improving held-out accuracy by +0.05 to +0.10 in four of five seeded splits.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10241v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic recommendation verifiable rewards pass^k reliability multi-turn dialogue">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2606.10156</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">$τ$-Rec: A Verifiable Benchmark for Agentic Recommender Systems<div class="title-zh">τ-Rec：面向 Agent 推荐系统的可验证基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic recommendation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">verifiable rewards</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">pass^k reliability</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multi-turn dialogue</span></div>
+  <div class="item-summary">$\tau$-Rec replaces subjective LLM-as-a-judge evaluation for agentic recommenders with verifiable rewards and a reveal-tagged elicitation mechanism that controls when task constraints surface during dialogue. Across nine configurations from five model families, even the best model reaches only about 57% at pass^1 and 35% at pass^4, revealing a steep reliability cliff.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10156v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph retrieval-guided drafting multi-agent systems medical imaging">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.14766</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">XMedFusion: A Knowledge-Guided Multimodal Perception and Reasoning Framework for Autonomous Medical Systems<div class="title-zh">XMedFusion：面向自主医疗系统的知识引导多模态感知与推理框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-guided drafting</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">medical imaging</span></div>
+  <div class="item-summary">XMedFusion decomposes radiology report generation into a visual perception agent, a knowledge-graph construction agent, retrieval-guided drafting, and a synthesis agent that reasons over integrated evidence. On a public chest radiograph dataset it reports BLEU-1 gains from 0.0493 to 0.3359 and ROUGE-L from 0.0863 to 0.2440 over baseline vision-language models.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.14766v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="LLM-as-judge mathematical reasoning authentic assessment benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.10254</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RealMath-Eval: Why SOTA Judges Struggle with Real Human Reasoning<div class="title-zh">RealMath-Eval：为何顶尖评审模型难以评估真实人类推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">authentic assessment</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">RealMath-Eval benchmarks 224 real high-school exam responses and finds state-of-the-art LLM judges have much higher error on authentic student reasoning (MSE around 2.96) than on synthetic solutions (MSE around 1.17), pointing to an evaluation gap.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10254v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="APT detection embeddings optimal transport zero target supervision">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.10216</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Source Domain is All You Need: Source-Only Cross-OS Transfer Learning for APT Anomaly Detection via Semantic Alignment and Optimal Transport<div class="title-zh">仅需源域：通过语义对齐与最优传输实现跨 OS APT 异常检测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">APT detection</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">optimal transport</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">zero target supervision</span></div>
+  <div class="item-summary">The paper studies source-only cross-OS APT detection from system-level provenance traces, abstracting process behavior into structured natural-language descriptions and embedding them for comparison against a source-normal reference. It combines semantic, structural (graph-autoencoder), and optimal-transport deviations into a barycentric anomaly score, requiring no target-domain labels.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10216v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent trajectories post-training data Bittensor benchmark contamination">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.10064</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Bittensor Agent Arenas as a Trajectory Primitive: Distilling a Shopping Agent from ShoppingBench Subnet Traces<div class="title-zh">Bittensor Agent 竞技场作为轨迹原语：从 ShoppingBench 子网轨迹蒸馏购物 Agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent trajectories</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">post-training data</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Bittensor</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark contamination</span></div>
+  <div class="item-summary">The paper argues that incentive-aligned agent arenas can manufacture the multi-turn traces needed for small-model agentic post-training, demonstrating this on Bittensor ORO Subnet 15, a deployment of the ShoppingBench agentic-commerce benchmark. Its race mechanism, LLM reasoning judge, and rotating leak-cluster-guarded problem suite reportedly yield incentive-aligned diversity, per-trajectory judging, and anti-memorized held-out evaluation, with a structural-quality filter separating agentic from sub-task trajectories.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10064v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal recommendation chain-of-thought uncertainty estimation instruction tuning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.28357</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ReasonRec: A Reasoning-Augmented Multimodal Agent for Unified Recommendation<div class="title-zh">ReasonRec：面向统一推荐的理由增强多模态 Agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal recommendation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">uncertainty estimation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">instruction tuning</span></div>
+  <div class="item-summary">ReasonRec is a reasoning-augmented multimodal recommendation agent built around a three-stage explicit reasoning pipeline, with reasoning-aware visual instruction tuning that turns recommendation tasks into unified chain-of-thought prompts and uncertainty-guided delegation of compute. Across four recommendation tasks and five real-world datasets it reports over 30% relative improvement and better cold-start and long-tail handling.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.28357v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory self-improvement held-out validation event sourcing LongMemEval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.10241</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Regimes: An Auditable, Held-Out-Gated Improvement Loop Demonstrated on LongMemEval with ActiveGraph<div class="title-zh">Regimes：在 LongMemEval 与 ActiveGraph 上演示的可审计、留出集门控改进循环</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">self-improvement</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">held-out validation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">event sourcing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LongMemEval</span></div>
+  <div class="item-summary">Regimes is an auditable improvement loop on the event-sourced ActiveGraph runtime that diagnoses failed evaluations, proposes repairs at typed pipeline seams, and promotes them only after static checks, sandbox execution, in-sample evaluation, and held-out validation. On LongMemEval-S it finds the dominant failure is reconciliation rather than retrieval, with reader-prompt repairs improving held-out accuracy by +0.05 to +0.10 in four of five seeded splits.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10241v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="text-to-SQL active learning query embeddings few-shot retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.10125</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Robust Active Learning for Few-Shot Example Selection in Text-to-SQL<div class="title-zh">面向文本转 SQL 少样本示例选择的鲁棒主动学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">text-to-SQL</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">active learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">query embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">few-shot retrieval</span></div>
+  <div class="item-summary">The paper treats which queries to annotate for few-shot text-to-SQL as constrained experimental design on a low-dimensional query-embedding manifold, with query-dependent annotation noise and a partition-matroid spread constraint. It proposes a stratified greedy algorithm with a 1/2-approximation guarantee and a retrieval model that bounds few-shot accuracy by fill distance, demonstration noise, and domain coverage.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10125v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="graph neural networks benchmark composition label informativeness aggregator selection">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.10249</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">When Design Rules Break: Benchmark Composition Determines Whether Label Informativeness Predicts GNN Aggregator Choice<div class="title-zh">当设计规则失效：基准组成决定标签信息量能否预测 GNN 聚合器选择</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph neural networks</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark composition</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">label informativeness</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">aggregator selection</span></div>
+  <div class="item-summary">The study tests GNN aggregator selection across 24 node-classification datasets and finds that label informativeness predicts the GIN-Sum versus GIN-Mean gap on legacy benchmarks but degrades once Facebook-100 graphs are included, where near-zero label informativeness coexists with a strong preference for sum aggregation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.10249v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills personal knowledge base MCP Chinese content">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">chubbyguan/chubbyskills<div class="title-zh">chubbyguan/chubbyskills：中文内容知识库 AI Skill 合集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">personal knowledge base</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Chinese content</span></div>
+  <div class="item-summary">A Python project offering 14 AI skills that ingest Chinese-language content from Douyin, Bilibili, Xiaohongshu, WeChat, and other channels into a personal knowledge base, including subtitle-first transcription and a knowledge-base MCP server.</div>
+  <a class="item-link" href="https://github.com/chubbyguan/chubbyskills" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="AI agents e-commerce partnership">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">JD.com, Tencent reportedly team up on AI agent collaboration<div class="title-zh">京东与腾讯据报就 AI Agent 展开合作</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">e-commerce</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">partnership</span></div>
+  <div class="item-summary">JD.com and Tencent have reportedly partnered on AI agents, pairing JD.com's e-commerce and fulfillment strengths with Tencent's resources.</div>
+  <a class="item-link" href="https://technode.com/2026/06/08/jd-com-tencent-reportedly-team-up-on-ai-agent-collaboration/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org/" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://technode.com/" target="_blank" rel="noopener">TechNode</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-06-08", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 3, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 9, "tools_frameworks": 1, "blogs_insights": 1}}, "daily_keywords": [{"text": "agentic recommendation", "domain": "agent-architecture"}, {"text": "verifiable rewards", "domain": "evaluation-benchmark"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "APT detection", "domain": "ai-knowledge"}, {"text": "agent trajectories", "domain": "agent-architecture"}, {"text": "multimodal reasoning", "domain": "cognition-reasoning"}, {"text": "held-out validation", "domain": "evaluation-benchmark"}, {"text": "personal knowledge base", "domain": "knowledge-lifecycle"}, {"text": "AI agent partnership", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "$τ$-Rec: A Verifiable Benchmark for Agentic Recommender Systems", "title_zh": "τ-Rec：面向 Agent 推荐系统的可验证基准", "url": "http://arxiv.org/abs/2606.10156v3", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2606.10156", "summary": "$\\tau$-Rec replaces subjective LLM-as-a-judge evaluation for agentic recommenders with verifiable rewards and a reveal-tagged elicitation mechanism that controls when task constraints surface during dialogue. Across nine configurations from five model families, even the best model reaches only about 57% at pass^1 and 35% at pass^4, revealing a steep reliability cliff.", "keywords": [{"text": "agentic recommendation", "domain": "agent-architecture"}, {"text": "verifiable rewards", "domain": "evaluation-benchmark"}, {"text": "pass^k reliability", "domain": "evaluation-benchmark"}, {"text": "multi-turn dialogue", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Regimes: An Auditable, Held-Out-Gated Improvement Loop Demonstrated on LongMemEval with ActiveGraph", "title_zh": "Regimes：在 LongMemEval 与 ActiveGraph 上演示的可审计、留出集门控改进循环", "url": "http://arxiv.org/abs/2606.10241v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.10241", "summary": "Regimes is an auditable improvement loop on the event-sourced ActiveGraph runtime that diagnoses failed evaluations, proposes repairs at typed pipeline seams, and promotes them only after static checks, sandbox execution, in-sample evaluation, and held-out validation. On LongMemEval-S it finds the dominant failure is reconciliation rather than retrieval, with reader-prompt repairs improving held-out accuracy by +0.05 to +0.10 in four of five seeded splits.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "self-improvement", "domain": "agent-architecture"}, {"text": "held-out validation", "domain": "evaluation-benchmark"}, {"text": "event sourcing", "domain": "agent-memory"}, {"text": "LongMemEval", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "$τ$-Rec: A Verifiable Benchmark for Agentic Recommender Systems", "title_zh": "τ-Rec：面向 Agent 推荐系统的可验证基准", "url": "http://arxiv.org/abs/2606.10156v3", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2606.10156", "summary": "$\\tau$-Rec replaces subjective LLM-as-a-judge evaluation for agentic recommenders with verifiable rewards and a reveal-tagged elicitation mechanism that controls when task constraints surface during dialogue. Across nine configurations from five model families, even the best model reaches only about 57% at pass^1 and 35% at pass^4, revealing a steep reliability cliff.", "keywords": [{"text": "agentic recommendation", "domain": "agent-architecture"}, {"text": "verifiable rewards", "domain": "evaluation-benchmark"}, {"text": "pass^k reliability", "domain": "evaluation-benchmark"}, {"text": "multi-turn dialogue", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "XMedFusion: A Knowledge-Guided Multimodal Perception and Reasoning Framework for Autonomous Medical Systems", "title_zh": "XMedFusion：面向自主医疗系统的知识引导多模态感知与推理框架", "url": "http://arxiv.org/abs/2606.14766v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.14766", "summary": "XMedFusion decomposes radiology report generation into a visual perception agent, a knowledge-graph construction agent, retrieval-guided drafting, and a synthesis agent that reasons over integrated evidence. On a public chest radiograph dataset it reports BLEU-1 gains from 0.0493 to 0.3359 and ROUGE-L from 0.0863 to 0.2440 over baseline vision-language models.", "keywords": [{"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "retrieval-guided drafting", "domain": "rag-retrieval"}, {"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "medical imaging", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "RealMath-Eval: Why SOTA Judges Struggle with Real Human Reasoning", "title_zh": "RealMath-Eval：为何顶尖评审模型难以评估真实人类推理", "url": "http://arxiv.org/abs/2606.10254v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.10254", "summary": "RealMath-Eval benchmarks 224 real high-school exam responses and finds state-of-the-art LLM judges have much higher error on authentic student reasoning (MSE around 2.96) than on synthetic solutions (MSE around 1.17), pointing to an evaluation gap.", "keywords": [{"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "mathematical reasoning", "domain": "cognition-reasoning"}, {"text": "authentic assessment", "domain": "evaluation-benchmark"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "A Source Domain is All You Need: Source-Only Cross-OS Transfer Learning for APT Anomaly Detection via Semantic Alignment and Optimal Transport", "title_zh": "仅需源域：通过语义对齐与最优传输实现跨 OS APT 异常检测", "url": "http://arxiv.org/abs/2606.10216v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.10216", "summary": "The paper studies source-only cross-OS APT detection from system-level provenance traces, abstracting process behavior into structured natural-language descriptions and embedding them for comparison against a source-normal reference. It combines semantic, structural (graph-autoencoder), and optimal-transport deviations into a barycentric anomaly score, requiring no target-domain labels.", "keywords": [{"text": "APT detection", "domain": "ai-knowledge"}, {"text": "embeddings", "domain": "embeddings-vectors"}, {"text": "optimal transport", "domain": "embeddings-vectors"}, {"text": "zero target supervision", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Bittensor Agent Arenas as a Trajectory Primitive: Distilling a Shopping Agent from ShoppingBench Subnet Traces", "title_zh": "Bittensor Agent 竞技场作为轨迹原语：从 ShoppingBench 子网轨迹蒸馏购物 Agent", "url": "http://arxiv.org/abs/2606.10064v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.10064", "summary": "The paper argues that incentive-aligned agent arenas can manufacture the multi-turn traces needed for small-model agentic post-training, demonstrating this on Bittensor ORO Subnet 15, a deployment of the ShoppingBench agentic-commerce benchmark. Its race mechanism, LLM reasoning judge, and rotating leak-cluster-guarded problem suite reportedly yield incentive-aligned diversity, per-trajectory judging, and anti-memorized held-out evaluation, with a structural-quality filter separating agentic from sub-task trajectories.", "keywords": [{"text": "agent trajectories", "domain": "agent-architecture"}, {"text": "post-training data", "domain": "knowledge-lifecycle"}, {"text": "Bittensor", "domain": "agent-architecture"}, {"text": "benchmark contamination", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ReasonRec: A Reasoning-Augmented Multimodal Agent for Unified Recommendation", "title_zh": "ReasonRec：面向统一推荐的理由增强多模态 Agent", "url": "http://arxiv.org/abs/2606.28357v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.28357", "summary": "ReasonRec is a reasoning-augmented multimodal recommendation agent built around a three-stage explicit reasoning pipeline, with reasoning-aware visual instruction tuning that turns recommendation tasks into unified chain-of-thought prompts and uncertainty-guided delegation of compute. Across four recommendation tasks and five real-world datasets it reports over 30% relative improvement and better cold-start and long-tail handling.", "keywords": [{"text": "multimodal recommendation", "domain": "ai-knowledge"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "uncertainty estimation", "domain": "cognition-reasoning"}, {"text": "instruction tuning", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Regimes: An Auditable, Held-Out-Gated Improvement Loop Demonstrated on LongMemEval with ActiveGraph", "title_zh": "Regimes：在 LongMemEval 与 ActiveGraph 上演示的可审计、留出集门控改进循环", "url": "http://arxiv.org/abs/2606.10241v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.10241", "summary": "Regimes is an auditable improvement loop on the event-sourced ActiveGraph runtime that diagnoses failed evaluations, proposes repairs at typed pipeline seams, and promotes them only after static checks, sandbox execution, in-sample evaluation, and held-out validation. On LongMemEval-S it finds the dominant failure is reconciliation rather than retrieval, with reader-prompt repairs improving held-out accuracy by +0.05 to +0.10 in four of five seeded splits.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "self-improvement", "domain": "agent-architecture"}, {"text": "held-out validation", "domain": "evaluation-benchmark"}, {"text": "event sourcing", "domain": "agent-memory"}, {"text": "LongMemEval", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Robust Active Learning for Few-Shot Example Selection in Text-to-SQL", "title_zh": "面向文本转 SQL 少样本示例选择的鲁棒主动学习", "url": "http://arxiv.org/abs/2606.10125v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.10125", "summary": "The paper treats which queries to annotate for few-shot text-to-SQL as constrained experimental design on a low-dimensional query-embedding manifold, with query-dependent annotation noise and a partition-matroid spread constraint. It proposes a stratified greedy algorithm with a 1/2-approximation guarantee and a retrieval model that bounds few-shot accuracy by fill distance, demonstration noise, and domain coverage.", "keywords": [{"text": "text-to-SQL", "domain": "ai-knowledge"}, {"text": "active learning", "domain": "evaluation-benchmark"}, {"text": "query embeddings", "domain": "embeddings-vectors"}, {"text": "few-shot retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "When Design Rules Break: Benchmark Composition Determines Whether Label Informativeness Predicts GNN Aggregator Choice", "title_zh": "当设计规则失效：基准组成决定标签信息量能否预测 GNN 聚合器选择", "url": "http://arxiv.org/abs/2606.10249v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.10249", "summary": "The study tests GNN aggregator selection across 24 node-classification datasets and finds that label informativeness predicts the GIN-Sum versus GIN-Mean gap on legacy benchmarks but degrades once Facebook-100 graphs are included, where near-zero label informativeness coexists with a strong preference for sum aggregation.", "keywords": [{"text": "graph neural networks", "domain": "knowledge-graph"}, {"text": "benchmark composition", "domain": "evaluation-benchmark"}, {"text": "label informativeness", "domain": "knowledge-graph"}, {"text": "aggregator selection", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "chubbyguan/chubbyskills", "title_zh": "chubbyguan/chubbyskills：中文内容知识库 AI Skill 合集", "url": "https://github.com/chubbyguan/chubbyskills", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "A Python project offering 14 AI skills that ingest Chinese-language content from Douyin, Bilibili, Xiaohongshu, WeChat, and other channels into a personal knowledge base, including subtitle-first transcription and a knowledge-base MCP server.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "personal knowledge base", "domain": "knowledge-lifecycle"}, {"text": "MCP", "domain": "agent-architecture"}, {"text": "Chinese content", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "JD.com, Tencent reportedly team up on AI agent collaboration", "title_zh": "京东与腾讯据报就 AI Agent 展开合作", "url": "https://technode.com/2026/06/08/jd-com-tencent-reportedly-team-up-on-ai-agent-collaboration/", "source": "TechNode", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "JD.com and Tencent have reportedly partnered on AI agents, pairing JD.com's e-commerce and fulfillment strengths with Tencent's resources.", "keywords": [{"text": "AI agents", "domain": "agent-architecture"}, {"text": "e-commerce", "domain": "ai-knowledge"}, {"text": "partnership", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org/"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "TechNode", "url": "https://technode.com/"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

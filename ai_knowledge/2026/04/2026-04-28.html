@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-04-28</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding-agent harness</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">observability</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context serving</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic caching</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge-graph QA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context decomposition</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge-graph QA generation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG for hardware design</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic coding CLI</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise AI platform</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark transfer</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding-agent harness observability experience corpus self-evolution Terminal-Bench">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.25850</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Harness Engineering: Observability-Driven Automatic Evolution of Coding-Agent Harnesses<div class="title-zh">智能体脚手架工程：可观测性驱动的编码智能体脚手架自动演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding-agent harness</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">observability</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience corpus</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">Terminal-Bench</span></div>
+  <div class="item-summary">Agentic Harness Engineering (AHE) is a closed loop that evolves coding-agent harnesses through three observability pillars: file-level representations of every editable component, a layered evidence corpus distilled from millions of trajectory tokens, and per-edit predictions verified against later task outcomes. Ten iterations lift pass@1 on Terminal-Bench 2 from 69.7% to 77.0%, above the human-designed Codex-CLI (71.9%), and the frozen harness transfers to SWE-bench-verified with 12% fewer tokens and to three other model families with +5.1 to +10.1 pp gains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.25850v5" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="managed agents enterprise deployment cloud platform">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OpenAI models, Codex, and Managed Agents come to AWS<div class="title-zh">OpenAI 模型、Codex 与托管智能体登陆 AWS</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">managed agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise deployment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cloud platform</span></div>
+  <div class="item-summary">OpenAI's GPT models, Codex and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their existing AWS environments.</div>
+  <a class="item-link" href="https://openai.com/index/openai-on-aws" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="long-context serving attention latency memory-centric architecture agentic workloads">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2604.26103</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AMMA: A Multi-Chiplet Memory-Centric Architecture for Low-Latency 1M Context Attention Serving<div class="title-zh">AMMA：面向低延迟百万上下文注意力服务的多芯粒内存中心架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context serving</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">attention latency</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">memory-centric architecture</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workloads</span></div>
+  <div class="item-summary">AMMA is a multi-chiplet, memory-centric architecture for low-latency long-context attention that replaces GPU compute dies with HBM-PNM cubes, roughly doubling available memory bandwidth for memory-bound decode-phase attention. Against an NVIDIA H100, it reports 15.5x lower attention latency and 6.9x lower energy consumption, motivated by reasoning and agentic workloads pushing context toward one million tokens.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.26103v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="coding-agent harness observability experience corpus self-evolution Terminal-Bench">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.25850</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Harness Engineering: Observability-Driven Automatic Evolution of Coding-Agent Harnesses<div class="title-zh">智能体脚手架工程：可观测性驱动的编码智能体脚手架自动演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding-agent harness</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">observability</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">experience corpus</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">Terminal-Bench</span></div>
+  <div class="item-summary">Agentic Harness Engineering (AHE) is a closed loop that evolves coding-agent harnesses through three observability pillars: file-level representations of every editable component, a layered evidence corpus distilled from millions of trajectory tokens, and per-edit predictions verified against later task outcomes. Ten iterations lift pass@1 on Terminal-Bench 2 from 69.7% to 77.0%, above the human-designed Codex-CLI (71.9%), and the frozen harness transfers to SWE-bench-verified with 12% fewer tokens and to three other model families with +5.1 to +10.1 pp gains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.25850v5" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="semantic caching knowledge-graph QA retrieval planning schema grounding maximal marginal relevance">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.26176</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CacheRAG: A Semantic Caching System for Retrieval-Augmented Generation in Knowledge Graph Question Answering<div class="title-zh">CacheRAG：面向知识图谱问答检索增强生成的语义缓存系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">semantic caching</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge-graph QA</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval planning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">schema grounding</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">maximal marginal relevance</span></div>
+  <div class="item-summary">CacheRAG turns stateless LLM planners for knowledge-graph question answering into continual learners by caching retrieval plans, using a two-stage semantic parsing interface, a Domain-to-Aspect hierarchical index with maximal marginal relevance, and bounded heuristic subgraph expansion. It reports +13.2% accuracy and +17.5% truthfulness on the CRAG dataset over state-of-the-art baselines, arguing that generating retrieval plans in isolation leads to schema hallucinations and limited retrieval coverage.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.26176v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context coupling code editing subagents SWE-bench edit-format policy">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.26102</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SWE-Edit: Rethinking Code Editing for Efficient SWE-Agent<div class="title-zh">SWE-Edit：重新思考 SWE 智能体的代码编辑方式</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context coupling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">code editing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">subagents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">SWE-bench</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">edit-format policy</span></div>
+  <div class="item-summary">SWE-Edit decomposes the code-editing interface into a Viewer subagent that extracts task-relevant code on demand and an Editor subagent that executes high-level natural-language plans, addressing a context-coupling problem in which exploration and strict edit generation share one window. On SWE-Bench Verified it raises resolve rate by 2.1 pp and cuts inference cost by 17.9% across Kimi-K2, MiniMax-M2.1 and GLM-4.7, and GRPO training on Qwen3-8B improves edit success by 12.5 pp.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.26102v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph QA generation graphlet prompting biomedical QA dataset">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.26048</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">BioGraphletQA: Knowledge-Anchored Generation of Complex QA Datasets<div class="title-zh">BioGraphletQA：知识锚定的复杂问答数据集生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">QA generation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">graphlet prompting</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">biomedical QA</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">dataset</span></div>
+  <div class="item-summary">BioGraphletQA is a biomedical KGQA dataset of 119,856 QA pairs generated by grounding structured prompts in graphlets of up to five nodes from the OREGANO knowledge graph, with most pairs enriched by PubMed snippets. Expert review of 106 pairs confirmed scientific validity and complexity, and augmenting downstream benchmarks raised PubMedQA accuracy from 49.2% to 68.5% in a low-resource setting.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.26048v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation heuristic synthesis hardware design iterative refinement">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.26153</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RAG-Enhanced Kernel-Based Heuristic Synthesis (RKHS): A Structured Methodology Using Large Language Models for Hardware Design<div class="title-zh">RAG 增强的核启发式合成（RKHS）：利用大语言模型进行硬件设计的结构化方法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">heuristic synthesis</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">hardware design</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">iterative refinement</span></div>
+  <div class="item-summary">RKHS combines retrieval-augmented generation, compact kernel heuristic templates and an LLM-driven refinement loop to synthesize reusable optimization heuristics. A prototype for latency-minimizing list scheduling in high-level synthesis cut average schedule length by up to 11% over a baseline, with 1.3x runtime overhead.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.26153v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding assistant DeepSeek V4 reasoning effort agent skills">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">lessweb/deepcode-cli<div class="title-zh">lessweb/deepcode-cli：为 DeepSeek V4 优化的终端 AI 编码助手</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding assistant</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">DeepSeek V4</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">reasoning effort</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span></div>
+  <div class="item-summary">Deep Code is a TypeScript terminal AI coding assistant optimized for the DeepSeek V4 model, with support for deep thinking, reasoning-effort control and Agent Skills.</div>
+  <a class="item-link" href="https://github.com/lessweb/deepcode-cli" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="managed agents enterprise deployment cloud platform">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OpenAI models, Codex, and Managed Agents come to AWS<div class="title-zh">OpenAI 模型、Codex 与托管智能体登陆 AWS</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">managed agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise deployment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cloud platform</span></div>
+  <div class="item-summary">OpenAI's GPT models, Codex and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their existing AWS environments.</div>
+  <a class="item-link" href="https://openai.com/index/openai-on-aws" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-04-28", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 3, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 6, "tools_frameworks": 1, "blogs_insights": 1}}, "daily_keywords": [{"text": "coding-agent harness", "domain": "agent-architecture"}, {"text": "observability", "domain": "agent-memory"}, {"text": "long-context serving", "domain": "context-prompting"}, {"text": "semantic caching", "domain": "rag-retrieval"}, {"text": "knowledge-graph QA", "domain": "knowledge-graph"}, {"text": "context decomposition", "domain": "context-prompting"}, {"text": "knowledge-graph QA generation", "domain": "knowledge-lifecycle"}, {"text": "RAG for hardware design", "domain": "rag-retrieval"}, {"text": "agentic coding CLI", "domain": "agent-architecture"}, {"text": "enterprise AI platform", "domain": "ai-knowledge"}, {"text": "benchmark transfer", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Agentic Harness Engineering: Observability-Driven Automatic Evolution of Coding-Agent Harnesses", "title_zh": "智能体脚手架工程：可观测性驱动的编码智能体脚手架自动演化", "url": "http://arxiv.org/abs/2604.25850v5", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.25850", "summary": "Agentic Harness Engineering (AHE) is a closed loop that evolves coding-agent harnesses through three observability pillars: file-level representations of every editable component, a layered evidence corpus distilled from millions of trajectory tokens, and per-edit predictions verified against later task outcomes. Ten iterations lift pass@1 on Terminal-Bench 2 from 69.7% to 77.0%, above the human-designed Codex-CLI (71.9%), and the frozen harness transfers to SWE-bench-verified with 12% fewer tokens and to three other model families with +5.1 to +10.1 pp gains.", "keywords": [{"text": "coding-agent harness", "domain": "agent-architecture"}, {"text": "observability", "domain": "agent-memory"}, {"text": "experience corpus", "domain": "agent-memory"}, {"text": "self-evolution", "domain": "knowledge-lifecycle"}, {"text": "Terminal-Bench", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "OpenAI models, Codex, and Managed Agents come to AWS", "title_zh": "OpenAI 模型、Codex 与托管智能体登陆 AWS", "url": "https://openai.com/index/openai-on-aws", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI's GPT models, Codex and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their existing AWS environments.", "keywords": [{"text": "managed agents", "domain": "agent-architecture"}, {"text": "enterprise deployment", "domain": "ai-knowledge"}, {"text": "cloud platform", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "AMMA: A Multi-Chiplet Memory-Centric Architecture for Low-Latency 1M Context Attention Serving", "title_zh": "AMMA：面向低延迟百万上下文注意力服务的多芯粒内存中心架构", "url": "http://arxiv.org/abs/2604.26103v3", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2604.26103", "summary": "AMMA is a multi-chiplet, memory-centric architecture for low-latency long-context attention that replaces GPU compute dies with HBM-PNM cubes, roughly doubling available memory bandwidth for memory-bound decode-phase attention. Against an NVIDIA H100, it reports 15.5x lower attention latency and 6.9x lower energy consumption, motivated by reasoning and agentic workloads pushing context toward one million tokens.", "keywords": [{"text": "long-context serving", "domain": "context-prompting"}, {"text": "attention latency", "domain": "ai-knowledge"}, {"text": "memory-centric architecture", "domain": "ai-knowledge"}, {"text": "agentic workloads", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic Harness Engineering: Observability-Driven Automatic Evolution of Coding-Agent Harnesses", "title_zh": "智能体脚手架工程：可观测性驱动的编码智能体脚手架自动演化", "url": "http://arxiv.org/abs/2604.25850v5", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.25850", "summary": "Agentic Harness Engineering (AHE) is a closed loop that evolves coding-agent harnesses through three observability pillars: file-level representations of every editable component, a layered evidence corpus distilled from millions of trajectory tokens, and per-edit predictions verified against later task outcomes. Ten iterations lift pass@1 on Terminal-Bench 2 from 69.7% to 77.0%, above the human-designed Codex-CLI (71.9%), and the frozen harness transfers to SWE-bench-verified with 12% fewer tokens and to three other model families with +5.1 to +10.1 pp gains.", "keywords": [{"text": "coding-agent harness", "domain": "agent-architecture"}, {"text": "observability", "domain": "agent-memory"}, {"text": "experience corpus", "domain": "agent-memory"}, {"text": "self-evolution", "domain": "knowledge-lifecycle"}, {"text": "Terminal-Bench", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "CacheRAG: A Semantic Caching System for Retrieval-Augmented Generation in Knowledge Graph Question Answering", "title_zh": "CacheRAG：面向知识图谱问答检索增强生成的语义缓存系统", "url": "http://arxiv.org/abs/2604.26176v4", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.26176", "summary": "CacheRAG turns stateless LLM planners for knowledge-graph question answering into continual learners by caching retrieval plans, using a two-stage semantic parsing interface, a Domain-to-Aspect hierarchical index with maximal marginal relevance, and bounded heuristic subgraph expansion. It reports +13.2% accuracy and +17.5% truthfulness on the CRAG dataset over state-of-the-art baselines, arguing that generating retrieval plans in isolation leads to schema hallucinations and limited retrieval coverage.", "keywords": [{"text": "semantic caching", "domain": "rag-retrieval"}, {"text": "knowledge-graph QA", "domain": "knowledge-graph"}, {"text": "retrieval planning", "domain": "rag-retrieval"}, {"text": "schema grounding", "domain": "ai-knowledge"}, {"text": "maximal marginal relevance", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "SWE-Edit: Rethinking Code Editing for Efficient SWE-Agent", "title_zh": "SWE-Edit：重新思考 SWE 智能体的代码编辑方式", "url": "http://arxiv.org/abs/2604.26102v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.26102", "summary": "SWE-Edit decomposes the code-editing interface into a Viewer subagent that extracts task-relevant code on demand and an Editor subagent that executes high-level natural-language plans, addressing a context-coupling problem in which exploration and strict edit generation share one window. On SWE-Bench Verified it raises resolve rate by 2.1 pp and cuts inference cost by 17.9% across Kimi-K2, MiniMax-M2.1 and GLM-4.7, and GRPO training on Qwen3-8B improves edit success by 12.5 pp.", "keywords": [{"text": "context coupling", "domain": "context-prompting"}, {"text": "code editing", "domain": "agent-architecture"}, {"text": "subagents", "domain": "agent-architecture"}, {"text": "SWE-bench", "domain": "evaluation-benchmark"}, {"text": "edit-format policy", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "BioGraphletQA: Knowledge-Anchored Generation of Complex QA Datasets", "title_zh": "BioGraphletQA：知识锚定的复杂问答数据集生成", "url": "http://arxiv.org/abs/2604.26048v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.26048", "summary": "BioGraphletQA is a biomedical KGQA dataset of 119,856 QA pairs generated by grounding structured prompts in graphlets of up to five nodes from the OREGANO knowledge graph, with most pairs enriched by PubMed snippets. Expert review of 106 pairs confirmed scientific validity and complexity, and augmenting downstream benchmarks raised PubMedQA accuracy from 49.2% to 68.5% in a low-resource setting.", "keywords": [{"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "QA generation", "domain": "knowledge-lifecycle"}, {"text": "graphlet prompting", "domain": "context-prompting"}, {"text": "biomedical QA", "domain": "ai-knowledge"}, {"text": "dataset", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "RAG-Enhanced Kernel-Based Heuristic Synthesis (RKHS): A Structured Methodology Using Large Language Models for Hardware Design", "title_zh": "RAG 增强的核启发式合成（RKHS）：利用大语言模型进行硬件设计的结构化方法", "url": "http://arxiv.org/abs/2604.26153v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.26153", "summary": "RKHS combines retrieval-augmented generation, compact kernel heuristic templates and an LLM-driven refinement loop to synthesize reusable optimization heuristics. A prototype for latency-minimizing list scheduling in high-level synthesis cut average schedule length by up to 11% over a baseline, with 1.3x runtime overhead.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "heuristic synthesis", "domain": "ai-knowledge"}, {"text": "hardware design", "domain": "ai-knowledge"}, {"text": "iterative refinement", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "lessweb/deepcode-cli", "title_zh": "lessweb/deepcode-cli：为 DeepSeek V4 优化的终端 AI 编码助手", "url": "https://github.com/lessweb/deepcode-cli", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Deep Code is a TypeScript terminal AI coding assistant optimized for the DeepSeek V4 model, with support for deep thinking, reasoning-effort control and Agent Skills.", "keywords": [{"text": "coding assistant", "domain": "agent-architecture"}, {"text": "DeepSeek V4", "domain": "ai-knowledge"}, {"text": "reasoning effort", "domain": "context-prompting"}, {"text": "agent skills", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "OpenAI models, Codex, and Managed Agents come to AWS", "title_zh": "OpenAI 模型、Codex 与托管智能体登陆 AWS", "url": "https://openai.com/index/openai-on-aws", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI's GPT models, Codex and Managed Agents are now available on AWS, enabling enterprises to build secure AI in their existing AWS environments.", "keywords": [{"text": "managed agents", "domain": "agent-architecture"}, {"text": "enterprise deployment", "domain": "ai-knowledge"}, {"text": "cloud platform", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-04-23</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">13 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">13/13 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">10</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:10%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">typed semantic memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">temporal versioning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-a-judge reliability</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">position bias</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">emergent strategic reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">machine unlearning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multi-turn jailbreak</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">red-team strategy evolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">continual learning evaluation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">low-resource RAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">MeSH ontology</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory typed semantic memory temporal versioning conflict resolution LongMemEval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.22085</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Memanto: Typed Semantic Memory with Information-Theoretic Retrieval for Long-Horizon Agents<div class="title-zh">Memanto：面向长时程智能体的类型化语义记忆与信息论检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">typed semantic memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">temporal versioning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">conflict resolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LongMemEval</span></div>
+  <div class="item-summary">Memanto is a universal agent memory layer combining a typed semantic schema with thirteen memory categories, automated conflict resolution and temporal versioning, backed by Moorcheh's index-free information-theoretic search. It reports state-of-the-art 89.8% on LongMemEval and 87.1% on LoCoMo with a single retrieval query and no ingestion cost, surpassing evaluated hybrid graph and vector systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22085v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="model release tool use reasoning">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Introducing GPT-5.5<div class="title-zh">GPT-5.5 发布</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model release</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning</span></div>
+  <div class="item-summary">OpenAI introduced GPT-5.5, described as a model built for complex tasks such as coding, research and data analysis across tools.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-gpt-5-5" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="LLM-as-a-judge judge reliability position bias evaluation methodology">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2606.13685</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Coin Flip Judge? Reliability and Bias in LLM-as-a-Judge Evaluation<div class="title-zh">抛硬币式评审？LLM 作为评审的可靠性与偏差</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-a-judge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">judge reliability</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">position bias</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation methodology</span></div>
+  <div class="item-summary">The study runs repeated identical LLM-as-a-Judge evaluations on 29 tasks with 50 pairwise and 50 pointwise trials per question. Pairwise preferences flip 13.6% of the time on average, 28% of questions exceed a 20% flip rate, cross-judge agreement is 76%, and about 11 repeated trials are needed for a majority vote to recover the 50-trial verdict with 95% probability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.13685v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[10]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory typed semantic memory temporal versioning conflict resolution LongMemEval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.22085</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Memanto: Typed Semantic Memory with Information-Theoretic Retrieval for Long-Horizon Agents<div class="title-zh">Memanto：面向长时程智能体的类型化语义记忆与信息论检索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">typed semantic memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">temporal versioning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">conflict resolution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LongMemEval</span></div>
+  <div class="item-summary">Memanto is a universal agent memory layer combining a typed semantic schema with thirteen memory categories, automated conflict resolution and temporal versioning, backed by Moorcheh's index-free information-theoretic search. It reports state-of-the-art 89.8% on LongMemEval and 87.1% on LoCoMo with a single retrieval query and no ingestion cost, surpassing evaluated hybrid graph and vector systems.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22085v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="LLM-as-a-judge judge reliability position bias evaluation methodology">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2606.13685</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Coin Flip Judge? Reliability and Bias in LLM-as-a-Judge Evaluation<div class="title-zh">抛硬币式评审？LLM 作为评审的可靠性与偏差</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-a-judge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">judge reliability</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">position bias</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation methodology</span></div>
+  <div class="item-summary">The study runs repeated identical LLM-as-a-Judge evaluations on 29 tasks with 50 pairwise and 50 pointwise trials per question. Pairwise preferences flip 13.6% of the time on average, 28% of questions exceed a 20% flip rate, cross-judge agreement is 76%, and about 11 repeated trials are needed for a majority vote to recover the 50-trial verdict with 95% probability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.13685v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="strategic reasoning risk taxonomy deception detection agentic evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.22119</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Emergent Strategic Reasoning Risks in AI: A Taxonomy-Driven Evaluation Framework<div class="title-zh">AI 中的涌现性策略推理风险：分类体系驱动的评估框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">strategic reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">risk taxonomy</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">deception detection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic evaluation</span></div>
+  <div class="item-summary">ESRRSim is a taxonomy-driven agentic framework for evaluating emergent strategic reasoning risks such as deception, evaluation gaming and reward hacking. Across 11 reasoning LLMs, detection rates ranged from 14.45% to 72.72%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22119v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="neuro-symbolic reasoning vision-language models latent reasoning token efficiency">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2604.22062</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Incentivizing Neuro-symbolic Language-based Reasoning in VLMs via Reinforcement Learning<div class="title-zh">通过强化学习激励视觉语言模型中的神经符号语言推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">neuro-symbolic reasoning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">vision-language models</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">latent reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">token efficiency</span></div>
+  <div class="item-summary">The work explores representing vision-language concepts in a neuro-symbolic language and post-trains Qwen3-VL-2B-Instruct for it on four H200 GPU nodes. It reports a 3.33% accuracy gain on a math, science and general-knowledge vision-language benchmark while cutting reasoning tokens by 75% relative to SymPy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22062v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="machine unlearning forgetting depth privacy attacks evaluation framework">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.22076</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PrivUn: Unveiling Latent Ripple Effects and Shallow Forgetting in Privacy Unlearning<div class="title-zh">PrivUn：揭示隐私遗忘中的潜在涟漪效应与浅层遗忘</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">machine unlearning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">forgetting depth</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">privacy attacks</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation framework</span></div>
+  <div class="item-summary">PrivUn evaluates unlearning robustness through direct retrieval, in-context learning recovery and fine-tuning restoration attacks, adding forgetting scores, association metrics and forgetting-depth assessment. It finds that privacy unlearning propagates along latent gradient-based associations and is often shallow, leaving private information distributed across deep model layers; association-aware coreset selection and multi-layer representational constraints are explored as remedies.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22076v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-turn attack stateless moderation adversarial robustness session context">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2604.21860</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Transient Turn Injection: Exposing Stateless Multi-Turn Vulnerabilities in Large Language Models<div class="title-zh">瞬态轮次注入：暴露大语言模型无状态多轮交互漏洞</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multi-turn attack</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">stateless moderation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial robustness</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">session context</span></div>
+  <div class="item-summary">Transient Turn Injection is a multi-turn attack that distributes adversarial intent across isolated interactions to exploit stateless moderation, using automated attacker agents. Evaluations across models from OpenAI, Anthropic, Google, Meta and open-source alternatives find wide variation in resilience and surface model-specific vulnerabilities, especially in medical and high-stakes domains.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.21860v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="red-teaming strategy search coding agents jailbreak">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.22871</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AutoRISE: Agent-Driven Strategy Evolution for Red-Teaming Large Language Models<div class="title-zh">AutoRISE：面向大语言模型红队的智能体驱动策略演化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">red-teaming</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">strategy search</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">jailbreak</span></div>
+  <div class="item-summary">AutoRISE searches over executable attack programs rather than individual prompts: a coding agent edits an attack strategy while a fixed evaluation harness scores the resulting attacks and returns diagnostics for the next edit. Evaluated on 11 models from five families across seven jailbreak datasets, it improves average attack success by 17.0 points over the strongest baseline on held-out models in a black-box, inference-only setting.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22871v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning catastrophic forgetting evaluation protocol fine-tuning regime">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.21927</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Same Methods, Different Rankings: Trainable Depth as an Evaluation Variable in Continual Learning<div class="title-zh">相同方法，不同排名：可训练深度作为持续学习中的评估变量</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation protocol</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">fine-tuning regime</span></div>
+  <div class="item-summary">The paper treats the fine-tuning regime, defined by the trainable parameter subspace, as an evaluation variable for continual learning. Across five methods, five trainable-depth regimes, five datasets and eleven task orders per dataset, method rankings are not consistently preserved, and deeper adaptation is associated with larger update magnitudes, more forgetting and a stronger relationship between the two.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.21927v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="RAG hybrid search low-resource language local deployment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.22095</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An End-to-End Ukrainian RAG for Local Deployment. Optimized Hybrid Search and Lightweight Generation<div class="title-zh">面向本地部署的端到端乌克兰语 RAG：优化的混合检索与轻量生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">RAG</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid search</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">low-resource language</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">local deployment</span></div>
+  <div class="item-summary">The paper describes a Ukrainian document question-answering RAG system that placed second in the UNLP 2026 Shared Task, combining a two-stage retrieval pipeline with a Ukrainian language model fine-tuned on synthetic data. Compression and lightweight generation target local deployment under strict compute limits.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22095v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge augmentation MeSH ontology temporal adaptation retrieval-augmented learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.22098</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Knowledge-driven Augmentation and Retrieval for Integrative Temporal Adaptation<div class="title-zh">知识驱动的增强与检索：面向一体化时序适应</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">knowledge augmentation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">MeSH ontology</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">temporal adaptation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented learning</span></div>
+  <div class="item-summary">KARITA is a knowledge-driven augmentation and retrieval method for temporal adaptation that draws on knowledge sources such as the MeSH medical ontology and uses shifting insights to guide retrieval-augmented learning. It reports consistent improvements on clinical, legal and scientific classification tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.22098v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="MCP servers agent skills AWS">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">aws/agent-toolkit-for-aws<div class="title-zh">aws/agent-toolkit-for-aws：AWS 官方 AI Agent 工具包</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP servers</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AWS</span></div>
+  <div class="item-summary">AWS released an official AWS-supported toolkit of MCP servers, skills and plugins intended to help AI agents build on AWS.</div>
+  <a class="item-link" href="https://github.com/aws/agent-toolkit-for-aws" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent evaluation observability tracing open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">future-agi/future-agi<div class="title-zh">future-agi/future-agi：开源 LLM 与 AI Agent 评测观测平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">observability</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tracing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">future-agi is an open-source, self-hostable Apache 2.0 Python platform for evaluating, observing and improving LLM and AI-agent applications, with tracing, evals, simulations, datasets, a gateway and guardrails.</div>
+  <a class="item-link" href="https://github.com/future-agi/future-agi" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="model release tool use reasoning">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Introducing GPT-5.5<div class="title-zh">GPT-5.5 发布</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model release</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning</span></div>
+  <div class="item-summary">OpenAI introduced GPT-5.5, described as a model built for complex tasks such as coding, research and data analysis across tools.</div>
+  <a class="item-link" href="https://openai.com/index/introducing-gpt-5-5" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-04-23", "stats": {"total_items": 13, "unique_items": 13, "sources_count": 3, "links_verified_count": 13, "links_failed_count": 0, "section_counts": {"research_papers": 10, "tools_frameworks": 2, "models_embeddings": 1}}, "daily_keywords": [{"text": "typed semantic memory", "domain": "agent-memory"}, {"text": "temporal versioning", "domain": "knowledge-lifecycle"}, {"text": "LLM-as-a-judge reliability", "domain": "evaluation-benchmark"}, {"text": "position bias", "domain": "evaluation-benchmark"}, {"text": "emergent strategic reasoning", "domain": "cognition-reasoning"}, {"text": "machine unlearning", "domain": "knowledge-lifecycle"}, {"text": "multi-turn jailbreak", "domain": "context-prompting"}, {"text": "red-team strategy evolution", "domain": "agent-architecture"}, {"text": "continual learning evaluation", "domain": "evaluation-benchmark"}, {"text": "low-resource RAG", "domain": "rag-retrieval"}, {"text": "MeSH ontology", "domain": "knowledge-graph"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Memanto: Typed Semantic Memory with Information-Theoretic Retrieval for Long-Horizon Agents", "title_zh": "Memanto：面向长时程智能体的类型化语义记忆与信息论检索", "url": "http://arxiv.org/abs/2604.22085v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.22085", "summary": "Memanto is a universal agent memory layer combining a typed semantic schema with thirteen memory categories, automated conflict resolution and temporal versioning, backed by Moorcheh's index-free information-theoretic search. It reports state-of-the-art 89.8% on LongMemEval and 87.1% on LoCoMo with a single retrieval query and no ingestion cost, surpassing evaluated hybrid graph and vector systems.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "typed semantic memory", "domain": "agent-memory"}, {"text": "temporal versioning", "domain": "knowledge-lifecycle"}, {"text": "conflict resolution", "domain": "knowledge-lifecycle"}, {"text": "LongMemEval", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Introducing GPT-5.5", "title_zh": "GPT-5.5 发布", "url": "https://openai.com/index/introducing-gpt-5-5", "source": "OpenAI", "section": "models_embeddings", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduced GPT-5.5, described as a model built for complex tasks such as coding, research and data analysis across tools.", "keywords": [{"text": "model release", "domain": "ai-knowledge"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "The Coin Flip Judge? Reliability and Bias in LLM-as-a-Judge Evaluation", "title_zh": "抛硬币式评审？LLM 作为评审的可靠性与偏差", "url": "http://arxiv.org/abs/2606.13685v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2606.13685", "summary": "The study runs repeated identical LLM-as-a-Judge evaluations on 29 tasks with 50 pairwise and 50 pointwise trials per question. Pairwise preferences flip 13.6% of the time on average, 28% of questions exceed a 20% flip rate, cross-judge agreement is 76%, and about 11 repeated trials are needed for a majority vote to recover the 50-trial verdict with 95% probability.", "keywords": [{"text": "LLM-as-a-judge", "domain": "evaluation-benchmark"}, {"text": "judge reliability", "domain": "evaluation-benchmark"}, {"text": "position bias", "domain": "evaluation-benchmark"}, {"text": "evaluation methodology", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Memanto: Typed Semantic Memory with Information-Theoretic Retrieval for Long-Horizon Agents", "title_zh": "Memanto：面向长时程智能体的类型化语义记忆与信息论检索", "url": "http://arxiv.org/abs/2604.22085v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.22085", "summary": "Memanto is a universal agent memory layer combining a typed semantic schema with thirteen memory categories, automated conflict resolution and temporal versioning, backed by Moorcheh's index-free information-theoretic search. It reports state-of-the-art 89.8% on LongMemEval and 87.1% on LoCoMo with a single retrieval query and no ingestion cost, surpassing evaluated hybrid graph and vector systems.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "typed semantic memory", "domain": "agent-memory"}, {"text": "temporal versioning", "domain": "knowledge-lifecycle"}, {"text": "conflict resolution", "domain": "knowledge-lifecycle"}, {"text": "LongMemEval", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "The Coin Flip Judge? Reliability and Bias in LLM-as-a-Judge Evaluation", "title_zh": "抛硬币式评审？LLM 作为评审的可靠性与偏差", "url": "http://arxiv.org/abs/2606.13685v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2606.13685", "summary": "The study runs repeated identical LLM-as-a-Judge evaluations on 29 tasks with 50 pairwise and 50 pointwise trials per question. Pairwise preferences flip 13.6% of the time on average, 28% of questions exceed a 20% flip rate, cross-judge agreement is 76%, and about 11 repeated trials are needed for a majority vote to recover the 50-trial verdict with 95% probability.", "keywords": [{"text": "LLM-as-a-judge", "domain": "evaluation-benchmark"}, {"text": "judge reliability", "domain": "evaluation-benchmark"}, {"text": "position bias", "domain": "evaluation-benchmark"}, {"text": "evaluation methodology", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Emergent Strategic Reasoning Risks in AI: A Taxonomy-Driven Evaluation Framework", "title_zh": "AI 中的涌现性策略推理风险：分类体系驱动的评估框架", "url": "http://arxiv.org/abs/2604.22119v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.22119", "summary": "ESRRSim is a taxonomy-driven agentic framework for evaluating emergent strategic reasoning risks such as deception, evaluation gaming and reward hacking. Across 11 reasoning LLMs, detection rates ranged from 14.45% to 72.72%.", "keywords": [{"text": "strategic reasoning", "domain": "cognition-reasoning"}, {"text": "risk taxonomy", "domain": "evaluation-benchmark"}, {"text": "deception detection", "domain": "evaluation-benchmark"}, {"text": "agentic evaluation", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Incentivizing Neuro-symbolic Language-based Reasoning in VLMs via Reinforcement Learning", "title_zh": "通过强化学习激励视觉语言模型中的神经符号语言推理", "url": "http://arxiv.org/abs/2604.22062v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2604.22062", "summary": "The work explores representing vision-language concepts in a neuro-symbolic language and post-trains Qwen3-VL-2B-Instruct for it on four H200 GPU nodes. It reports a 3.33% accuracy gain on a math, science and general-knowledge vision-language benchmark while cutting reasoning tokens by 75% relative to SymPy.", "keywords": [{"text": "neuro-symbolic reasoning", "domain": "cognition-reasoning"}, {"text": "vision-language models", "domain": "ai-knowledge"}, {"text": "latent reasoning", "domain": "cognition-reasoning"}, {"text": "token efficiency", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "PrivUn: Unveiling Latent Ripple Effects and Shallow Forgetting in Privacy Unlearning", "title_zh": "PrivUn：揭示隐私遗忘中的潜在涟漪效应与浅层遗忘", "url": "http://arxiv.org/abs/2604.22076v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.22076", "summary": "PrivUn evaluates unlearning robustness through direct retrieval, in-context learning recovery and fine-tuning restoration attacks, adding forgetting scores, association metrics and forgetting-depth assessment. It finds that privacy unlearning propagates along latent gradient-based associations and is often shallow, leaving private information distributed across deep model layers; association-aware coreset selection and multi-layer representational constraints are explored as remedies.", "keywords": [{"text": "machine unlearning", "domain": "knowledge-lifecycle"}, {"text": "forgetting depth", "domain": "knowledge-lifecycle"}, {"text": "privacy attacks", "domain": "ai-knowledge"}, {"text": "evaluation framework", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Transient Turn Injection: Exposing Stateless Multi-Turn Vulnerabilities in Large Language Models", "title_zh": "瞬态轮次注入：暴露大语言模型无状态多轮交互漏洞", "url": "http://arxiv.org/abs/2604.21860v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2604.21860", "summary": "Transient Turn Injection is a multi-turn attack that distributes adversarial intent across isolated interactions to exploit stateless moderation, using automated attacker agents. Evaluations across models from OpenAI, Anthropic, Google, Meta and open-source alternatives find wide variation in resilience and surface model-specific vulnerabilities, especially in medical and high-stakes domains.", "keywords": [{"text": "multi-turn attack", "domain": "context-prompting"}, {"text": "stateless moderation", "domain": "agent-architecture"}, {"text": "adversarial robustness", "domain": "evaluation-benchmark"}, {"text": "session context", "domain": "agent-memory"}], "link_verified": true, "is_highlight": false}, {"title": "AutoRISE: Agent-Driven Strategy Evolution for Red-Teaming Large Language Models", "title_zh": "AutoRISE：面向大语言模型红队的智能体驱动策略演化", "url": "http://arxiv.org/abs/2604.22871v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.22871", "summary": "AutoRISE searches over executable attack programs rather than individual prompts: a coding agent edits an attack strategy while a fixed evaluation harness scores the resulting attacks and returns diagnostics for the next edit. Evaluated on 11 models from five families across seven jailbreak datasets, it improves average attack success by 17.0 points over the strongest baseline on held-out models in a black-box, inference-only setting.", "keywords": [{"text": "red-teaming", "domain": "evaluation-benchmark"}, {"text": "strategy search", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "jailbreak", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Same Methods, Different Rankings: Trainable Depth as an Evaluation Variable in Continual Learning", "title_zh": "相同方法，不同排名：可训练深度作为持续学习中的评估变量", "url": "http://arxiv.org/abs/2604.21927v4", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.21927", "summary": "The paper treats the fine-tuning regime, defined by the trainable parameter subspace, as an evaluation variable for continual learning. Across five methods, five trainable-depth regimes, five datasets and eleven task orders per dataset, method rankings are not consistently preserved, and deeper adaptation is associated with larger update magnitudes, more forgetting and a stronger relationship between the two.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "evaluation protocol", "domain": "evaluation-benchmark"}, {"text": "fine-tuning regime", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "An End-to-End Ukrainian RAG for Local Deployment. Optimized Hybrid Search and Lightweight Generation", "title_zh": "面向本地部署的端到端乌克兰语 RAG：优化的混合检索与轻量生成", "url": "http://arxiv.org/abs/2604.22095v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.22095", "summary": "The paper describes a Ukrainian document question-answering RAG system that placed second in the UNLP 2026 Shared Task, combining a two-stage retrieval pipeline with a Ukrainian language model fine-tuned on synthetic data. Compression and lightweight generation target local deployment under strict compute limits.", "keywords": [{"text": "RAG", "domain": "rag-retrieval"}, {"text": "hybrid search", "domain": "rag-retrieval"}, {"text": "low-resource language", "domain": "ai-knowledge"}, {"text": "local deployment", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "Knowledge-driven Augmentation and Retrieval for Integrative Temporal Adaptation", "title_zh": "知识驱动的增强与检索：面向一体化时序适应", "url": "http://arxiv.org/abs/2604.22098v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.22098", "summary": "KARITA is a knowledge-driven augmentation and retrieval method for temporal adaptation that draws on knowledge sources such as the MeSH medical ontology and uses shifting insights to guide retrieval-augmented learning. It reports consistent improvements on clinical, legal and scientific classification tasks.", "keywords": [{"text": "knowledge augmentation", "domain": "rag-retrieval"}, {"text": "MeSH ontology", "domain": "knowledge-graph"}, {"text": "temporal adaptation", "domain": "knowledge-lifecycle"}, {"text": "retrieval-augmented learning", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "aws/agent-toolkit-for-aws", "title_zh": "aws/agent-toolkit-for-aws：AWS 官方 AI Agent 工具包", "url": "https://github.com/aws/agent-toolkit-for-aws", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "AWS released an official AWS-supported toolkit of MCP servers, skills and plugins intended to help AI agents build on AWS.", "keywords": [{"text": "MCP servers", "domain": "agent-architecture"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "AWS", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "future-agi/future-agi", "title_zh": "future-agi/future-agi：开源 LLM 与 AI Agent 评测观测平台", "url": "https://github.com/future-agi/future-agi", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "future-agi is an open-source, self-hostable Apache 2.0 Python platform for evaluating, observing and improving LLM and AI-agent applications, with tracing, evals, simulations, datasets, a gateway and guardrails.", "keywords": [{"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "observability", "domain": "evaluation-benchmark"}, {"text": "tracing", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Introducing GPT-5.5", "title_zh": "GPT-5.5 发布", "url": "https://openai.com/index/introducing-gpt-5-5", "source": "OpenAI", "section": "models_embeddings", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI introduced GPT-5.5, described as a model built for complex tasks such as coding, research and data analysis across tools.", "keywords": [{"text": "model release", "domain": "ai-knowledge"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-06-05</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools, Frameworks & Open Source</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">9 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">9/9 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical graph memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">clinical evaluation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">probabilistic reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">research agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM judges</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">visual evidence</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">contract metadata</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multilingual benchmark</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="hierarchical graph memory agentic retrieval knowledge graph long video understanding multimodal reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07512</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MemDreamer: Decoupling Perception and Reasoning for Long Video Understanding via Hierarchical Graph Memory and Agentic Retrieval Mechanism<div class="title-zh">MemDreamer：通过分层图记忆与 Agent 检索机制解耦长视频理解的感知与推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical graph memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">long video understanding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multimodal reasoning</span></div>
+  <div class="item-summary">MemDreamer streams long videos into a three-tier Hierarchical Graph Memory anchored by a foundational graph of spatiotemporal and causal relations, then lets a reasoning model navigate it through an Observation-Reason-Action retrieval loop with tool augmentation. It reports state-of-the-art results on four benchmarks, narrowing the gap to human experts to 3.7 points while constraining the reasoning context to 2% of full-context ingestion and gaining 12.5 points absolute accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07512v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="hierarchical graph memory agentic retrieval knowledge graph long video understanding multimodal reasoning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07512</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MemDreamer: Decoupling Perception and Reasoning for Long Video Understanding via Hierarchical Graph Memory and Agentic Retrieval Mechanism<div class="title-zh">MemDreamer：通过分层图记忆与 Agent 检索机制解耦长视频理解的感知与推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">hierarchical graph memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">agentic retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">long video understanding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multimodal reasoning</span></div>
+  <div class="item-summary">MemDreamer streams long videos into a three-tier Hierarchical Graph Memory anchored by a foundational graph of spatiotemporal and causal relations, then lets a reasoning model navigate it through an Observation-Reason-Action retrieval loop with tool augmentation. It reports state-of-the-art results on four benchmarks, narrowing the gap to human experts to 3.7 points while constraining the reasoning context to 2% of full-context ingestion and gaining 12.5 points absolute accuracy.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07512v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="clinical benchmark bilingual evaluation diagnosis retrieval medical reasoning">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2606.07853</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond English benchmarks: clinical llm evaluation in Brazilian Portuguese<div class="title-zh">超越英语基准：巴西葡萄牙语临床 LLM 评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">clinical benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">bilingual evaluation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">diagnosis retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">medical reasoning</span></div>
+  <div class="item-summary">ClinicalBr is a bilingual Portuguese-English benchmark built from 2,892 Brazilian clinical case reports across 28 SciELO medical journals and 18 specialties, supporting diagnosis retrieval, differential diagnosis, exam recommendation and treatment planning. Evaluating MedGemma-27B, Sabiá-4, DeepSeek-R1 and o3-mini, the authors find the Portuguese-English gap is task-dependent: English leads by 7.5-12.1 accuracy points on diagnosis retrieval, but the advantage disappears on the other tasks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07853v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="research agents research lifecycle agent benchmark scientific judgment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07462</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Act As a Real Researcher: A Suite of Benchmarks Evaluating Frontier LLMs and Agentic Harnesses in Research Lifecycle<div class="title-zh">像真正的研究者一样行动：评估前沿 LLM 与 Agent 框架在研究生命周期中表现的基准套件</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">research agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">research lifecycle</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">scientific judgment</span></div>
+  <div class="item-summary">AARRI-Bench is the first benchmark in the AARR series, testing whether agents emulate the professionalism, thoroughness and nuanced reasoning of human researchers in granular research scenarios rather than only macro-level execution. Across frontier models and agentic harnesses the best configuration, Mini-SWE-Agent with Claude Opus 4.7, reached only 68.3% success, frequently overlooking details obvious to real human researchers.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07462v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="LLM judges fact verification verdict calibration evidence conflict">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07834</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Cherry-pick Override: LLM Judges Under-use the Non-Directional Verdicts Their Contract Authorizes<div class="title-zh">Cherry-pick Override：LLM 评审未充分利用其契约授权的非方向性裁决</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM judges</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">fact verification</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">verdict calibration</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence conflict</span></div>
+  <div class="item-summary">The paper defines directional overcommitment, where an LLM judge returns Supports or Refutes on a claim whose contract authorizes a non-directional verdict such as Conflicting or Not Enough Evidence. On AVeriTeC's gold-Conflicting subset a four-option typed panel committed directionally on 18.7% of claims and four frozen judges on 21.3-48.0%; asked in a fresh context, two judges identified the conflict on about two thirds of their own CPO claims, versus under 0.12 for claims they had committed correctly.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07834v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="probabilistic reasoning token bias chain-of-thought discrete probability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07515</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">How reliable are LLMs when it comes to playing dice?<div class="title-zh">LLM 玩骰子有多可靠？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">probabilistic reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">token bias</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">discrete probability</span></div>
+  <div class="item-summary">The authors benchmark eight state-of-the-art models on standard and counterintuitive discrete-probability problems, with and without chain-of-thought prompting. Average accuracy was 0.96 on standard problems but 0.59 on counterintuitive ones; performance dropped by over 20% when canonical formulations were disguised and by up to 34% with misleading suggestions embedded in the prompt, with no model immune.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07515v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="continual learning catastrophic forgetting knowledge distillation clustering">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07474</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Unsupervised Continual Clustering via Forward-Backward Knowledge Distillation<div class="title-zh">通过前向-后向知识蒸馏的无监督持续聚类</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">knowledge distillation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">clustering</span></div>
+  <div class="item-summary">The authors introduce Unsupervised Continual Clustering and propose FBCC, which uses a continual teacher network with a clustering projector plus lightweight task-specific students in a dual-phase forward-backward distillation process. Across four benchmark datasets it improves clustering accuracy over continual-learning baselines while reducing catastrophic forgetting without storing past data.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07474v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal reasoning visual evidence perturbation benchmark grounding">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.07872</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">VisualFLIP: Do Predictions Depend on Task-Critical Visual Evidence in Multimodal Reasoning?<div class="title-zh">VisualFLIP：多模态推理的预测是否依赖任务关键视觉证据？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">multimodal reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">visual evidence</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">perturbation benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">grounding</span></div>
+  <div class="item-summary">VisualFLIP is a paired benchmark of 1,374 images organized as same-question perturbation pairs across cardinality, attribute, spatial and logic tasks, used to evaluate 24 multimodal models on whether their correct answers actually depend on task-critical visual evidence.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.07872v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools, Frameworks & Open Source
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic harness vulnerability testing security">
+  <div class="item-meta">
+    <span class="item-org">Visa</span>
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">visa/visa-vulnerability-agentic-harness<div class="title-zh">visa/visa-vulnerability-agentic-harness：Visa 的漏洞智能体测试框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic harness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">vulnerability testing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">security</span></div>
+  <div class="item-summary">Visa published a Python repository described as a vulnerability-focused agentic harness. [limited detail available from source]</div>
+  <a class="item-link" href="https://github.com/visa/visa-vulnerability-agentic-harness" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="document extraction contract metadata structured data LlamaIndex">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Jun 5, 2026 Guides Extract Contract Metadata: Building Structured Intelligence from Legal Documents Read<div class="title-zh">提取合同元数据：从法律文档构建结构化智能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document extraction</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">contract metadata</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">structured data</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">LlamaIndex</span></div>
+  <div class="item-summary">LlamaIndex published a guide on extracting contract metadata to build structured intelligence from legal documents. [limited detail available from source]</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/extract-contract-metadata" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://www.llamaindex.ai/blog" target="_blank" rel="noopener">LlamaIndex Blog</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-06-05", "stats": {"total_items": 9, "unique_items": 9, "sources_count": 3, "links_verified_count": 9, "links_failed_count": 0, "section_counts": {"research_papers": 7, "tools_frameworks": 1, "blogs_insights": 1}}, "daily_keywords": [{"text": "hierarchical graph memory", "domain": "agent-memory"}, {"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "clinical evaluation", "domain": "evaluation-benchmark"}, {"text": "probabilistic reasoning", "domain": "cognition-reasoning"}, {"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "research agents", "domain": "agent-architecture"}, {"text": "LLM judges", "domain": "evaluation-benchmark"}, {"text": "visual evidence", "domain": "evaluation-benchmark"}, {"text": "contract metadata", "domain": "ai-knowledge"}, {"text": "multilingual benchmark", "domain": "evaluation-benchmark"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "MemDreamer: Decoupling Perception and Reasoning for Long Video Understanding via Hierarchical Graph Memory and Agentic Retrieval Mechanism", "title_zh": "MemDreamer：通过分层图记忆与 Agent 检索机制解耦长视频理解的感知与推理", "url": "http://arxiv.org/abs/2606.07512v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07512", "summary": "MemDreamer streams long videos into a three-tier Hierarchical Graph Memory anchored by a foundational graph of spatiotemporal and causal relations, then lets a reasoning model navigate it through an Observation-Reason-Action retrieval loop with tool augmentation. It reports state-of-the-art results on four benchmarks, narrowing the gap to human experts to 3.7 points while constraining the reasoning context to 2% of full-context ingestion and gaining 12.5 points absolute accuracy.", "keywords": [{"text": "hierarchical graph memory", "domain": "agent-memory"}, {"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "long video understanding", "domain": "ai-knowledge"}, {"text": "multimodal reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "MemDreamer: Decoupling Perception and Reasoning for Long Video Understanding via Hierarchical Graph Memory and Agentic Retrieval Mechanism", "title_zh": "MemDreamer：通过分层图记忆与 Agent 检索机制解耦长视频理解的感知与推理", "url": "http://arxiv.org/abs/2606.07512v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07512", "summary": "MemDreamer streams long videos into a three-tier Hierarchical Graph Memory anchored by a foundational graph of spatiotemporal and causal relations, then lets a reasoning model navigate it through an Observation-Reason-Action retrieval loop with tool augmentation. It reports state-of-the-art results on four benchmarks, narrowing the gap to human experts to 3.7 points while constraining the reasoning context to 2% of full-context ingestion and gaining 12.5 points absolute accuracy.", "keywords": [{"text": "hierarchical graph memory", "domain": "agent-memory"}, {"text": "agentic retrieval", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "long video understanding", "domain": "ai-knowledge"}, {"text": "multimodal reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Beyond English benchmarks: clinical llm evaluation in Brazilian Portuguese", "title_zh": "超越英语基准：巴西葡萄牙语临床 LLM 评估", "url": "http://arxiv.org/abs/2606.07853v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2606.07853", "summary": "ClinicalBr is a bilingual Portuguese-English benchmark built from 2,892 Brazilian clinical case reports across 28 SciELO medical journals and 18 specialties, supporting diagnosis retrieval, differential diagnosis, exam recommendation and treatment planning. Evaluating MedGemma-27B, Sabiá-4, DeepSeek-R1 and o3-mini, the authors find the Portuguese-English gap is task-dependent: English leads by 7.5-12.1 accuracy points on diagnosis retrieval, but the advantage disappears on the other tasks.", "keywords": [{"text": "clinical benchmark", "domain": "evaluation-benchmark"}, {"text": "bilingual evaluation", "domain": "ai-knowledge"}, {"text": "diagnosis retrieval", "domain": "rag-retrieval"}, {"text": "medical reasoning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Act As a Real Researcher: A Suite of Benchmarks Evaluating Frontier LLMs and Agentic Harnesses in Research Lifecycle", "title_zh": "像真正的研究者一样行动：评估前沿 LLM 与 Agent 框架在研究生命周期中表现的基准套件", "url": "http://arxiv.org/abs/2606.07462v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07462", "summary": "AARRI-Bench is the first benchmark in the AARR series, testing whether agents emulate the professionalism, thoroughness and nuanced reasoning of human researchers in granular research scenarios rather than only macro-level execution. Across frontier models and agentic harnesses the best configuration, Mini-SWE-Agent with Claude Opus 4.7, reached only 68.3% success, frequently overlooking details obvious to real human researchers.", "keywords": [{"text": "research agents", "domain": "agent-architecture"}, {"text": "research lifecycle", "domain": "evaluation-benchmark"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "scientific judgment", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Cherry-pick Override: LLM Judges Under-use the Non-Directional Verdicts Their Contract Authorizes", "title_zh": "Cherry-pick Override：LLM 评审未充分利用其契约授权的非方向性裁决", "url": "http://arxiv.org/abs/2606.07834v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07834", "summary": "The paper defines directional overcommitment, where an LLM judge returns Supports or Refutes on a claim whose contract authorizes a non-directional verdict such as Conflicting or Not Enough Evidence. On AVeriTeC's gold-Conflicting subset a four-option typed panel committed directionally on 18.7% of claims and four frozen judges on 21.3-48.0%; asked in a fresh context, two judges identified the conflict on about two thirds of their own CPO claims, versus under 0.12 for claims they had committed correctly.", "keywords": [{"text": "LLM judges", "domain": "evaluation-benchmark"}, {"text": "fact verification", "domain": "ai-knowledge"}, {"text": "verdict calibration", "domain": "cognition-reasoning"}, {"text": "evidence conflict", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "How reliable are LLMs when it comes to playing dice?", "title_zh": "LLM 玩骰子有多可靠？", "url": "http://arxiv.org/abs/2606.07515v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07515", "summary": "The authors benchmark eight state-of-the-art models on standard and counterintuitive discrete-probability problems, with and without chain-of-thought prompting. Average accuracy was 0.96 on standard problems but 0.59 on counterintuitive ones; performance dropped by over 20% when canonical formulations were disguised and by up to 34% with misleading suggestions embedded in the prompt, with no model immune.", "keywords": [{"text": "probabilistic reasoning", "domain": "cognition-reasoning"}, {"text": "token bias", "domain": "cognition-reasoning"}, {"text": "chain-of-thought", "domain": "context-prompting"}, {"text": "discrete probability", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Unsupervised Continual Clustering via Forward-Backward Knowledge Distillation", "title_zh": "通过前向-后向知识蒸馏的无监督持续聚类", "url": "http://arxiv.org/abs/2606.07474v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07474", "summary": "The authors introduce Unsupervised Continual Clustering and propose FBCC, which uses a continual teacher network with a clustering projector plus lightweight task-specific students in a dual-phase forward-backward distillation process. Across four benchmark datasets it improves clustering accuracy over continual-learning baselines while reducing catastrophic forgetting without storing past data.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "knowledge distillation", "domain": "agent-memory"}, {"text": "clustering", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "VisualFLIP: Do Predictions Depend on Task-Critical Visual Evidence in Multimodal Reasoning?", "title_zh": "VisualFLIP：多模态推理的预测是否依赖任务关键视觉证据？", "url": "http://arxiv.org/abs/2606.07872v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.07872", "summary": "VisualFLIP is a paired benchmark of 1,374 images organized as same-question perturbation pairs across cardinality, attribute, spatial and logic tasks, used to evaluate 24 multimodal models on whether their correct answers actually depend on task-critical visual evidence.", "keywords": [{"text": "multimodal reasoning", "domain": "cognition-reasoning"}, {"text": "visual evidence", "domain": "evaluation-benchmark"}, {"text": "perturbation benchmark", "domain": "evaluation-benchmark"}, {"text": "grounding", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools, Frameworks & Open Source", "items": [{"title": "visa/visa-vulnerability-agentic-harness", "title_zh": "visa/visa-vulnerability-agentic-harness：Visa 的漏洞智能体测试框架", "url": "https://github.com/visa/visa-vulnerability-agentic-harness", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "Visa", "language": "en", "arxiv_id": "", "summary": "Visa published a Python repository described as a vulnerability-focused agentic harness. [limited detail available from source]", "keywords": [{"text": "agentic harness", "domain": "agent-architecture"}, {"text": "vulnerability testing", "domain": "evaluation-benchmark"}, {"text": "security", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Jun 5, 2026 Guides Extract Contract Metadata: Building Structured Intelligence from Legal Documents Read", "title_zh": "提取合同元数据：从法律文档构建结构化智能", "url": "https://www.llamaindex.ai/blog/extract-contract-metadata", "source": "LlamaIndex Blog", "section": "blogs_insights", "organization": "LlamaIndex", "language": "en", "arxiv_id": "", "summary": "LlamaIndex published a guide on extracting contract metadata to build structured intelligence from legal documents. [limited detail available from source]", "keywords": [{"text": "document extraction", "domain": "ai-knowledge"}, {"text": "contract metadata", "domain": "knowledge-lifecycle"}, {"text": "structured data", "domain": "rag-retrieval"}, {"text": "LlamaIndex", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai/blog"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

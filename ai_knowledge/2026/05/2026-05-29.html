@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-29</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">15 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>5 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/15 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">10</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:10%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">visual working memory</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">hallucination detection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">knowledge base QA</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">observation masking</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning limits</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool delegation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill internalization</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">pixel-native search</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="continual learning episodic memory long-horizon agents benchmark generation catastrophic forgetting">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.24893</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentOdyssey: Open-Ended Long-Horizon Text Game Generation for Test-Time Continual Learning Agents<div class="title-zh">AgentOdyssey：面向测试时持续学习智能体的开放式长程文本游戏生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark generation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span></div>
+  <div class="item-summary">AgentOdyssey procedurally generates open-ended text games with rich entities, world dynamics and long-horizon tasks to evaluate test-time continual learning agents, interleaving learning and inference throughout deployment. Across six generated games, even the top agent remained far below human performance, and supervised fine-tuning agents still suffered catastrophic forgetting despite short-term memory benefits.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.24893v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hallucination detection knowledge base QA graph neural networks answer verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00328</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">KG-Guard: Graph-Based Hallucination Detection for Knowledge Base Question Answering<div class="title-zh">KG-Guard：面向知识库问答的基于图的幻觉检测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">hallucination detection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">knowledge base QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph neural networks</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">answer verification</span></div>
+  <div class="item-summary">KG-Guard formulates hallucination detection in knowledge base question answering as answer-node classification and treats the answering LLM as a black box, representing each instance as an augmented graph with a virtual question node. It reports F1 of 82.0, 87.4 and 84.3 on WebQSP, ComplexWebQuestions and PUGG with roughly 305x fewer parameters than LLM-based baselines, and feeding flagged answers back improves downstream KBQA F1 by 13.0-14.5 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00328v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context management search agents observation masking retrieval benchmark sweep">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00408</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Masking Stale Observations Helps Search Agents -- Until It Doesn't: A Regime Map and Its Mechanism<div class="title-zh">屏蔽过期观测对搜索智能体有帮助——直到不再有帮助：机制与状态图</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">search agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">observation masking</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark sweep</span></div>
+  <div class="item-summary">The authors sweep agent backbones from 4B to 284B parameters and three retrievers on offline and live-web agentic search benchmarks to study masking stale observations from context. They find accuracy gains follow an asymmetric inverted-U shape relative to the model's unmasked accuracy, reflecting the interaction between retriever recall and the model's implicit filtering capacity.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00408v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="pixel-native search multimodal retrieval open source web parsing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">StarTrail-org/PixelRAG<div class="title-zh">StarTrail-org/PixelRAG：像素原生搜索，终结网页解析</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">pixel-native search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">web parsing</span></div>
+  <div class="item-summary">StarTrail-org's PixelRAG is an open-source Python project pitched as the end of web parsing and the beginning of scalable pixel-native search, tied to an arXiv paper and pixelrag.ai. It had 10,352 stars, 918 forks and topics including RAG, memory and multimodal.</div>
+  <a class="item-link" href="https://github.com/StarTrail-org/PixelRAG" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[10]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="continual learning episodic memory long-horizon agents benchmark generation catastrophic forgetting">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.24893</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AgentOdyssey: Open-Ended Long-Horizon Text Game Generation for Test-Time Continual Learning Agents<div class="title-zh">AgentOdyssey：面向测试时持续学习智能体的开放式长程文本游戏生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual learning</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark generation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span></div>
+  <div class="item-summary">AgentOdyssey procedurally generates open-ended text games with rich entities, world dynamics and long-horizon tasks to evaluate test-time continual learning agents, interleaving learning and inference throughout deployment. Across six generated games, even the top agent remained far below human performance, and supervised fine-tuning agents still suffered catastrophic forgetting despite short-term memory benefits.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.24893v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research multimodal reports visual working memory grounding verification evaluation protocol">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.29861</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Towards Verifiable Multimodal Deep Research: A Multi-Agent Harness for Interleaved Report Generation<div class="title-zh">迈向可验证的多模态深度研究：面向图文交错报告生成的多智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multimodal reports</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">visual working memory</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">grounding verification</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation protocol</span></div>
+  <div class="item-summary">A Renmin University multi-agent harness plans, researches and writes interleaved multimodal reports, keeping source-aligned images in a visual working memory and using a verifier agent to enforce grounding and cross-modal consistency. It also introduces the PtahEval evaluation protocol.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.29861" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="continual fine-tuning catastrophic forgetting LoRA adapters spectral normalization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00382</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CRMA: A Spectrally-Bounded Backbone for Modular Continual Fine-Tuning of LLMs<div class="title-zh">CRMA：面向 LLM 模块化持续微调的光谱有界骨干</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">continual fine-tuning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">LoRA adapters</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">spectral normalization</span></div>
+  <div class="item-summary">CRMA is a residual adapter whose internal mixing matrix is doubly stochastic at every forward pass via Sinkhorn normalization, giving a structural spectral bound rather than a penalty. On Mistral-7B across five sequential domains, modular per-task LoRA on a CRMA backbone reportedly reduces loss-relative drift from +42.96% to -0.17% and improves prior-task holdout loss over a frozen-substrate baseline.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00382v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="hallucination detection knowledge base QA graph neural networks answer verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00328</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">KG-Guard: Graph-Based Hallucination Detection for Knowledge Base Question Answering<div class="title-zh">KG-Guard：面向知识库问答的基于图的幻觉检测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">hallucination detection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">knowledge base QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph neural networks</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">answer verification</span></div>
+  <div class="item-summary">KG-Guard formulates hallucination detection in knowledge base question answering as answer-node classification and treats the answering LLM as a black box, representing each instance as an augmented graph with a virtual question node. It reports F1 of 82.0, 87.4 and 84.3 on WebQSP, ComplexWebQuestions and PUGG with roughly 305x fewer parameters than LLM-based baselines, and feeding flagged answers back improves downstream KBQA F1 by 13.0-14.5 points.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00328v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="context management search agents observation masking retrieval benchmark sweep">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00408</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Masking Stale Observations Helps Search Agents -- Until It Doesn't: A Regime Map and Its Mechanism<div class="title-zh">屏蔽过期观测对搜索智能体有帮助——直到不再有帮助：机制与状态图</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">search agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">observation masking</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark sweep</span></div>
+  <div class="item-summary">The authors sweep agent backbones from 4B to 284B parameters and three retrievers on offline and live-web agentic search benchmarks to study masking stale observations from context. They find accuracy gains follow an asymmetric inverted-U shape relative to the model's unmasked accuracy, reflecting the interaction between retriever recall and the model's implicit filtering capacity.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00408v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="reasoning limits tool delegation state tracking chain-of-thought">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00376</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Deterministic Horizon: When Extended Reasoning Fails and Tool Delegation Becomes Necessary<div class="title-zh">确定性视界：何时扩展推理失效、工具委派成为必要</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning limits</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool delegation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">state tracking</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span></div>
+  <div class="item-summary">The paper presents an attention bottleneck analysis arguing that total state-tracking capacity in bits is bounded by head count, head dimension and context length, and defines a Deterministic Horizon of 19-31 marking the depth where unaided accuracy crosses 50%. Across twelve models and eight task domains, tool-integrated reasoning reaches 76-94% accuracy versus 17-42% for neural chain-of-thought on PermutationProbe.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00376v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="on-policy distillation reasoning trajectories token-level supervision model training">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00305</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Bridging Reasoning Trajectories in On-Policy Distillation via Near-Future Guidance<div class="title-zh">通过近未来引导弥合同策略蒸馏中的推理轨迹</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">on-policy distillation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning trajectories</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">token-level supervision</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model training</span></div>
+  <div class="item-summary">The paper shows that on-policy distillation's token-level learning signal cannot reliably bridge student trajectories toward teacher trajectories, since about 30% of high-loss tokens are surface-form mismatches rather than real reasoning forks. Its Trajectory-aware OPD uses near-future trajectory information to identify divergent states and distribute guidance, improving average accuracy to 52.2% from 47.8% for standard OPD.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00305v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="skill internalization agent RL skill routing out-of-distribution generalization">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.28424</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Skill0.5: Joint Skill Internalization and Utilization for Out-of-Distribution Generalization in Agentic Reinforcement Learning<div class="title-zh">Skill0.5：智能体强化学习中的技能内化与调用联合优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill internalization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent RL</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill routing</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">out-of-distribution generalization</span></div>
+  <div class="item-summary">An East China Normal University framework internalizes general skills through privileged distillation while keeping task-specific skills external, routed by a difficulty-aware router that penalizes shortcuts on easy tasks. It is reported to outperform memory- and skill-based RL baselines on ALFWorld and WebShop.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.28424" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="agent safety guardrails alignment open release">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.29801</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">AgentDoG 1.5: A Lightweight and Scalable Alignment Framework for AI Agent Safety and Security<div class="title-zh">AgentDoG 1.5：面向 AI 智能体安全与防护的轻量可扩展对齐框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent safety</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">guardrails</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">alignment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open release</span></div>
+  <div class="item-summary">AgentDoG 1.5 is a Shanghai AI Lab alignment framework for AI agents, trained on roughly 1,000 taxonomy-guided samples to produce guardrail models from 0.8B to 8B parameters. The authors report performance comparable to closed-source models such as GPT-5.4 and release all models and datasets.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.29801" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="KV cache eviction long-context retrieval confidence-aware budgeting needle-in-a-haystack">
+  <div class="item-meta">
+    <span class="item-org">CMU</span>
+    <span class="arxiv-tag">arxiv:2605.24786</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">CONF-KV: Confidence-Aware KV Cache Eviction with Mixed-Precision Storage for Long-Horizon LLM<div class="title-zh">CONF-KV：面向长程 LLM 的置信度感知 KV 缓存淘汰与混合精度存储</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">KV cache eviction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">long-context retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">confidence-aware budgeting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">needle-in-a-haystack</span></div>
+  <div class="item-summary">CONF-KV is a KV-cache manager from Carnegie Mellon that sets the per-step cache budget from the model's next-token confidence, combined with blockwise online-softmax attention and mixed FP16/INT8 storage. It reaches 91.4% Needle-in-a-Haystack retrieval at 32K tokens, versus 53.8% for sliding windows.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.24786" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="pixel-native search multimodal retrieval open source web parsing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">StarTrail-org/PixelRAG<div class="title-zh">StarTrail-org/PixelRAG：像素原生搜索，终结网页解析</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">pixel-native search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multimodal retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">web parsing</span></div>
+  <div class="item-summary">StarTrail-org's PixelRAG is an open-source Python project pitched as the end of web parsing and the beginning of scalable pixel-native search, tied to an arXiv paper and pixelrag.ai. It had 10,352 stars, 918 forks and topics including RAG, memory and multimodal.</div>
+  <a class="item-link" href="https://github.com/StarTrail-org/PixelRAG" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent harness coding agents multi-model orchestration provider routing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">zhnt/loushang<div class="title-zh">zhnt/loushang：Python 编写的 AI 原生编程智能体框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-model orchestration</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">provider routing</span></div>
+  <div class="item-summary">loushang is a Python agent harness for coding workflows with multi-model LLM orchestration, stateful sessions, tool governance and provider routing for GPT, Claude, DeepSeek, Qwen, Kimi, GLM and MiniMax. The repository had 1,870 stars and 294 forks.</div>
+  <a class="item-link" href="https://github.com/zhnt/loushang" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="third-party evaluation model safeguards frontier systems">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A shared playbook for trustworthy third party evaluations<div class="title-zh">可信第三方评估的共同行动手册</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">third-party evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model safeguards</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">frontier systems</span></div>
+  <div class="item-summary">OpenAI shares guidance on third-party AI evaluations, covering how to assess model capabilities, safeguards and validity for frontier systems.</div>
+  <a class="item-link" href="https://openai.com/index/trustworthy-third-party-evaluations-foundations" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="coding agents agent memory configuration auto-mode rules">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Claude Code – Everything you can configure that the docs don't tell you<div class="title-zh">Claude Code：文档里没写的所有可配置项</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">configuration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">auto-mode rules</span></div>
+  <div class="item-summary">A developer's reading of the Claude Code source code documents undocumented configuration, including hook fields that rewrite commands mid-flight, persistent agent memory, plain-English auto-mode rules and self-improving loops, with copy-paste examples. The post drew 326 points on Hacker News.</div>
+  <a class="item-link" href="https://buildingbetter.tech/p/i-read-the-claude-code-source-code" target="_blank" rel="noopener">&rarr; buildingbetter.tech</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="open models on-premise deployment agentic harnesses European AI">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Notes from the Mistral AI Now Summit<div class="title-zh">Mistral AI Now 峰会笔记</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open models</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">on-premise deployment</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic harnesses</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">European AI</span></div>
+  <div class="item-summary">Conference notes from a few days in Paris at the Mistral AI Now Summit cover open models, on-premise deployment and agentic harnesses, along with Mistral's ambition to be Europe's full-stack AI partner. The post drew 466 points and 214 comments on Hacker News.</div>
+  <a class="item-link" href="https://koenvangilst.nl/lab/mistral-ai-now-summit" target="_blank" rel="noopener">&rarr; koenvangilst.nl</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://huggingface.co/papers" target="_blank" rel="noopener">HuggingFace Papers</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-29", "stats": {"total_items": 15, "unique_items": 15, "sources_count": 5, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 10, "tools_frameworks": 2, "blogs_insights": 2, "industry_applications": 1}}, "daily_keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "deep research", "domain": "agent-architecture"}, {"text": "visual working memory", "domain": "agent-memory"}, {"text": "hallucination detection", "domain": "knowledge-graph"}, {"text": "knowledge base QA", "domain": "rag-retrieval"}, {"text": "context management", "domain": "context-prompting"}, {"text": "observation masking", "domain": "agent-memory"}, {"text": "reasoning limits", "domain": "cognition-reasoning"}, {"text": "tool delegation", "domain": "agent-architecture"}, {"text": "skill internalization", "domain": "knowledge-lifecycle"}, {"text": "pixel-native search", "domain": "rag-retrieval"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "AgentOdyssey: Open-Ended Long-Horizon Text Game Generation for Test-Time Continual Learning Agents", "title_zh": "AgentOdyssey：面向测试时持续学习智能体的开放式长程文本游戏生成", "url": "http://arxiv.org/abs/2606.24893v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.24893", "summary": "AgentOdyssey procedurally generates open-ended text games with rich entities, world dynamics and long-horizon tasks to evaluate test-time continual learning agents, interleaving learning and inference throughout deployment. Across six generated games, even the top agent remained far below human performance, and supervised fine-tuning agents still suffered catastrophic forgetting despite short-term memory benefits.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "benchmark generation", "domain": "evaluation-benchmark"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "KG-Guard: Graph-Based Hallucination Detection for Knowledge Base Question Answering", "title_zh": "KG-Guard：面向知识库问答的基于图的幻觉检测", "url": "http://arxiv.org/abs/2606.00328v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00328", "summary": "KG-Guard formulates hallucination detection in knowledge base question answering as answer-node classification and treats the answering LLM as a black box, representing each instance as an augmented graph with a virtual question node. It reports F1 of 82.0, 87.4 and 84.3 on WebQSP, ComplexWebQuestions and PUGG with roughly 305x fewer parameters than LLM-based baselines, and feeding flagged answers back improves downstream KBQA F1 by 13.0-14.5 points.", "keywords": [{"text": "hallucination detection", "domain": "knowledge-graph"}, {"text": "knowledge base QA", "domain": "rag-retrieval"}, {"text": "graph neural networks", "domain": "knowledge-graph"}, {"text": "answer verification", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Masking Stale Observations Helps Search Agents -- Until It Doesn't: A Regime Map and Its Mechanism", "title_zh": "屏蔽过期观测对搜索智能体有帮助——直到不再有帮助：机制与状态图", "url": "http://arxiv.org/abs/2606.00408v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00408", "summary": "The authors sweep agent backbones from 4B to 284B parameters and three retrievers on offline and live-web agentic search benchmarks to study masking stale observations from context. They find accuracy gains follow an asymmetric inverted-U shape relative to the model's unmasked accuracy, reflecting the interaction between retriever recall and the model's implicit filtering capacity.", "keywords": [{"text": "context management", "domain": "context-prompting"}, {"text": "search agents", "domain": "agent-architecture"}, {"text": "observation masking", "domain": "agent-memory"}, {"text": "retrieval", "domain": "rag-retrieval"}, {"text": "benchmark sweep", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "StarTrail-org/PixelRAG", "title_zh": "StarTrail-org/PixelRAG：像素原生搜索，终结网页解析", "url": "https://github.com/StarTrail-org/PixelRAG", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "StarTrail-org's PixelRAG is an open-source Python project pitched as the end of web parsing and the beginning of scalable pixel-native search, tied to an arXiv paper and pixelrag.ai. It had 10,352 stars, 918 forks and topics including RAG, memory and multimodal.", "keywords": [{"text": "pixel-native search", "domain": "rag-retrieval"}, {"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "open source", "domain": "ai-knowledge"}, {"text": "web parsing", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "AgentOdyssey: Open-Ended Long-Horizon Text Game Generation for Test-Time Continual Learning Agents", "title_zh": "AgentOdyssey：面向测试时持续学习智能体的开放式长程文本游戏生成", "url": "http://arxiv.org/abs/2606.24893v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.24893", "summary": "AgentOdyssey procedurally generates open-ended text games with rich entities, world dynamics and long-horizon tasks to evaluate test-time continual learning agents, interleaving learning and inference throughout deployment. Across six generated games, even the top agent remained far below human performance, and supervised fine-tuning agents still suffered catastrophic forgetting despite short-term memory benefits.", "keywords": [{"text": "continual learning", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "benchmark generation", "domain": "evaluation-benchmark"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Towards Verifiable Multimodal Deep Research: A Multi-Agent Harness for Interleaved Report Generation", "title_zh": "迈向可验证的多模态深度研究：面向图文交错报告生成的多智能体框架", "url": "https://huggingface.co/papers/2605.29861", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.29861", "summary": "A Renmin University multi-agent harness plans, researches and writes interleaved multimodal reports, keeping source-aligned images in a visual working memory and using a verifier agent to enforce grounding and cross-modal consistency. It also introduces the PtahEval evaluation protocol.", "keywords": [{"text": "deep research", "domain": "agent-architecture"}, {"text": "multimodal reports", "domain": "agent-architecture"}, {"text": "visual working memory", "domain": "agent-memory"}, {"text": "grounding verification", "domain": "rag-retrieval"}, {"text": "evaluation protocol", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": false}, {"title": "CRMA: A Spectrally-Bounded Backbone for Modular Continual Fine-Tuning of LLMs", "title_zh": "CRMA：面向 LLM 模块化持续微调的光谱有界骨干", "url": "http://arxiv.org/abs/2606.00382v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00382", "summary": "CRMA is a residual adapter whose internal mixing matrix is doubly stochastic at every forward pass via Sinkhorn normalization, giving a structural spectral bound rather than a penalty. On Mistral-7B across five sequential domains, modular per-task LoRA on a CRMA backbone reportedly reduces loss-relative drift from +42.96% to -0.17% and improves prior-task holdout loss over a frozen-substrate baseline.", "keywords": [{"text": "continual fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "catastrophic forgetting", "domain": "knowledge-lifecycle"}, {"text": "LoRA adapters", "domain": "knowledge-lifecycle"}, {"text": "spectral normalization", "domain": "embeddings-vectors"}], "link_verified": true, "is_highlight": false}, {"title": "KG-Guard: Graph-Based Hallucination Detection for Knowledge Base Question Answering", "title_zh": "KG-Guard：面向知识库问答的基于图的幻觉检测", "url": "http://arxiv.org/abs/2606.00328v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00328", "summary": "KG-Guard formulates hallucination detection in knowledge base question answering as answer-node classification and treats the answering LLM as a black box, representing each instance as an augmented graph with a virtual question node. It reports F1 of 82.0, 87.4 and 84.3 on WebQSP, ComplexWebQuestions and PUGG with roughly 305x fewer parameters than LLM-based baselines, and feeding flagged answers back improves downstream KBQA F1 by 13.0-14.5 points.", "keywords": [{"text": "hallucination detection", "domain": "knowledge-graph"}, {"text": "knowledge base QA", "domain": "rag-retrieval"}, {"text": "graph neural networks", "domain": "knowledge-graph"}, {"text": "answer verification", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Masking Stale Observations Helps Search Agents -- Until It Doesn't: A Regime Map and Its Mechanism", "title_zh": "屏蔽过期观测对搜索智能体有帮助——直到不再有帮助：机制与状态图", "url": "http://arxiv.org/abs/2606.00408v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00408", "summary": "The authors sweep agent backbones from 4B to 284B parameters and three retrievers on offline and live-web agentic search benchmarks to study masking stale observations from context. They find accuracy gains follow an asymmetric inverted-U shape relative to the model's unmasked accuracy, reflecting the interaction between retriever recall and the model's implicit filtering capacity.", "keywords": [{"text": "context management", "domain": "context-prompting"}, {"text": "search agents", "domain": "agent-architecture"}, {"text": "observation masking", "domain": "agent-memory"}, {"text": "retrieval", "domain": "rag-retrieval"}, {"text": "benchmark sweep", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "The Deterministic Horizon: When Extended Reasoning Fails and Tool Delegation Becomes Necessary", "title_zh": "确定性视界：何时扩展推理失效、工具委派成为必要", "url": "http://arxiv.org/abs/2606.00376v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00376", "summary": "The paper presents an attention bottleneck analysis arguing that total state-tracking capacity in bits is bounded by head count, head dimension and context length, and defines a Deterministic Horizon of 19-31 marking the depth where unaided accuracy crosses 50%. Across twelve models and eight task domains, tool-integrated reasoning reaches 76-94% accuracy versus 17-42% for neural chain-of-thought on PermutationProbe.", "keywords": [{"text": "reasoning limits", "domain": "cognition-reasoning"}, {"text": "tool delegation", "domain": "agent-architecture"}, {"text": "state tracking", "domain": "cognition-reasoning"}, {"text": "chain-of-thought", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}, {"title": "Bridging Reasoning Trajectories in On-Policy Distillation via Near-Future Guidance", "title_zh": "通过近未来引导弥合同策略蒸馏中的推理轨迹", "url": "http://arxiv.org/abs/2606.00305v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00305", "summary": "The paper shows that on-policy distillation's token-level learning signal cannot reliably bridge student trajectories toward teacher trajectories, since about 30% of high-loss tokens are surface-form mismatches rather than real reasoning forks. Its Trajectory-aware OPD uses near-future trajectory information to identify divergent states and distribute guidance, improving average accuracy to 52.2% from 47.8% for standard OPD.", "keywords": [{"text": "on-policy distillation", "domain": "knowledge-lifecycle"}, {"text": "reasoning trajectories", "domain": "cognition-reasoning"}, {"text": "token-level supervision", "domain": "context-prompting"}, {"text": "model training", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Skill0.5: Joint Skill Internalization and Utilization for Out-of-Distribution Generalization in Agentic Reinforcement Learning", "title_zh": "Skill0.5：智能体强化学习中的技能内化与调用联合优化", "url": "https://huggingface.co/papers/2605.28424", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.28424", "summary": "An East China Normal University framework internalizes general skills through privileged distillation while keeping task-specific skills external, routed by a difficulty-aware router that penalizes shortcuts on easy tasks. It is reported to outperform memory- and skill-based RL baselines on ALFWorld and WebShop.", "keywords": [{"text": "skill internalization", "domain": "knowledge-lifecycle"}, {"text": "agent RL", "domain": "agent-architecture"}, {"text": "skill routing", "domain": "knowledge-lifecycle"}, {"text": "out-of-distribution generalization", "domain": "cognition-reasoning"}], "link_verified": false, "is_highlight": false}, {"title": "AgentDoG 1.5: A Lightweight and Scalable Alignment Framework for AI Agent Safety and Security", "title_zh": "AgentDoG 1.5：面向 AI 智能体安全与防护的轻量可扩展对齐框架", "url": "https://huggingface.co/papers/2605.29801", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.29801", "summary": "AgentDoG 1.5 is a Shanghai AI Lab alignment framework for AI agents, trained on roughly 1,000 taxonomy-guided samples to produce guardrail models from 0.8B to 8B parameters. The authors report performance comparable to closed-source models such as GPT-5.4 and release all models and datasets.", "keywords": [{"text": "agent safety", "domain": "agent-architecture"}, {"text": "guardrails", "domain": "agent-architecture"}, {"text": "alignment", "domain": "cognition-reasoning"}, {"text": "open release", "domain": "ai-knowledge"}], "link_verified": false, "is_highlight": false}, {"title": "CONF-KV: Confidence-Aware KV Cache Eviction with Mixed-Precision Storage for Long-Horizon LLM", "title_zh": "CONF-KV：面向长程 LLM 的置信度感知 KV 缓存淘汰与混合精度存储", "url": "https://huggingface.co/papers/2605.24786", "source": "HuggingFace Papers", "section": "research_papers", "organization": "CMU", "language": "en", "arxiv_id": "2605.24786", "summary": "CONF-KV is a KV-cache manager from Carnegie Mellon that sets the per-step cache budget from the model's next-token confidence, combined with blockwise online-softmax attention and mixed FP16/INT8 storage. It reaches 91.4% Needle-in-a-Haystack retrieval at 32K tokens, versus 53.8% for sliding windows.", "keywords": [{"text": "KV cache eviction", "domain": "context-prompting"}, {"text": "long-context retrieval", "domain": "rag-retrieval"}, {"text": "confidence-aware budgeting", "domain": "agent-memory"}, {"text": "needle-in-a-haystack", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "StarTrail-org/PixelRAG", "title_zh": "StarTrail-org/PixelRAG：像素原生搜索，终结网页解析", "url": "https://github.com/StarTrail-org/PixelRAG", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "StarTrail-org's PixelRAG is an open-source Python project pitched as the end of web parsing and the beginning of scalable pixel-native search, tied to an arXiv paper and pixelrag.ai. It had 10,352 stars, 918 forks and topics including RAG, memory and multimodal.", "keywords": [{"text": "pixel-native search", "domain": "rag-retrieval"}, {"text": "multimodal retrieval", "domain": "rag-retrieval"}, {"text": "open source", "domain": "ai-knowledge"}, {"text": "web parsing", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "zhnt/loushang", "title_zh": "zhnt/loushang：Python 编写的 AI 原生编程智能体框架", "url": "https://github.com/zhnt/loushang", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "loushang is a Python agent harness for coding workflows with multi-model LLM orchestration, stateful sessions, tool governance and provider routing for GPT, Claude, DeepSeek, Qwen, Kimi, GLM and MiniMax. The repository had 1,870 stars and 294 forks.", "keywords": [{"text": "agent harness", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "multi-model orchestration", "domain": "agent-architecture"}, {"text": "provider routing", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "A shared playbook for trustworthy third party evaluations", "title_zh": "可信第三方评估的共同行动手册", "url": "https://openai.com/index/trustworthy-third-party-evaluations-foundations", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI shares guidance on third-party AI evaluations, covering how to assess model capabilities, safeguards and validity for frontier systems.", "keywords": [{"text": "third-party evaluation", "domain": "evaluation-benchmark"}, {"text": "model safeguards", "domain": "agent-architecture"}, {"text": "frontier systems", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Claude Code – Everything you can configure that the docs don't tell you", "title_zh": "Claude Code：文档里没写的所有可配置项", "url": "https://buildingbetter.tech/p/i-read-the-claude-code-source-code", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "A developer's reading of the Claude Code source code documents undocumented configuration, including hook fields that rewrite commands mid-flight, persistent agent memory, plain-English auto-mode rules and self-improving loops, with copy-paste examples. The post drew 326 points on Hacker News.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "configuration", "domain": "ai-knowledge"}, {"text": "auto-mode rules", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Notes from the Mistral AI Now Summit", "title_zh": "Mistral AI Now 峰会笔记", "url": "https://koenvangilst.nl/lab/mistral-ai-now-summit", "source": "Hacker News", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "", "summary": "Conference notes from a few days in Paris at the Mistral AI Now Summit cover open models, on-premise deployment and agentic harnesses, along with Mistral's ambition to be Europe's full-stack AI partner. The post drew 466 points and 214 comments on Hacker News.", "keywords": [{"text": "open models", "domain": "ai-knowledge"}, {"text": "on-premise deployment", "domain": "agent-architecture"}, {"text": "agentic harnesses", "domain": "agent-architecture"}, {"text": "European AI", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "HuggingFace Papers", "url": "https://huggingface.co/papers"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

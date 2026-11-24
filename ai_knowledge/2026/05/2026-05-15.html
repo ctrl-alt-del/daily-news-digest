@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-15</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">12 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>5 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/12 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph population</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">metacognition</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">self-evolving memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">long-term memory benchmark</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">semantic knowledge graphs</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">graph agentic search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">long-horizon agent evaluation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">tacit knowledge capture</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[5]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="frontier model agentic workflows Gemini 3.5">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Gemini 3.5: frontier intelligence with action<div class="title-zh">Gemini 3.5：具备行动能力的前沿智能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">frontier model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Gemini 3.5</span></div>
+  <div class="item-summary">Google DeepMind introduced Gemini 3.5, billed as frontier intelligence with action and built to help users execute complex, agentic workflows.</div>
+  <a class="item-link" href="https://deepmind.google/blog/gemini-3-5-frontier-intelligence-with-action/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+<div class="item-card" data-keywords="agent memory self-evolving memory Reflexion failure reflection population broadcast">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16233</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FORGE: Self-Evolving Agent Memory With No Weight Updates via Population Broadcast<div class="title-zh">FORGE：无需权重更新、通过种群广播自进化的智能体记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">self-evolving memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Reflexion</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">failure reflection</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">population broadcast</span></div>
+  <div class="item-summary">FORGE is a staged, population-based protocol that evolves prompt-injected natural-language memory for hierarchical ReAct agents without gradient updates, converting failed trajectories into reusable rules, examples or both. On the stochastic CybORG CAGE-2 network-defense task it improved average return by 1.7-7.7x over zero-shot and by 29-72% over Reflexion across all 12 model-representation conditions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16233v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph population GraphRAG metacognition targeted retrieval Neo4j">
+  <div class="item-meta">
+    <span class="item-org">Google Research</span>
+    <span class="arxiv-tag">arxiv:2605.16676</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Enhancing Metacognitive AI: Knowledge-Graph Population with Graph-Theoretic LLM Enrichment<div class="title-zh">增强元认知 AI：用图论 LLM 增强进行知识图谱填充</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph population</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">metacognition</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">targeted retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">Neo4j</span></div>
+  <div class="item-summary">MetaKGEnrich builds a knowledge graph from a seed query, detects sparse regions using seven graph metrics and has GPT-4o generate targeted questions whose web-retrieved answers are ingested into Neo4j. On 30 queries from each of three datasets it improved GraphRAG answer quality for 80% of HotpotQA, 87% of Natural Questions and 83% of MS MARCO questions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16676v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="graph agentic search multi-hop QA knowledge graph token efficiency sub-agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16598</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GRASP: Graph Agentic Search over Propositions for Multi-hop Question Answering<div class="title-zh">GRASP：面向多跳问答的命题图智能体搜索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">graph agentic search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">token efficiency</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sub-agents</span></div>
+  <div class="item-summary">GRASP decomposes multi-hop questions into dependency-aware plans and resolves each single-hop sub-query over a three-layer graph of entities, propositions and passages, scaling the number of sub-agents to problem complexity. It reports the highest QA accuracy in open retrieval on MuSiQue and 2Wiki while using 40-50% fewer tokens than IRCoT+HippoRAG2.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16598v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-term memory multimodal memory memory agents long-context evaluation">
+  <div class="item-meta">
+    <span class="item-org">MIT, NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2605.14906</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models<div class="title-zh">MemLens：评测大型视觉语言模型多模态长期记忆的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">multimodal memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">memory agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">long-context evaluation</span></div>
+  <div class="item-summary">MemLens is an NVIDIA benchmark of 789 questions across 32K-256K contexts that tests multimodal long-term memory in 27 vision-language models and seven memory agents. Multi-session reasoning leaves most systems below 30% accuracy.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.14906" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal agent memory visual-evidence granularity memory evaluation retrieval complexity">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.15128</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">MemEye: A Visual-Centric Evaluation Framework for Multimodal Agent Memory<div class="title-zh">MemEye：以视觉为中心的多模态智能体记忆评测框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">multimodal agent memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">visual-evidence granularity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory evaluation</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval complexity</span></div>
+  <div class="item-summary">MemEye is an evaluation framework that measures multimodal agent memory by visual-evidence granularity and retrieval complexity across eight life-scenario tasks. Testing 13 memory methods on four vision-language backbones found that current architectures still lose fine visual detail.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.15128" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="skill library evolution agentic post-training reward modeling demonstration learning">
+  <div class="item-meta">
+    <span class="item-org">MIT</span>
+    <span class="arxiv-tag">arxiv:2605.08703</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">RewardHarness: Self-Evolving Agentic Post-Training<div class="title-zh">RewardHarness：自进化的智能体式后训练</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill library evolution</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic post-training</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">reward modeling</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">demonstration learning</span></div>
+  <div class="item-summary">RewardHarness is a framework from the Natural and Artificial Intelligence Lab that reframes image-edit reward modeling as evolving a library of tools and skills from about 100 demonstrations. It reports 47.4% average accuracy, beating GPT-5 by 5.3 points on image-editing evaluation benchmarks.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.08703" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="agent memory self-evolving memory Reflexion failure reflection population broadcast">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16233</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FORGE: Self-Evolving Agent Memory With No Weight Updates via Population Broadcast<div class="title-zh">FORGE：无需权重更新、通过种群广播自进化的智能体记忆</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">self-evolving memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Reflexion</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">failure reflection</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">population broadcast</span></div>
+  <div class="item-summary">FORGE is a staged, population-based protocol that evolves prompt-injected natural-language memory for hierarchical ReAct agents without gradient updates, converting failed trajectories into reusable rules, examples or both. On the stochastic CybORG CAGE-2 network-defense task it improved average return by 1.7-7.7x over zero-shot and by 29-72% over Reflexion across all 12 model-representation conditions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16233v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph population GraphRAG metacognition targeted retrieval Neo4j">
+  <div class="item-meta">
+    <span class="item-org">Google Research</span>
+    <span class="arxiv-tag">arxiv:2605.16676</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Enhancing Metacognitive AI: Knowledge-Graph Population with Graph-Theoretic LLM Enrichment<div class="title-zh">增强元认知 AI：用图论 LLM 增强进行知识图谱填充</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph population</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">metacognition</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">targeted retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">Neo4j</span></div>
+  <div class="item-summary">MetaKGEnrich builds a knowledge graph from a seed query, detects sparse regions using seven graph metrics and has GPT-4o generate targeted questions whose web-retrieved answers are ingested into Neo4j. On 30 queries from each of three datasets it improved GraphRAG answer quality for 80% of HotpotQA, 87% of Natural Questions and 83% of MS MARCO questions.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16676v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-term memory multimodal memory memory agents long-context evaluation">
+  <div class="item-meta">
+    <span class="item-org">MIT, NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2605.14906</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models<div class="title-zh">MemLens：评测大型视觉语言模型多模态长期记忆的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">multimodal memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">memory agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">long-context evaluation</span></div>
+  <div class="item-summary">MemLens is an NVIDIA benchmark of 789 questions across 32K-256K contexts that tests multimodal long-term memory in 27 vision-language models and seven memory agents. Multi-session reasoning leaves most systems below 30% accuracy.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.14906" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="semantic knowledge graph dialogue evaluation contradiction detection state tracking">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16650</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SKG-Eval: Stateful Evaluation of Multi-Turn Dialogue via Incremental Semantic Knowledge Graphs<div class="title-zh">SKG-Eval：通过增量语义知识图谱对多轮对话进行有状态评测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">semantic knowledge graph</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">dialogue evaluation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">contradiction detection</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">state tracking</span></div>
+  <div class="item-summary">SKG-Eval models multi-turn dialogue as an incrementally updated semantic knowledge graph of entities, relations and commitments, then scores local relevance, historical consistency and logical coherence. Across multiple benchmarks it reports higher correlation with human judgments and better detection of long-range inconsistencies, with deterministic scores and explicit contradiction certificates.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16650v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent benchmark long-horizon tasks CLI agents multimodal tasks">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.10912</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">WildClawBench: A Benchmark for Real-World, Long-Horizon Agent Evaluation<div class="title-zh">WildClawBench：面向真实世界长程任务的智能体评测基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon tasks</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">CLI agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multimodal tasks</span></div>
+  <div class="item-summary">WildClawBench is an Intern Large Models benchmark of 60 human-authored, bilingual, multimodal agent tasks run inside real CLI harnesses such as Claude Code and Codex. The best model, Claude Opus 4.7, reaches only 62.2%.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.10912" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="tacit knowledge semantic knowledge graph expert elicitation federated graph lab workflows">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.23985</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Federated Semantic Knowledge Graphs for Laboratory Workflows: A Structured Expert Elicitation Methodology Demonstrated Through Bioanalytical Workflow Twins<div class="title-zh">面向实验室工作流的联邦语义知识图谱：以生物分析工作流孪生演示的结构化专家启发方法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">tacit knowledge</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">semantic knowledge graph</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">expert elicitation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">federated graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">lab workflows</span></div>
+  <div class="item-summary">Researchers present a structured expert-elicitation method and federated semantic knowledge graph architecture for capturing tacit laboratory knowledge, deployed at Genentech's Biochemical and Cellular Pharmacology Department. An AI interview agent elicits procedural knowledge into aligned subgraphs, enabling seven query types unavailable from any single data source, including detection of automation-masked silent failures.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.23985v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="graph agentic search multi-hop QA knowledge graph token efficiency sub-agents">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16598</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GRASP: Graph Agentic Search over Propositions for Multi-hop Question Answering<div class="title-zh">GRASP：面向多跳问答的命题图智能体搜索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">graph agentic search</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop QA</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">token efficiency</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">sub-agents</span></div>
+  <div class="item-summary">GRASP decomposes multi-hop questions into dependency-aware plans and resolves each single-hop sub-query over a three-layer graph of entities, propositions and passages, scaling the number of sub-agents to problem complexity. It reports the highest QA accuracy in open retrieval on MuSiQue and 2Wiki while using 40-50% fewer tokens than IRCoT+HippoRAG2.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.16598v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills coding agents harness design open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DenisSergeevitch/agents-best-practices<div class="title-zh">agents-best-practices：面向 Codex 与 Claude Code 的中立 Agent Skill</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">harness design</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">The agents-best-practices repository offers a provider-neutral Agent Skill for Codex, Claude Code and agentic harness design. It had 2,395 stars and 216 forks and appeared on GitHub Trending on May 15.</div>
+  <a class="item-link" href="https://github.com/DenisSergeevitch/agents-best-practices" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="frontier model agentic workflows Gemini 3.5">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Gemini 3.5: frontier intelligence with action<div class="title-zh">Gemini 3.5：具备行动能力的前沿智能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">frontier model</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Gemini 3.5</span></div>
+  <div class="item-summary">Google DeepMind introduced Gemini 3.5, billed as frontier intelligence with action and built to help users execute complex, agentic workflows.</div>
+  <a class="item-link" href="https://deepmind.google/blog/gemini-3-5-frontier-intelligence-with-action/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="enterprise agents agent workflows OfficeQA Pro GPT-5.5">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Databricks brings GPT-5.5 to enterprise agent workflows<div class="title-zh">Databricks 将 GPT-5.5 引入企业智能体工作流</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">enterprise agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent workflows</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">OfficeQA Pro</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">GPT-5.5</span></div>
+  <div class="item-summary">OpenAI says Databricks is using GPT-5.5 for enterprise agent workflows, after the model set a new state of the art on the OfficeQA Pro benchmark.</div>
+  <a class="item-link" href="https://openai.com/index/databricks" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://huggingface.co/papers" target="_blank" rel="noopener">HuggingFace Papers</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://deepmind.google" target="_blank" rel="noopener">Google DeepMind</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-15", "stats": {"total_items": 12, "unique_items": 12, "sources_count": 5, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 9, "tools_frameworks": 1, "models_embeddings": 1, "industry_applications": 1}}, "daily_keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "knowledge graph population", "domain": "knowledge-graph"}, {"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "metacognition", "domain": "cognition-reasoning"}, {"text": "self-evolving memory", "domain": "agent-memory"}, {"text": "long-term memory benchmark", "domain": "evaluation-benchmark"}, {"text": "semantic knowledge graphs", "domain": "knowledge-graph"}, {"text": "graph agentic search", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "long-horizon agent evaluation", "domain": "evaluation-benchmark"}, {"text": "tacit knowledge capture", "domain": "knowledge-lifecycle"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Gemini 3.5: frontier intelligence with action", "title_zh": "Gemini 3.5：具备行动能力的前沿智能", "url": "https://deepmind.google/blog/gemini-3-5-frontier-intelligence-with-action/", "source": "Google DeepMind", "section": "models_embeddings", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind introduced Gemini 3.5, billed as frontier intelligence with action and built to help users execute complex, agentic workflows.", "keywords": [{"text": "frontier model", "domain": "ai-knowledge"}, {"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "Gemini 3.5", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "FORGE: Self-Evolving Agent Memory With No Weight Updates via Population Broadcast", "title_zh": "FORGE：无需权重更新、通过种群广播自进化的智能体记忆", "url": "http://arxiv.org/abs/2605.16233v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16233", "summary": "FORGE is a staged, population-based protocol that evolves prompt-injected natural-language memory for hierarchical ReAct agents without gradient updates, converting failed trajectories into reusable rules, examples or both. On the stochastic CybORG CAGE-2 network-defense task it improved average return by 1.7-7.7x over zero-shot and by 29-72% over Reflexion across all 12 model-representation conditions.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "self-evolving memory", "domain": "agent-memory"}, {"text": "Reflexion", "domain": "agent-architecture"}, {"text": "failure reflection", "domain": "knowledge-lifecycle"}, {"text": "population broadcast", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Enhancing Metacognitive AI: Knowledge-Graph Population with Graph-Theoretic LLM Enrichment", "title_zh": "增强元认知 AI：用图论 LLM 增强进行知识图谱填充", "url": "http://arxiv.org/abs/2605.16676v1", "source": "arXiv", "section": "research_papers", "organization": "Google Research", "language": "en", "arxiv_id": "2605.16676", "summary": "MetaKGEnrich builds a knowledge graph from a seed query, detects sparse regions using seven graph metrics and has GPT-4o generate targeted questions whose web-retrieved answers are ingested into Neo4j. On 30 queries from each of three datasets it improved GraphRAG answer quality for 80% of HotpotQA, 87% of Natural Questions and 83% of MS MARCO questions.", "keywords": [{"text": "knowledge graph population", "domain": "knowledge-graph"}, {"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "metacognition", "domain": "cognition-reasoning"}, {"text": "targeted retrieval", "domain": "rag-retrieval"}, {"text": "Neo4j", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true}, {"title": "GRASP: Graph Agentic Search over Propositions for Multi-hop Question Answering", "title_zh": "GRASP：面向多跳问答的命题图智能体搜索", "url": "http://arxiv.org/abs/2605.16598v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16598", "summary": "GRASP decomposes multi-hop questions into dependency-aware plans and resolves each single-hop sub-query over a three-layer graph of entities, propositions and passages, scaling the number of sub-agents to problem complexity. It reports the highest QA accuracy in open retrieval on MuSiQue and 2Wiki while using 40-50% fewer tokens than IRCoT+HippoRAG2.", "keywords": [{"text": "graph agentic search", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "token efficiency", "domain": "agent-architecture"}, {"text": "sub-agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models", "title_zh": "MemLens：评测大型视觉语言模型多模态长期记忆的基准", "url": "https://huggingface.co/papers/2605.14906", "source": "HuggingFace Papers", "section": "research_papers", "organization": "MIT, NVIDIA", "language": "en", "arxiv_id": "2605.14906", "summary": "MemLens is an NVIDIA benchmark of 789 questions across 32K-256K contexts that tests multimodal long-term memory in 27 vision-language models and seven memory agents. Multi-session reasoning leaves most systems below 30% accuracy.", "keywords": [{"text": "long-term memory", "domain": "agent-memory"}, {"text": "multimodal memory", "domain": "agent-memory"}, {"text": "memory agents", "domain": "agent-architecture"}, {"text": "long-context evaluation", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "MemEye: A Visual-Centric Evaluation Framework for Multimodal Agent Memory", "title_zh": "MemEye：以视觉为中心的多模态智能体记忆评测框架", "url": "https://huggingface.co/papers/2605.15128", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.15128", "summary": "MemEye is an evaluation framework that measures multimodal agent memory by visual-evidence granularity and retrieval complexity across eight life-scenario tasks. Testing 13 memory methods on four vision-language backbones found that current architectures still lose fine visual detail.", "keywords": [{"text": "multimodal agent memory", "domain": "agent-memory"}, {"text": "visual-evidence granularity", "domain": "evaluation-benchmark"}, {"text": "memory evaluation", "domain": "evaluation-benchmark"}, {"text": "retrieval complexity", "domain": "rag-retrieval"}], "link_verified": false, "is_highlight": false}, {"title": "RewardHarness: Self-Evolving Agentic Post-Training", "title_zh": "RewardHarness：自进化的智能体式后训练", "url": "https://huggingface.co/papers/2605.08703", "source": "HuggingFace Papers", "section": "research_papers", "organization": "MIT", "language": "en", "arxiv_id": "2605.08703", "summary": "RewardHarness is a framework from the Natural and Artificial Intelligence Lab that reframes image-edit reward modeling as evolving a library of tools and skills from about 100 demonstrations. It reports 47.4% average accuracy, beating GPT-5 by 5.3 points on image-editing evaluation benchmarks.", "keywords": [{"text": "skill library evolution", "domain": "knowledge-lifecycle"}, {"text": "agentic post-training", "domain": "agent-architecture"}, {"text": "reward modeling", "domain": "evaluation-benchmark"}, {"text": "demonstration learning", "domain": "knowledge-lifecycle"}], "link_verified": false, "is_highlight": false}, {"title": "FORGE: Self-Evolving Agent Memory With No Weight Updates via Population Broadcast", "title_zh": "FORGE：无需权重更新、通过种群广播自进化的智能体记忆", "url": "http://arxiv.org/abs/2605.16233v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16233", "summary": "FORGE is a staged, population-based protocol that evolves prompt-injected natural-language memory for hierarchical ReAct agents without gradient updates, converting failed trajectories into reusable rules, examples or both. On the stochastic CybORG CAGE-2 network-defense task it improved average return by 1.7-7.7x over zero-shot and by 29-72% over Reflexion across all 12 model-representation conditions.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "self-evolving memory", "domain": "agent-memory"}, {"text": "Reflexion", "domain": "agent-architecture"}, {"text": "failure reflection", "domain": "knowledge-lifecycle"}, {"text": "population broadcast", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Enhancing Metacognitive AI: Knowledge-Graph Population with Graph-Theoretic LLM Enrichment", "title_zh": "增强元认知 AI：用图论 LLM 增强进行知识图谱填充", "url": "http://arxiv.org/abs/2605.16676v1", "source": "arXiv", "section": "research_papers", "organization": "Google Research", "language": "en", "arxiv_id": "2605.16676", "summary": "MetaKGEnrich builds a knowledge graph from a seed query, detects sparse regions using seven graph metrics and has GPT-4o generate targeted questions whose web-retrieved answers are ingested into Neo4j. On 30 queries from each of three datasets it improved GraphRAG answer quality for 80% of HotpotQA, 87% of Natural Questions and 83% of MS MARCO questions.", "keywords": [{"text": "knowledge graph population", "domain": "knowledge-graph"}, {"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "metacognition", "domain": "cognition-reasoning"}, {"text": "targeted retrieval", "domain": "rag-retrieval"}, {"text": "Neo4j", "domain": "knowledge-graph"}], "link_verified": true, "is_highlight": true}, {"title": "MemLens: Benchmarking Multimodal Long-Term Memory in Large Vision-Language Models", "title_zh": "MemLens：评测大型视觉语言模型多模态长期记忆的基准", "url": "https://huggingface.co/papers/2605.14906", "source": "HuggingFace Papers", "section": "research_papers", "organization": "MIT, NVIDIA", "language": "en", "arxiv_id": "2605.14906", "summary": "MemLens is an NVIDIA benchmark of 789 questions across 32K-256K contexts that tests multimodal long-term memory in 27 vision-language models and seven memory agents. Multi-session reasoning leaves most systems below 30% accuracy.", "keywords": [{"text": "long-term memory", "domain": "agent-memory"}, {"text": "multimodal memory", "domain": "agent-memory"}, {"text": "memory agents", "domain": "agent-architecture"}, {"text": "long-context evaluation", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": true}, {"title": "SKG-Eval: Stateful Evaluation of Multi-Turn Dialogue via Incremental Semantic Knowledge Graphs", "title_zh": "SKG-Eval：通过增量语义知识图谱对多轮对话进行有状态评测", "url": "http://arxiv.org/abs/2605.16650v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16650", "summary": "SKG-Eval models multi-turn dialogue as an incrementally updated semantic knowledge graph of entities, relations and commitments, then scores local relevance, historical consistency and logical coherence. Across multiple benchmarks it reports higher correlation with human judgments and better detection of long-range inconsistencies, with deterministic scores and explicit contradiction certificates.", "keywords": [{"text": "semantic knowledge graph", "domain": "knowledge-graph"}, {"text": "dialogue evaluation", "domain": "evaluation-benchmark"}, {"text": "contradiction detection", "domain": "cognition-reasoning"}, {"text": "state tracking", "domain": "agent-memory"}], "link_verified": true, "is_highlight": false}, {"title": "WildClawBench: A Benchmark for Real-World, Long-Horizon Agent Evaluation", "title_zh": "WildClawBench：面向真实世界长程任务的智能体评测基准", "url": "https://huggingface.co/papers/2605.10912", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.10912", "summary": "WildClawBench is an Intern Large Models benchmark of 60 human-authored, bilingual, multimodal agent tasks run inside real CLI harnesses such as Claude Code and Codex. The best model, Claude Opus 4.7, reaches only 62.2%.", "keywords": [{"text": "agent benchmark", "domain": "evaluation-benchmark"}, {"text": "long-horizon tasks", "domain": "agent-architecture"}, {"text": "CLI agents", "domain": "agent-architecture"}, {"text": "multimodal tasks", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": false}, {"title": "Federated Semantic Knowledge Graphs for Laboratory Workflows: A Structured Expert Elicitation Methodology Demonstrated Through Bioanalytical Workflow Twins", "title_zh": "面向实验室工作流的联邦语义知识图谱：以生物分析工作流孪生演示的结构化专家启发方法", "url": "http://arxiv.org/abs/2605.23985v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.23985", "summary": "Researchers present a structured expert-elicitation method and federated semantic knowledge graph architecture for capturing tacit laboratory knowledge, deployed at Genentech's Biochemical and Cellular Pharmacology Department. An AI interview agent elicits procedural knowledge into aligned subgraphs, enabling seven query types unavailable from any single data source, including detection of automation-masked silent failures.", "keywords": [{"text": "tacit knowledge", "domain": "knowledge-lifecycle"}, {"text": "semantic knowledge graph", "domain": "knowledge-graph"}, {"text": "expert elicitation", "domain": "knowledge-lifecycle"}, {"text": "federated graph", "domain": "knowledge-graph"}, {"text": "lab workflows", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "GRASP: Graph Agentic Search over Propositions for Multi-hop Question Answering", "title_zh": "GRASP：面向多跳问答的命题图智能体搜索", "url": "http://arxiv.org/abs/2605.16598v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16598", "summary": "GRASP decomposes multi-hop questions into dependency-aware plans and resolves each single-hop sub-query over a three-layer graph of entities, propositions and passages, scaling the number of sub-agents to problem complexity. It reports the highest QA accuracy in open retrieval on MuSiQue and 2Wiki while using 40-50% fewer tokens than IRCoT+HippoRAG2.", "keywords": [{"text": "graph agentic search", "domain": "rag-retrieval"}, {"text": "multi-hop QA", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "token efficiency", "domain": "agent-architecture"}, {"text": "sub-agents", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "DenisSergeevitch/agents-best-practices", "title_zh": "agents-best-practices：面向 Codex 与 Claude Code 的中立 Agent Skill", "url": "https://github.com/DenisSergeevitch/agents-best-practices", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "The agents-best-practices repository offers a provider-neutral Agent Skill for Codex, Claude Code and agentic harness design. It had 2,395 stars and 216 forks and appeared on GitHub Trending on May 15.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "harness design", "domain": "context-prompting"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Gemini 3.5: frontier intelligence with action", "title_zh": "Gemini 3.5：具备行动能力的前沿智能", "url": "https://deepmind.google/blog/gemini-3-5-frontier-intelligence-with-action/", "source": "Google DeepMind", "section": "models_embeddings", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind introduced Gemini 3.5, billed as frontier intelligence with action and built to help users execute complex, agentic workflows.", "keywords": [{"text": "frontier model", "domain": "ai-knowledge"}, {"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "Gemini 3.5", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Databricks brings GPT-5.5 to enterprise agent workflows", "title_zh": "Databricks 将 GPT-5.5 引入企业智能体工作流", "url": "https://openai.com/index/databricks", "source": "OpenAI", "section": "industry_applications", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI says Databricks is using GPT-5.5 for enterprise agent workflows, after the model set a new state of the art on the OfficeQA Pro benchmark.", "keywords": [{"text": "enterprise agents", "domain": "agent-architecture"}, {"text": "agent workflows", "domain": "agent-architecture"}, {"text": "OfficeQA Pro", "domain": "evaluation-benchmark"}, {"text": "GPT-5.5", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "HuggingFace Papers", "url": "https://huggingface.co/papers"}, {"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "Google DeepMind", "url": "https://deepmind.google"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

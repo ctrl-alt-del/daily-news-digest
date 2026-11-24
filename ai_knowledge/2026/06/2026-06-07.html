@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-06-07</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-industry_applications" class="nav-link">Industry & Deployments</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">11/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">8</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:12%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration prompting</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">test-time learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">activation steering</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">counterfactual search</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">token economics</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">customer support agents</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="orchestration prompting benchmark multi-agent topologies prompt composition">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08878</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PerspectiveGap: A Benchmark for Multi-Agent Orchestration Prompting<div class="title-zh">PerspectiveGap：多 Agent 编排提示词基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent topologies</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt composition</span></div>
+  <div class="item-summary">PerspectiveGap benchmarks 110 scenarios across 10 topologies to test how well LLMs compose orchestration prompts, using role-fragment assignment and free-form prompt writing. Testing 33 commercial models from 10 companies, it finds GPT-5.5 clearly ahead, Opus 4.8 weak at orchestration prompting despite strong coding, and an average combined pass rate of just 17.2%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08878v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory test-time learning reinforcement learning GRPO">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2606.08656</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Player to Master: Enhancing Test-Time Learning of LLM Agents via Reinforcement Learning over Memory<div class="title-zh">从玩家到大师：通过记忆强化学习提升 LLM Agent 的测试时学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">test-time learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">MemoPilot trains the memory-update process of a frozen LLM as a multi-turn decision problem using multi-turn GRPO, with turn-wise rewards and context-independent turn-level advantage estimation. On multi-round Rock-Paper-Scissors and Limit Texas Hold'em it ranks first in Elo (1590 and 1762 respectively), outperforming baseline memory methods and proprietary models including DeepSeek-V3.2.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08656v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="customer support agents context engineering LLM-as-judge production deployment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08867</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Building Customer Support AI Agents at 100M-User Scale: An Evaluation-Driven Framework<div class="title-zh">在亿级用户规模上构建客服 AI Agent：评估驱动框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">customer support agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context engineering</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">production deployment</span></div>
+  <div class="item-summary">The paper presents Nubank's evaluation-driven framework for customer-support agents, combining context engineering, human-in-the-loop prompt iteration, LLM-judge evaluation with measured inter-rater agreement, GEPA optimization, and production validation. Across five deployments, a card-delivery A/B test reportedly showed a 37-point gain in AI transactional NPS and a 29-point rise in self-service rate, with AI satisfaction nearing expert human agents on most use cases.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08867v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[8]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="orchestration prompting benchmark multi-agent topologies prompt composition">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08878</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PerspectiveGap: A Benchmark for Multi-Agent Orchestration Prompting<div class="title-zh">PerspectiveGap：多 Agent 编排提示词基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">orchestration prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent topologies</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt composition</span></div>
+  <div class="item-summary">PerspectiveGap benchmarks 110 scenarios across 10 topologies to test how well LLMs compose orchestration prompts, using role-fragment assignment and free-form prompt writing. Testing 33 commercial models from 10 companies, it finds GPT-5.5 clearly ahead, Opus 4.8 weak at orchestration prompting despite strong coding, and an average combined pass rate of just 17.2%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08878v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="mathematical reasoning neuro-symbolic systems theorem proving survey benchmark evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08728</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Artificial Intelligence for Mathematical Reasoning: An Integrated Survey of Language Models, Neuro-symbolic Systems, and Verified Discovery<div class="title-zh">AI 数学推理：语言模型、神经符号系统与可验证发现的综合综述</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">neuro-symbolic systems</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theorem proving</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">survey</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark evaluation</span></div>
+  <div class="item-summary">This survey traces AI for mathematical reasoning from rule-based word-problem solvers through LLM prompting to reasoning models, multi-agent systems, neuro-symbolic provers, and verified-discovery workflows. It organizes the field along informal reasoning, formal proving, mathematical discovery, and inference/training techniques, and examines benchmark saturation, contamination, and failure modes such as reward hacking and brittle formalization.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08728v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory test-time learning reinforcement learning GRPO">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2606.08656</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Player to Master: Enhancing Test-Time Learning of LLM Agents via Reinforcement Learning over Memory<div class="title-zh">从玩家到大师：通过记忆强化学习提升 LLM Agent 的测试时学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">test-time learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">MemoPilot trains the memory-update process of a frozen LLM as a multi-turn decision problem using multi-turn GRPO, with turn-wise rewards and context-independent turn-level advantage estimation. On multi-round Rock-Paper-Scissors and Limit Texas Hold'em it ranks first in Elo (1590 and 1762 respectively), outperforming baseline memory methods and proprietary models including DeepSeek-V3.2.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08656v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="forensic log analysis chain-of-thought few-shot prompting explainability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08649</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Sample-Efficient LLM-Based Detection of Malicious Web Server Logs with Forensically Explainable Reasoning<div class="title-zh">CEF-Log：样本高效且可法证解释的恶意 Web 服务器日志 LLM 检测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">forensic log analysis</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">few-shot prompting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">explainability</span></div>
+  <div class="item-summary">CEF-Log is a context-enhanced few-shot chain-of-thought prompting strategy that embeds a structured five-step investigative template so LLMs learn how to analyze logs rather than what patterns to memorize. It reports an F1 of 0.99 on CSIC 2010 with only four examples, a 10x sample-efficiency improvement, and introduces the ForenWebLog dataset with real-world multi-step attacks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08649v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="activation steering emergent misalignment AI safety interpretability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08682</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Activation Steering Induces Emergent Misalignment: Steering Vector Construction and Comprehensive Evaluation<div class="title-zh">激活引导诱发涌现性失配：引导向量构建与综合评估</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">activation steering</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">emergent misalignment</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">AI safety</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">interpretability</span></div>
+  <div class="item-summary">The study shows that steering vectors derived from a narrow task can induce emergent misalignment across unrelated domains, with activation-steering-induced misalignment reportedly producing more actionable harmful responses than finetuning-induced misalignment. It characterizes dependence on steering magnitude, steering-subspace rank, and construction epochs, and tests sensitivity across model families, scales, tasks, and intervention layers.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08682v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="counterfactual recourse agentic search Monte Carlo tree search LLM budget">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08696</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Agentic Search for Counterfactual Recourse under Fixed LLM Budgets<div class="title-zh">固定 LLM 预算下的反事实救济 Agent 搜索</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">counterfactual recourse</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic search</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">Monte Carlo tree search</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM budget</span></div>
+  <div class="item-summary">ReCo-MCTS frames counterfactual recourse generation as a fixed-budget search problem and combines LLM multi-candidate generation, constraint checking, black-box oracle evaluation, and UCT-guided tree search. On four real-world tabular datasets it returns more oracle-validated counterfactuals than the evaluated baselines under the specified resource limits, with trade-offs in the extent of the required changes.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08696v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="inference-time scaling entropy-based selection self-consistency compute allocation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08850</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Intrinsic Selection and Particle Resampling for Inference-Time Scaling Beyond Domain Verifiability<div class="title-zh">超越领域可验证性的推理时扩展：内在选择与粒子重采样</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">inference-time scaling</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">entropy-based selection</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">self-consistency</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">compute allocation</span></div>
+  <div class="item-summary">The authors use length-adjusted tail entropy from parallel sample sets as a ground-truth-free signal of solution quality and as a gate for allocating compute. Intrinsic selection matches consensus methods across three domains and improves engineering-design selection by 20% over pass@1; particle filtering adds 6.1 points of pass@1 on hard math, and distillation yields up to 26.5% gains on complex clinical responses.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08850v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent writing agent skills human-in-the-loop open-source">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08857</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">PaperMentor: A Human-Centered Multi-Agent Writing Tutor for AI Research Papers on Overleaf<div class="title-zh">PaperMentor：面向 Overleaf 上 AI 研究论文的以人为本多 Agent 写作导师</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent writing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">human-in-the-loop</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">open-source</span></div>
+  <div class="item-summary">PaperMentor gives Overleaf-native inline writing suggestions while leaving authorship to the human, pairing an expert skill library with 12 specialized agents. In a 14-participant study, 90.6% of its comments were rated actionable and 67.5% valid, outperforming a GPT-5.2 baseline without the skill library; it is released open source under AGPL-3.0.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08857v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills design tooling local execution">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">JimLiu/baoyu-design<div class="title-zh">JimLiu/baoyu-design：把 Claude Design 作为 Agent Skill 本地运行</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">design tooling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">local execution</span></div>
+  <div class="item-summary">A JavaScript project that runs Claude Design locally as an agent skill for Cursor, Claude Code, and similar tools, producing UI mockups, prototypes, decks, and wireframes as self-contained HTML without claude.ai/design.</div>
+  <a class="item-link" href="https://github.com/JimLiu/baoyu-design" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry & Deployments
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="customer support agents context engineering LLM-as-judge production deployment">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.08867</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Building Customer Support AI Agents at 100M-User Scale: An Evaluation-Driven Framework<div class="title-zh">在亿级用户规模上构建客服 AI Agent：评估驱动框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">customer support agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context engineering</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">LLM-as-judge</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">production deployment</span></div>
+  <div class="item-summary">The paper presents Nubank's evaluation-driven framework for customer-support agents, combining context engineering, human-in-the-loop prompt iteration, LLM-judge evaluation with measured inter-rater agreement, GEPA optimization, and production validation. Across five deployments, a card-delivery A/B test reportedly showed a 37-point gain in AI transactional NPS and a 29-point rise in self-service rate, with AI satisfaction nearing expert human agents on most use cases.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.08867v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="token economics agentic software engineering multi-agent systems cost efficiency">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Tokenomics: Quantifying Where Tokens Are Used in Agentic Software Engineering<div class="title-zh">Tokenomics：量化 Agent 软件工程中的 Token 使用</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">token economics</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic software engineering</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">cost efficiency</span></div>
+  <div class="item-summary">The paper maps execution traces from 30 development tasks run with the ChatDev multi-agent framework and a GPT-5 reasoning model onto software lifecycle stages from design and coding to testing and documentation. It aims to quantify where tokens are spent, arguing that poor understanding of operational efficiency and resource consumption hinders adoption through unpredictable costs and environmental impact.</div>
+  <a class="item-link" href="https://arxiv.org/abs/2601.14470" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org/" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://news.ycombinator.com/" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-06-07", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 3, "links_verified_count": 11, "links_failed_count": 0, "section_counts": {"research_papers": 8, "tools_frameworks": 1, "industry_applications": 2}}, "daily_keywords": [{"text": "orchestration prompting", "domain": "agent-architecture"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "test-time learning", "domain": "agent-memory"}, {"text": "mathematical reasoning", "domain": "cognition-reasoning"}, {"text": "chain-of-thought", "domain": "context-prompting"}, {"text": "activation steering", "domain": "cognition-reasoning"}, {"text": "counterfactual search", "domain": "cognition-reasoning"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "token economics", "domain": "evaluation-benchmark"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "customer support agents", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "PerspectiveGap: A Benchmark for Multi-Agent Orchestration Prompting", "title_zh": "PerspectiveGap：多 Agent 编排提示词基准", "url": "http://arxiv.org/abs/2606.08878v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08878", "summary": "PerspectiveGap benchmarks 110 scenarios across 10 topologies to test how well LLMs compose orchestration prompts, using role-fragment assignment and free-form prompt writing. Testing 33 commercial models from 10 companies, it finds GPT-5.5 clearly ahead, Opus 4.8 weak at orchestration prompting despite strong coding, and an average combined pass rate of just 17.2%.", "keywords": [{"text": "orchestration prompting", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "multi-agent topologies", "domain": "agent-architecture"}, {"text": "prompt composition", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "From Player to Master: Enhancing Test-Time Learning of LLM Agents via Reinforcement Learning over Memory", "title_zh": "从玩家到大师：通过记忆强化学习提升 LLM Agent 的测试时学习", "url": "http://arxiv.org/abs/2606.08656v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2606.08656", "summary": "MemoPilot trains the memory-update process of a frozen LLM as a multi-turn decision problem using multi-turn GRPO, with turn-wise rewards and context-independent turn-level advantage estimation. On multi-round Rock-Paper-Scissors and Limit Texas Hold'em it ranks first in Elo (1590 and 1762 respectively), outperforming baseline memory methods and proprietary models including DeepSeek-V3.2.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "test-time learning", "domain": "agent-memory"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Building Customer Support AI Agents at 100M-User Scale: An Evaluation-Driven Framework", "title_zh": "在亿级用户规模上构建客服 AI Agent：评估驱动框架", "url": "http://arxiv.org/abs/2606.08867v2", "source": "arXiv", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "2606.08867", "summary": "The paper presents Nubank's evaluation-driven framework for customer-support agents, combining context engineering, human-in-the-loop prompt iteration, LLM-judge evaluation with measured inter-rater agreement, GEPA optimization, and production validation. Across five deployments, a card-delivery A/B test reportedly showed a 37-point gain in AI transactional NPS and a 29-point rise in self-service rate, with AI satisfaction nearing expert human agents on most use cases.", "keywords": [{"text": "customer support agents", "domain": "agent-architecture"}, {"text": "context engineering", "domain": "context-prompting"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "production deployment", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "PerspectiveGap: A Benchmark for Multi-Agent Orchestration Prompting", "title_zh": "PerspectiveGap：多 Agent 编排提示词基准", "url": "http://arxiv.org/abs/2606.08878v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08878", "summary": "PerspectiveGap benchmarks 110 scenarios across 10 topologies to test how well LLMs compose orchestration prompts, using role-fragment assignment and free-form prompt writing. Testing 33 commercial models from 10 companies, it finds GPT-5.5 clearly ahead, Opus 4.8 weak at orchestration prompting despite strong coding, and an average combined pass rate of just 17.2%.", "keywords": [{"text": "orchestration prompting", "domain": "agent-architecture"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "multi-agent topologies", "domain": "agent-architecture"}, {"text": "prompt composition", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Artificial Intelligence for Mathematical Reasoning: An Integrated Survey of Language Models, Neuro-symbolic Systems, and Verified Discovery", "title_zh": "AI 数学推理：语言模型、神经符号系统与可验证发现的综合综述", "url": "http://arxiv.org/abs/2606.08728v4", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08728", "summary": "This survey traces AI for mathematical reasoning from rule-based word-problem solvers through LLM prompting to reasoning models, multi-agent systems, neuro-symbolic provers, and verified-discovery workflows. It organizes the field along informal reasoning, formal proving, mathematical discovery, and inference/training techniques, and examines benchmark saturation, contamination, and failure modes such as reward hacking and brittle formalization.", "keywords": [{"text": "mathematical reasoning", "domain": "cognition-reasoning"}, {"text": "neuro-symbolic systems", "domain": "cognition-reasoning"}, {"text": "theorem proving", "domain": "cognition-reasoning"}, {"text": "survey", "domain": "ai-knowledge"}, {"text": "benchmark evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "From Player to Master: Enhancing Test-Time Learning of LLM Agents via Reinforcement Learning over Memory", "title_zh": "从玩家到大师：通过记忆强化学习提升 LLM Agent 的测试时学习", "url": "http://arxiv.org/abs/2606.08656v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2606.08656", "summary": "MemoPilot trains the memory-update process of a frozen LLM as a multi-turn decision problem using multi-turn GRPO, with turn-wise rewards and context-independent turn-level advantage estimation. On multi-round Rock-Paper-Scissors and Limit Texas Hold'em it ranks first in Elo (1590 and 1762 respectively), outperforming baseline memory methods and proprietary models including DeepSeek-V3.2.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "test-time learning", "domain": "agent-memory"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Sample-Efficient LLM-Based Detection of Malicious Web Server Logs with Forensically Explainable Reasoning", "title_zh": "CEF-Log：样本高效且可法证解释的恶意 Web 服务器日志 LLM 检测", "url": "http://arxiv.org/abs/2606.08649v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08649", "summary": "CEF-Log is a context-enhanced few-shot chain-of-thought prompting strategy that embeds a structured five-step investigative template so LLMs learn how to analyze logs rather than what patterns to memorize. It reports an F1 of 0.99 on CSIC 2010 with only four examples, a 10x sample-efficiency improvement, and introduces the ForenWebLog dataset with real-world multi-step attacks.", "keywords": [{"text": "forensic log analysis", "domain": "ai-knowledge"}, {"text": "chain-of-thought", "domain": "context-prompting"}, {"text": "few-shot prompting", "domain": "context-prompting"}, {"text": "explainability", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Activation Steering Induces Emergent Misalignment: Steering Vector Construction and Comprehensive Evaluation", "title_zh": "激活引导诱发涌现性失配：引导向量构建与综合评估", "url": "http://arxiv.org/abs/2606.08682v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08682", "summary": "The study shows that steering vectors derived from a narrow task can induce emergent misalignment across unrelated domains, with activation-steering-induced misalignment reportedly producing more actionable harmful responses than finetuning-induced misalignment. It characterizes dependence on steering magnitude, steering-subspace rank, and construction epochs, and tests sensitivity across model families, scales, tasks, and intervention layers.", "keywords": [{"text": "activation steering", "domain": "cognition-reasoning"}, {"text": "emergent misalignment", "domain": "cognition-reasoning"}, {"text": "AI safety", "domain": "evaluation-benchmark"}, {"text": "interpretability", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Agentic Search for Counterfactual Recourse under Fixed LLM Budgets", "title_zh": "固定 LLM 预算下的反事实救济 Agent 搜索", "url": "http://arxiv.org/abs/2606.08696v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08696", "summary": "ReCo-MCTS frames counterfactual recourse generation as a fixed-budget search problem and combines LLM multi-candidate generation, constraint checking, black-box oracle evaluation, and UCT-guided tree search. On four real-world tabular datasets it returns more oracle-validated counterfactuals than the evaluated baselines under the specified resource limits, with trade-offs in the extent of the required changes.", "keywords": [{"text": "counterfactual recourse", "domain": "cognition-reasoning"}, {"text": "agentic search", "domain": "agent-architecture"}, {"text": "Monte Carlo tree search", "domain": "cognition-reasoning"}, {"text": "LLM budget", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Intrinsic Selection and Particle Resampling for Inference-Time Scaling Beyond Domain Verifiability", "title_zh": "超越领域可验证性的推理时扩展：内在选择与粒子重采样", "url": "http://arxiv.org/abs/2606.08850v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08850", "summary": "The authors use length-adjusted tail entropy from parallel sample sets as a ground-truth-free signal of solution quality and as a gate for allocating compute. Intrinsic selection matches consensus methods across three domains and improves engineering-design selection by 20% over pass@1; particle filtering adds 6.1 points of pass@1 on hard math, and distillation yields up to 26.5% gains on complex clinical responses.", "keywords": [{"text": "inference-time scaling", "domain": "cognition-reasoning"}, {"text": "entropy-based selection", "domain": "cognition-reasoning"}, {"text": "self-consistency", "domain": "evaluation-benchmark"}, {"text": "compute allocation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "PaperMentor: A Human-Centered Multi-Agent Writing Tutor for AI Research Papers on Overleaf", "title_zh": "PaperMentor：面向 Overleaf 上 AI 研究论文的以人为本多 Agent 写作导师", "url": "http://arxiv.org/abs/2606.08857v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.08857", "summary": "PaperMentor gives Overleaf-native inline writing suggestions while leaving authorship to the human, pairing an expert skill library with 12 specialized agents. In a 14-participant study, 90.6% of its comments were rated actionable and 67.5% valid, outperforming a GPT-5.2 baseline without the skill library; it is released open source under AGPL-3.0.", "keywords": [{"text": "multi-agent writing", "domain": "agent-architecture"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "human-in-the-loop", "domain": "context-prompting"}, {"text": "open-source", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "JimLiu/baoyu-design", "title_zh": "JimLiu/baoyu-design：把 Claude Design 作为 Agent Skill 本地运行", "url": "https://github.com/JimLiu/baoyu-design", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "A JavaScript project that runs Claude Design locally as an agent skill for Cursor, Claude Code, and similar tools, producing UI mockups, prototypes, decks, and wireframes as self-contained HTML without claude.ai/design.", "keywords": [{"text": "agent skills", "domain": "agent-architecture"}, {"text": "design tooling", "domain": "ai-knowledge"}, {"text": "local execution", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry & Deployments", "items": [{"title": "Building Customer Support AI Agents at 100M-User Scale: An Evaluation-Driven Framework", "title_zh": "在亿级用户规模上构建客服 AI Agent：评估驱动框架", "url": "http://arxiv.org/abs/2606.08867v2", "source": "arXiv", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "2606.08867", "summary": "The paper presents Nubank's evaluation-driven framework for customer-support agents, combining context engineering, human-in-the-loop prompt iteration, LLM-judge evaluation with measured inter-rater agreement, GEPA optimization, and production validation. Across five deployments, a card-delivery A/B test reportedly showed a 37-point gain in AI transactional NPS and a 29-point rise in self-service rate, with AI satisfaction nearing expert human agents on most use cases.", "keywords": [{"text": "customer support agents", "domain": "agent-architecture"}, {"text": "context engineering", "domain": "context-prompting"}, {"text": "LLM-as-judge", "domain": "evaluation-benchmark"}, {"text": "production deployment", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": true}, {"title": "Tokenomics: Quantifying Where Tokens Are Used in Agentic Software Engineering", "title_zh": "Tokenomics：量化 Agent 软件工程中的 Token 使用", "url": "https://arxiv.org/abs/2601.14470", "source": "Hacker News", "section": "industry_applications", "organization": "", "language": "en", "arxiv_id": "", "summary": "The paper maps execution traces from 30 development tasks run with the ChatDev multi-agent framework and a GPT-5 reasoning model onto software lifecycle stages from design and coding to testing and documentation. It aims to quantify where tokens are spent, arguing that poor understanding of operational efficiency and resource consumption hinders adoption through unpredictable costs and environmental impact.", "keywords": [{"text": "token economics", "domain": "evaluation-benchmark"}, {"text": "agentic software engineering", "domain": "agent-architecture"}, {"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "cost efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org/"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Hacker News", "url": "https://news.ycombinator.com/"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

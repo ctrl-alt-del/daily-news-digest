@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-27</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">13 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>4 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">13/13 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">10</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:20%"></div></div>
+  <span class="stat-count">2</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:10%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill lifecycle</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent skills</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology curation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">behavioral specification</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">personalization</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt tone</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">semantic invariance</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">AI-assisted proof</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">mobile GUI agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term interaction</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="skill lifecycle agent memory self-evolving agents cross-agent transfer benchmark evaluation">
+  <div class="item-meta">
+    <span class="item-org">ByteDance, MIT</span>
+    <span class="arxiv-tag">arxiv:2605.27366</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MUSE-Autoskill: Self-Evolving Agents via Skill Creation, Memory, Management, and Evaluation<div class="title-zh">MUSE-Autoskill：通过技能创建、记忆、管理与评估实现自我进化的智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill lifecycle</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">cross-agent transfer</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark evaluation</span></div>
+  <div class="item-summary">ByteDance's skill-centric agent framework manages skills through a lifecycle of creation, memory, management, evaluation and refinement, with unit tests and runtime feedback driving improvement while skill-level memory accumulates experience. Experiments on SkillsBench report gains in task success, efficiency, reuse and cross-agent transfer.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.27366" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="ontology curation phenotype annotation agentic curation expert evaluation knowledge integration">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.28965</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Frontier LLM-based agents can overcome the ontology curation bottleneck for natural phenotypes<div class="title-zh">前沿 LLM 智能体有望突破自然表型本体标注的瓶颈</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology curation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">phenotype annotation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic curation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">expert evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge integration</span></div>
+  <div class="item-summary">Five frontier hosted LLMs from Anthropic and OpenAI acted as agentic curators, each working in a self-contained workspace with the source publication PDF, the original annotation guide, four project ontologies and a validation script. Against the original gold standard, every agent fell within the range of inter-curator variability of three trained biocurators, and all substantially outperformed Semantic CharaParser on four metrics.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.28965v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph construction ontology grounding neuro-symbolic reasoning entity canonicalization symbolic querying">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.29168</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Better Later Than Sooner: Neuro-Symbolic Knowledge Graph Construction via Ontology-grounded Post-extraction Correction<div class="title-zh">Better Later Than Sooner：基于本体约束后置修正的神经符号知识图谱构建</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology grounding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">neuro-symbolic reasoning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">entity canonicalization</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">symbolic querying</span></div>
+  <div class="item-summary">The paper proposes a neuro-symbolic pipeline for ontology-grounded knowledge graph construction that combines open-domain extraction, embedding-based canonicalization of types and predicates, and targeted LLM correction of ontology violations deferred to a post-extraction stage. It reports substantially lower token usage, improved KG consistency and preserved downstream QA quality, and measures SPARQL graph patterns to show the graphs suit symbolic querying.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.29168v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="AI-assisted proof agentic mathematics human-AI collaboration algebraic geometry">
+  <div class="item-meta">
+    <span class="item-org">DeepMind</span>
+    <span class="arxiv-tag">arxiv:2605.29151</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Real-rootedness of the Poincaré polynomials of $\overline{\mathcal M}_{0,n}$: an AI-assisted proof<div class="title-zh">模空间 Poincaré 多项式的实根性：一个 AI 辅助证明</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">AI-assisted proof</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic mathematics</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">human-AI collaboration</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">algebraic geometry</span></div>
+  <div class="item-summary">The authors prove real-rootedness of the Poincaré polynomial of the Deligne-Mumford moduli space of stable n-pointed rational curves, settling a conjecture of Aluffi-Chen-Marcolli through a bivariate deformation that reveals a hidden interlacing structure. They report that the proof was obtained through an iterative AI-assisted workflow with Co-Mathematician, an agentic frontier-model system developed by Google DeepMind, while the authors formulated the problem, evaluated proof attempts and requested corrections.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.29151v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[10]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="skill lifecycle agent memory self-evolving agents cross-agent transfer benchmark evaluation">
+  <div class="item-meta">
+    <span class="item-org">ByteDance, MIT</span>
+    <span class="arxiv-tag">arxiv:2605.27366</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MUSE-Autoskill: Self-Evolving Agents via Skill Creation, Memory, Management, and Evaluation<div class="title-zh">MUSE-Autoskill：通过技能创建、记忆、管理与评估实现自我进化的智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill lifecycle</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">cross-agent transfer</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark evaluation</span></div>
+  <div class="item-summary">ByteDance's skill-centric agent framework manages skills through a lifecycle of creation, memory, management, evaluation and refinement, with unit tests and runtime feedback driving improvement while skill-level memory accumulates experience. Experiments on SkillsBench report gains in task success, efficiency, reuse and cross-agent transfer.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.27366" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="semantic invariance paraphrase robustness mathematical reasoning benchmark auditing">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2605.29001</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FormInv: A Measurement Protocol for Semantic Invariance in Mathematical Reasoning Benchmarks<div class="title-zh">FormInv：数学推理基准中语义不变性的测量协议</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">semantic invariance</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">paraphrase robustness</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mathematical reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark auditing</span></div>
+  <div class="item-summary">FormInv audits paraphrase quality in mathematical reasoning benchmarks and introduces the Conditional Inconsistency Rate, which measures how often a semantically equivalent rewording flips a model's known-correct answer. A MathCheck audit found 4 incorrect paraphrases in 129 groups, enough to reorder model rankings, and 47% of auto-generated connective-variation paraphrases in the authors' own dataset were judged semantically incorrect.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.29001v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="ontology curation phenotype annotation agentic curation expert evaluation knowledge integration">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.28965</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Frontier LLM-based agents can overcome the ontology curation bottleneck for natural phenotypes<div class="title-zh">前沿 LLM 智能体有望突破自然表型本体标注的瓶颈</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology curation</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">phenotype annotation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic curation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">expert evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge integration</span></div>
+  <div class="item-summary">Five frontier hosted LLMs from Anthropic and OpenAI acted as agentic curators, each working in a self-contained workspace with the source publication PDF, the original annotation guide, four project ontologies and a validation script. Against the original gold standard, every agent fell within the range of inter-curator variability of three trained biocurators, and all substantially outperformed Semantic CharaParser on four metrics.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.28965v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge graph construction ontology grounding neuro-symbolic reasoning entity canonicalization symbolic querying">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.29168</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Better Later Than Sooner: Neuro-Symbolic Knowledge Graph Construction via Ontology-grounded Post-extraction Correction<div class="title-zh">Better Later Than Sooner：基于本体约束后置修正的神经符号知识图谱构建</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">ontology grounding</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">neuro-symbolic reasoning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">entity canonicalization</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">symbolic querying</span></div>
+  <div class="item-summary">The paper proposes a neuro-symbolic pipeline for ontology-grounded knowledge graph construction that combines open-domain extraction, embedding-based canonicalization of types and predicates, and targeted LLM correction of ontology violations deferred to a post-extraction stage. It reports substantially lower token usage, improved KG consistency and preserved downstream QA quality, and measures SPARQL graph patterns to show the graphs suit symbolic querying.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.29168v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="behavioral specification personalization representational accuracy context compression commercial memory systems">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.28969</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Beyond Recall: Behavioral Specification as an Interpretive Layer for AI Personalization<div class="title-zh">超越召回：将行为规范作为 AI 个性化的解释层</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">behavioral specification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">personalization</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">representational accuracy</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compression</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">commercial memory systems</span></div>
+  <div class="item-summary">The paper introduces representational accuracy to measure how faithfully an AI system captures a person's interpretation and operationalizes it as a Behavioral Specification that compresses personal data into interpretive patterns. Across 14 autobiographical corpora it recovers most of what a raw corpus provides at roughly 25x less context cost, and it is tested alongside Mem0, Letta, Supermemory and Zep.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.28969v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt tone prompt sensitivity multiple-choice evaluation accuracy variance">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.29027</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Mind Your Tone: Does Tone Alter LLM Performance?<div class="title-zh">注意语气：语气会改变 LLM 的表现吗？</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt tone</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt sensitivity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multiple-choice evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">accuracy variance</span></div>
+  <div class="item-summary">The study tests whether prompt tone changes LLM accuracy on objective multiple-choice questions using a 50-question set with five tone variants and a 570-question MMLU subset spanning 57 subjects with seven tone variants. Across ChatGPT-4o, ChatGPT-5-nano, Gemini 2.5 Flash and Gemini 2.5 Flash Lite, tonal effects are systematic but highly model-dependent, and the authors caution against assuming tone-robust reliability.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.29027v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="AI-assisted proof agentic mathematics human-AI collaboration algebraic geometry">
+  <div class="item-meta">
+    <span class="item-org">DeepMind</span>
+    <span class="arxiv-tag">arxiv:2605.29151</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Real-rootedness of the Poincaré polynomials of $\overline{\mathcal M}_{0,n}$: an AI-assisted proof<div class="title-zh">模空间 Poincaré 多项式的实根性：一个 AI 辅助证明</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">AI-assisted proof</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic mathematics</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">human-AI collaboration</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">algebraic geometry</span></div>
+  <div class="item-summary">The authors prove real-rootedness of the Poincaré polynomial of the Deligne-Mumford moduli space of stable n-pointed rational curves, settling a conjecture of Aluffi-Chen-Marcolli through a bivariate deformation that reveals a hidden interlacing structure. They report that the proof was obtained through an iterative AI-assisted workflow with Co-Mathematician, an agentic frontier-model system developed by Google DeepMind, while the authors formulated the problem, evaluated proof attempts and requested corrections.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.29151v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="mobile GUI agents simulation environment parallel evaluation GRPO">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.26114</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">MobileGym: A Verifiable and Highly Parallel Simulation Platform for Mobile GUI Agent Research<div class="title-zh">MobileGym：面向移动 GUI Agent 研究的可验证高并行仿真平台</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">mobile GUI agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">simulation environment</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">parallel evaluation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">MobileGym is a browser-hosted mobile simulation environment that judges outcomes deterministically over structured JSON state and can run hundreds of parallel instances per server. It includes a 416-template benchmark, and GRPO training on Qwen3-VL-4B-Instruct gained 12.8 points on the test set.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.26114" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="personalization proactive agents long-term interaction agent benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.27141</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">VitaBench 2.0: Evaluating Personalized and Proactive Agents in Long-Term User Interactions<div class="title-zh">VitaBench 2.0：评估长期用户交互中的个性化与主动式 Agent</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">personalization</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">proactive agents</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long-term interaction</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent benchmark</span></div>
+  <div class="item-summary">LongCat's VitaBench 2.0 orders tasks into per-user temporal sequences in which preferences are scattered across fragmented interactions, testing whether agents can extract, update and proactively seek missing information. It reports that frontier proprietary and open models still fall well short of practical personalization.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.27141" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="adversarial robustness vision-language-action reasoning evaluation autonomous driving">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2605.29114</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ReasonBreak: Probing Vulnerabilities in Reasoning-Enabled Vision-Language-Action Models for Autonomous Driving<div class="title-zh">ReasonBreak：探测面向自动驾驶的推理增强视觉-语言-动作模型漏洞</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adversarial robustness</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">vision-language-action</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning evaluation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">autonomous driving</span></div>
+  <div class="item-summary">The paper presents the first systematic black-box study of reasoning-enabled vision-language-action models under realistic textual input corruptions, using NVIDIA's Alpamayo models as representative industry systems. It reports up to 89% attack success rate on reasoning and up to 72% on trajectory manipulation in closed-loop simulation, along with a reasoning-aware evaluation framework and a benchmark for attacks and defenses.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.29114v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent skills AI-assisted engineering coding agents open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">backnotprop/pstack<div class="title-zh">backnotprop/pstack：面向严谨 AI 辅助工程的技能与原则</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent skills</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">AI-assisted engineering</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">pstack packages skills and principles for rigorous AI-assisted engineering, built for use with Claude, Codex and pi. The JavaScript repository had 2,805 stars and 212 forks and is tagged agent-skills and claude-code.</div>
+  <a class="item-link" href="https://github.com/backnotprop/pstack" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent skills course retrieval study notes evidence indexing">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">JuneYaooo/nihaisha-nishi-tcm<div class="title-zh">JuneYaooo/nihaisha-nishi-tcm：倪海厦中医课程学习的 Agent 技能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent skills</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">course retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">study notes</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence indexing</span></div>
+  <div class="item-summary">An Agent Skill for studying Ni Haixia's traditional Chinese medicine courses, covering course retrieval, formula-pattern and acupoint lookup, study-note organization and screenshot evidence indexing. The Python repository had 2,198 stars and 477 forks.</div>
+  <a class="item-link" href="https://github.com/JuneYaooo/nihaisha-nishi-tcm" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agentic workflows Codex accuracy improvement">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Building self-improving tax agents with Codex<div class="title-zh">用 Codex 构建可自我改进的税务智能体</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic workflows</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Codex</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">accuracy improvement</span></div>
+  <div class="item-summary">OpenAI describes how OpenAI, Thrive and Crete built a self-improving tax agent with Codex that automates filings, improves accuracy and accelerates workflows.</div>
+  <a class="item-link" href="https://openai.com/index/building-self-improving-tax-agents-with-codex" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://huggingface.co/papers" target="_blank" rel="noopener">HuggingFace Papers</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-27", "stats": {"total_items": 13, "unique_items": 13, "sources_count": 4, "links_verified_count": 13, "links_failed_count": 0, "section_counts": {"research_papers": 10, "tools_frameworks": 2, "blogs_insights": 1}}, "daily_keywords": [{"text": "skill lifecycle", "domain": "knowledge-lifecycle"}, {"text": "agent skills", "domain": "agent-architecture"}, {"text": "ontology curation", "domain": "knowledge-graph"}, {"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "self-evolving agents", "domain": "knowledge-lifecycle"}, {"text": "behavioral specification", "domain": "agent-memory"}, {"text": "personalization", "domain": "agent-memory"}, {"text": "prompt tone", "domain": "context-prompting"}, {"text": "semantic invariance", "domain": "evaluation-benchmark"}, {"text": "AI-assisted proof", "domain": "cognition-reasoning"}, {"text": "mobile GUI agents", "domain": "agent-architecture"}, {"text": "long-term interaction", "domain": "agent-memory"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "MUSE-Autoskill: Self-Evolving Agents via Skill Creation, Memory, Management, and Evaluation", "title_zh": "MUSE-Autoskill：通过技能创建、记忆、管理与评估实现自我进化的智能体", "url": "https://huggingface.co/papers/2605.27366", "source": "HuggingFace Papers", "section": "research_papers", "organization": "ByteDance, MIT", "language": "en", "arxiv_id": "2605.27366", "summary": "ByteDance's skill-centric agent framework manages skills through a lifecycle of creation, memory, management, evaluation and refinement, with unit tests and runtime feedback driving improvement while skill-level memory accumulates experience. Experiments on SkillsBench report gains in task success, efficiency, reuse and cross-agent transfer.", "keywords": [{"text": "skill lifecycle", "domain": "knowledge-lifecycle"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "self-evolving agents", "domain": "knowledge-lifecycle"}, {"text": "cross-agent transfer", "domain": "agent-architecture"}, {"text": "benchmark evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Frontier LLM-based agents can overcome the ontology curation bottleneck for natural phenotypes", "title_zh": "前沿 LLM 智能体有望突破自然表型本体标注的瓶颈", "url": "http://arxiv.org/abs/2605.28965v2", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.28965", "summary": "Five frontier hosted LLMs from Anthropic and OpenAI acted as agentic curators, each working in a self-contained workspace with the source publication PDF, the original annotation guide, four project ontologies and a validation script. Against the original gold standard, every agent fell within the range of inter-curator variability of three trained biocurators, and all substantially outperformed Semantic CharaParser on four metrics.", "keywords": [{"text": "ontology curation", "domain": "knowledge-graph"}, {"text": "phenotype annotation", "domain": "knowledge-graph"}, {"text": "agentic curation", "domain": "agent-architecture"}, {"text": "expert evaluation", "domain": "evaluation-benchmark"}, {"text": "knowledge integration", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Better Later Than Sooner: Neuro-Symbolic Knowledge Graph Construction via Ontology-grounded Post-extraction Correction", "title_zh": "Better Later Than Sooner：基于本体约束后置修正的神经符号知识图谱构建", "url": "http://arxiv.org/abs/2605.29168v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.29168", "summary": "The paper proposes a neuro-symbolic pipeline for ontology-grounded knowledge graph construction that combines open-domain extraction, embedding-based canonicalization of types and predicates, and targeted LLM correction of ontology violations deferred to a post-extraction stage. It reports substantially lower token usage, improved KG consistency and preserved downstream QA quality, and measures SPARQL graph patterns to show the graphs suit symbolic querying.", "keywords": [{"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "ontology grounding", "domain": "knowledge-graph"}, {"text": "neuro-symbolic reasoning", "domain": "cognition-reasoning"}, {"text": "entity canonicalization", "domain": "embeddings-vectors"}, {"text": "symbolic querying", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Real-rootedness of the Poincaré polynomials of $\\overline{\\mathcal M}_{0,n}$: an AI-assisted proof", "title_zh": "模空间 Poincaré 多项式的实根性：一个 AI 辅助证明", "url": "http://arxiv.org/abs/2605.29151v2", "source": "arXiv", "section": "research_papers", "organization": "DeepMind", "language": "en", "arxiv_id": "2605.29151", "summary": "The authors prove real-rootedness of the Poincaré polynomial of the Deligne-Mumford moduli space of stable n-pointed rational curves, settling a conjecture of Aluffi-Chen-Marcolli through a bivariate deformation that reveals a hidden interlacing structure. They report that the proof was obtained through an iterative AI-assisted workflow with Co-Mathematician, an agentic frontier-model system developed by Google DeepMind, while the authors formulated the problem, evaluated proof attempts and requested corrections.", "keywords": [{"text": "AI-assisted proof", "domain": "cognition-reasoning"}, {"text": "agentic mathematics", "domain": "agent-architecture"}, {"text": "human-AI collaboration", "domain": "cognition-reasoning"}, {"text": "algebraic geometry", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "MUSE-Autoskill: Self-Evolving Agents via Skill Creation, Memory, Management, and Evaluation", "title_zh": "MUSE-Autoskill：通过技能创建、记忆、管理与评估实现自我进化的智能体", "url": "https://huggingface.co/papers/2605.27366", "source": "HuggingFace Papers", "section": "research_papers", "organization": "ByteDance, MIT", "language": "en", "arxiv_id": "2605.27366", "summary": "ByteDance's skill-centric agent framework manages skills through a lifecycle of creation, memory, management, evaluation and refinement, with unit tests and runtime feedback driving improvement while skill-level memory accumulates experience. Experiments on SkillsBench report gains in task success, efficiency, reuse and cross-agent transfer.", "keywords": [{"text": "skill lifecycle", "domain": "knowledge-lifecycle"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "self-evolving agents", "domain": "knowledge-lifecycle"}, {"text": "cross-agent transfer", "domain": "agent-architecture"}, {"text": "benchmark evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "FormInv: A Measurement Protocol for Semantic Invariance in Mathematical Reasoning Benchmarks", "title_zh": "FormInv：数学推理基准中语义不变性的测量协议", "url": "http://arxiv.org/abs/2605.29001v2", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2605.29001", "summary": "FormInv audits paraphrase quality in mathematical reasoning benchmarks and introduces the Conditional Inconsistency Rate, which measures how often a semantically equivalent rewording flips a model's known-correct answer. A MathCheck audit found 4 incorrect paraphrases in 129 groups, enough to reorder model rankings, and 47% of auto-generated connective-variation paraphrases in the authors' own dataset were judged semantically incorrect.", "keywords": [{"text": "semantic invariance", "domain": "evaluation-benchmark"}, {"text": "paraphrase robustness", "domain": "context-prompting"}, {"text": "mathematical reasoning", "domain": "cognition-reasoning"}, {"text": "benchmark auditing", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Frontier LLM-based agents can overcome the ontology curation bottleneck for natural phenotypes", "title_zh": "前沿 LLM 智能体有望突破自然表型本体标注的瓶颈", "url": "http://arxiv.org/abs/2605.28965v2", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.28965", "summary": "Five frontier hosted LLMs from Anthropic and OpenAI acted as agentic curators, each working in a self-contained workspace with the source publication PDF, the original annotation guide, four project ontologies and a validation script. Against the original gold standard, every agent fell within the range of inter-curator variability of three trained biocurators, and all substantially outperformed Semantic CharaParser on four metrics.", "keywords": [{"text": "ontology curation", "domain": "knowledge-graph"}, {"text": "phenotype annotation", "domain": "knowledge-graph"}, {"text": "agentic curation", "domain": "agent-architecture"}, {"text": "expert evaluation", "domain": "evaluation-benchmark"}, {"text": "knowledge integration", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Better Later Than Sooner: Neuro-Symbolic Knowledge Graph Construction via Ontology-grounded Post-extraction Correction", "title_zh": "Better Later Than Sooner：基于本体约束后置修正的神经符号知识图谱构建", "url": "http://arxiv.org/abs/2605.29168v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.29168", "summary": "The paper proposes a neuro-symbolic pipeline for ontology-grounded knowledge graph construction that combines open-domain extraction, embedding-based canonicalization of types and predicates, and targeted LLM correction of ontology violations deferred to a post-extraction stage. It reports substantially lower token usage, improved KG consistency and preserved downstream QA quality, and measures SPARQL graph patterns to show the graphs suit symbolic querying.", "keywords": [{"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "ontology grounding", "domain": "knowledge-graph"}, {"text": "neuro-symbolic reasoning", "domain": "cognition-reasoning"}, {"text": "entity canonicalization", "domain": "embeddings-vectors"}, {"text": "symbolic querying", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": true}, {"title": "Beyond Recall: Behavioral Specification as an Interpretive Layer for AI Personalization", "title_zh": "超越召回：将行为规范作为 AI 个性化的解释层", "url": "http://arxiv.org/abs/2605.28969v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.28969", "summary": "The paper introduces representational accuracy to measure how faithfully an AI system captures a person's interpretation and operationalizes it as a Behavioral Specification that compresses personal data into interpretive patterns. Across 14 autobiographical corpora it recovers most of what a raw corpus provides at roughly 25x less context cost, and it is tested alongside Mem0, Letta, Supermemory and Zep.", "keywords": [{"text": "behavioral specification", "domain": "agent-memory"}, {"text": "personalization", "domain": "ai-knowledge"}, {"text": "representational accuracy", "domain": "evaluation-benchmark"}, {"text": "context compression", "domain": "context-prompting"}, {"text": "commercial memory systems", "domain": "agent-memory"}], "link_verified": true, "is_highlight": false}, {"title": "Mind Your Tone: Does Tone Alter LLM Performance?", "title_zh": "注意语气：语气会改变 LLM 的表现吗？", "url": "http://arxiv.org/abs/2605.29027v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.29027", "summary": "The study tests whether prompt tone changes LLM accuracy on objective multiple-choice questions using a 50-question set with five tone variants and a 570-question MMLU subset spanning 57 subjects with seven tone variants. Across ChatGPT-4o, ChatGPT-5-nano, Gemini 2.5 Flash and Gemini 2.5 Flash Lite, tonal effects are systematic but highly model-dependent, and the authors caution against assuming tone-robust reliability.", "keywords": [{"text": "prompt tone", "domain": "context-prompting"}, {"text": "prompt sensitivity", "domain": "context-prompting"}, {"text": "multiple-choice evaluation", "domain": "evaluation-benchmark"}, {"text": "accuracy variance", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Real-rootedness of the Poincaré polynomials of $\\overline{\\mathcal M}_{0,n}$: an AI-assisted proof", "title_zh": "模空间 Poincaré 多项式的实根性：一个 AI 辅助证明", "url": "http://arxiv.org/abs/2605.29151v2", "source": "arXiv", "section": "research_papers", "organization": "DeepMind", "language": "en", "arxiv_id": "2605.29151", "summary": "The authors prove real-rootedness of the Poincaré polynomial of the Deligne-Mumford moduli space of stable n-pointed rational curves, settling a conjecture of Aluffi-Chen-Marcolli through a bivariate deformation that reveals a hidden interlacing structure. They report that the proof was obtained through an iterative AI-assisted workflow with Co-Mathematician, an agentic frontier-model system developed by Google DeepMind, while the authors formulated the problem, evaluated proof attempts and requested corrections.", "keywords": [{"text": "AI-assisted proof", "domain": "cognition-reasoning"}, {"text": "agentic mathematics", "domain": "agent-architecture"}, {"text": "human-AI collaboration", "domain": "cognition-reasoning"}, {"text": "algebraic geometry", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "MobileGym: A Verifiable and Highly Parallel Simulation Platform for Mobile GUI Agent Research", "title_zh": "MobileGym：面向移动 GUI Agent 研究的可验证高并行仿真平台", "url": "https://huggingface.co/papers/2605.26114", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.26114", "summary": "MobileGym is a browser-hosted mobile simulation environment that judges outcomes deterministically over structured JSON state and can run hundreds of parallel instances per server. It includes a 416-template benchmark, and GRPO training on Qwen3-VL-4B-Instruct gained 12.8 points on the test set.", "keywords": [{"text": "mobile GUI agents", "domain": "agent-architecture"}, {"text": "simulation environment", "domain": "evaluation-benchmark"}, {"text": "parallel evaluation", "domain": "evaluation-benchmark"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "VitaBench 2.0: Evaluating Personalized and Proactive Agents in Long-Term User Interactions", "title_zh": "VitaBench 2.0：评估长期用户交互中的个性化与主动式 Agent", "url": "https://huggingface.co/papers/2605.27141", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.27141", "summary": "LongCat's VitaBench 2.0 orders tasks into per-user temporal sequences in which preferences are scattered across fragmented interactions, testing whether agents can extract, update and proactively seek missing information. It reports that frontier proprietary and open models still fall well short of practical personalization.", "keywords": [{"text": "personalization", "domain": "agent-memory"}, {"text": "proactive agents", "domain": "agent-architecture"}, {"text": "long-term interaction", "domain": "agent-memory"}, {"text": "agent benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ReasonBreak: Probing Vulnerabilities in Reasoning-Enabled Vision-Language-Action Models for Autonomous Driving", "title_zh": "ReasonBreak：探测面向自动驾驶的推理增强视觉-语言-动作模型漏洞", "url": "http://arxiv.org/abs/2605.29114v1", "source": "arXiv", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2605.29114", "summary": "The paper presents the first systematic black-box study of reasoning-enabled vision-language-action models under realistic textual input corruptions, using NVIDIA's Alpamayo models as representative industry systems. It reports up to 89% attack success rate on reasoning and up to 72% on trajectory manipulation in closed-loop simulation, along with a reasoning-aware evaluation framework and a benchmark for attacks and defenses.", "keywords": [{"text": "adversarial robustness", "domain": "evaluation-benchmark"}, {"text": "vision-language-action", "domain": "agent-architecture"}, {"text": "reasoning evaluation", "domain": "cognition-reasoning"}, {"text": "autonomous driving", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "backnotprop/pstack", "title_zh": "backnotprop/pstack：面向严谨 AI 辅助工程的技能与原则", "url": "https://github.com/backnotprop/pstack", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "pstack packages skills and principles for rigorous AI-assisted engineering, built for use with Claude, Codex and pi. The JavaScript repository had 2,805 stars and 212 forks and is tagged agent-skills and claude-code.", "keywords": [{"text": "agent skills", "domain": "knowledge-lifecycle"}, {"text": "AI-assisted engineering", "domain": "agent-architecture"}, {"text": "coding agents", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "JuneYaooo/nihaisha-nishi-tcm", "title_zh": "JuneYaooo/nihaisha-nishi-tcm：倪海厦中医课程学习的 Agent 技能", "url": "https://github.com/JuneYaooo/nihaisha-nishi-tcm", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "An Agent Skill for studying Ni Haixia's traditional Chinese medicine courses, covering course retrieval, formula-pattern and acupoint lookup, study-note organization and screenshot evidence indexing. The Python repository had 2,198 stars and 477 forks.", "keywords": [{"text": "agent skills", "domain": "knowledge-lifecycle"}, {"text": "course retrieval", "domain": "rag-retrieval"}, {"text": "study notes", "domain": "ai-knowledge"}, {"text": "evidence indexing", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Building self-improving tax agents with Codex", "title_zh": "用 Codex 构建可自我改进的税务智能体", "url": "https://openai.com/index/building-self-improving-tax-agents-with-codex", "source": "OpenAI", "section": "blogs_insights", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI describes how OpenAI, Thrive and Crete built a self-improving tax agent with Codex that automates filings, improves accuracy and accelerates workflows.", "keywords": [{"text": "agentic workflows", "domain": "agent-architecture"}, {"text": "Codex", "domain": "ai-knowledge"}, {"text": "accuracy improvement", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "HuggingFace Papers", "url": "https://huggingface.co/papers"}, {"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

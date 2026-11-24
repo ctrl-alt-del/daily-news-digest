@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-17</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">6</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:16%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory consolidation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool calling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP servers</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">workflow graphs</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving systems</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sentence embeddings</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">agent learning resources</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory long-horizon agents memory consolidation episodic memory long-context limits">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.17625</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Episodic-Semantic Memory Architecture for Long-Horizon Scientific Agents<div class="title-zh">面向长程科学智能体的情景—语义记忆架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory consolidation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context limits</span></div>
+  <div class="item-summary">A Dual Process Memory Architecture separates a fixed 10-message episodic window from consolidated long-term knowledge that grows at about three tokens per message, tested over 15,000 messages with six LLMs and 1,440 queries. It maintained 70-85% accuracy using 62% fewer tokens, while full-context models failed at 10,000 messages.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17625v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research agents benchmark evaluation rubric scoring cognitive traps">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.17554</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Evaluating Deep Research Agents on Expert Consulting Work: A Benchmark with Verifiers, Rubrics, and Cognitive Traps<div class="title-zh">评估深度研究智能体在专家咨询工作中的表现：带验证器、评分标准与认知陷阱的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">rubric scoring</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">cognitive traps</span></div>
+  <div class="item-summary">The benchmark comprises 70 SME-authored management consulting prompts with embedded cognitive traps, scored by deterministic binary verifiers and a five-criterion rubric. o3-deep-research led the continuous Verifier-Rubric Score at 61.4, but no agent exceeded a 15.7% acceptance rate under the joint threshold.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17554v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool calling MCP servers verified data generation DAG exploration GRPO">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.17558</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Firefly: Illuminating Large-Scale Verified Tool-Call Data Generation from Real APIs<div class="title-zh">Firefly：从真实 API 生成大规模可验证工具调用数据</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool calling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP servers</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">verified data generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">DAG exploration</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">FireFly inverts tool-call data synthesis by having a strong LLM explore real MCP servers along graph-guided DAGs and then generating tasks backward from observed outcomes, yielding 5,144 verified tasks across 240 servers and 993 tools. A 4B model trained with GRPO on this data matched Claude Sonnet 4.6 on the held-out test set.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17558v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="workflow graphs self-evolving systems multi-agent traversal graph-guided retrieval incident investigation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.17617</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GraphMind: From Operational Traces to Self-Evolving Workflow Automation<div class="title-zh">GraphMind：从运维轨迹到自进化工作流自动化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">workflow graphs</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving systems</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent traversal</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">graph-guided retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">incident investigation</span></div>
+  <div class="item-summary">GraphMind extracts action-centric workflow graphs from human resolution traces, executes them with a multi-agent traversal engine, and reinforces successful paths through Adaptive Traversal Reinforcement. Deployed across four production cloud database services, it required 8x less retrieval context than an Agentic Summary-RAG baseline, and its Adaptive Traversal Reinforcement layer reduced hallucination rate by 26%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17617v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[6]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent memory long-horizon agents memory consolidation episodic memory long-context limits">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.17625</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Episodic-Semantic Memory Architecture for Long-Horizon Scientific Agents<div class="title-zh">面向长程科学智能体的情景—语义记忆架构</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">memory consolidation</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">episodic memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context limits</span></div>
+  <div class="item-summary">A Dual Process Memory Architecture separates a fixed 10-message episodic window from consolidated long-term knowledge that grows at about three tokens per message, tested over 15,000 messages with six LLMs and 1,440 queries. It maintained 70-85% accuracy using 62% fewer tokens, while full-context models failed at 10,000 messages.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17625v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research agents benchmark evaluation rubric scoring cognitive traps">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.17554</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Evaluating Deep Research Agents on Expert Consulting Work: A Benchmark with Verifiers, Rubrics, and Cognitive Traps<div class="title-zh">评估深度研究智能体在专家咨询工作中的表现：带验证器、评分标准与认知陷阱的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">deep research agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark evaluation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">rubric scoring</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">cognitive traps</span></div>
+  <div class="item-summary">The benchmark comprises 70 SME-authored management consulting prompts with embedded cognitive traps, scored by deterministic binary verifiers and a five-criterion rubric. o3-deep-research led the continuous Verifier-Rubric Score at 61.4, but no agent exceeded a 15.7% acceptance rate under the joint threshold.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17554v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="legal reasoning benchmark dataset multi-label classification severity-aware metric">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2605.17691</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Validate Your Authority: Benchmarking LLMs on Multi-Label Precedent Treatment Classification<div class="title-zh">验证你的权威：多标签判例处理分类的 LLM 基准评测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">legal reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark dataset</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multi-label classification</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">severity-aware metric</span></div>
+  <div class="item-summary">The paper introduces an expert-annotated dataset of 239 real-world legal citations and an Average Severity Error metric for multi-label precedent treatment classification. Gemini 2.5 Flash reached 79.1% on the high-level task, while GPT-5-mini led the more complex fine-grained schema at 67.7%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17691v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="tool calling MCP servers verified data generation DAG exploration GRPO">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.17558</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Firefly: Illuminating Large-Scale Verified Tool-Call Data Generation from Real APIs<div class="title-zh">Firefly：从真实 API 生成大规模可验证工具调用数据</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool calling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP servers</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">verified data generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">DAG exploration</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">GRPO</span></div>
+  <div class="item-summary">FireFly inverts tool-call data synthesis by having a strong LLM explore real MCP servers along graph-guided DAGs and then generating tasks backward from observed outcomes, yielding 5,144 verified tasks across 240 servers and 993 tools. A 4B model trained with GRPO on this data matched Claude Sonnet 4.6 on the held-out test set.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17558v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="workflow graphs self-evolving systems multi-agent traversal graph-guided retrieval incident investigation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.17617</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GraphMind: From Operational Traces to Self-Evolving Workflow Automation<div class="title-zh">GraphMind：从运维轨迹到自进化工作流自动化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">workflow graphs</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving systems</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent traversal</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">graph-guided retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">incident investigation</span></div>
+  <div class="item-summary">GraphMind extracts action-centric workflow graphs from human resolution traces, executes them with a multi-agent traversal engine, and reinforces successful paths through Adaptive Traversal Reinforcement. Deployed across four production cloud database services, it required 8x less retrieval context than an Agentic Summary-RAG baseline, and its Adaptive Traversal Reinforcement layer reduced hallucination rate by 26%.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17617v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented generation EEG decoding sentence embeddings vector retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.17503</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RAG-based EEG-to-Text Translation Using Deep Learning and LLMs<div class="title-zh">基于 RAG 的脑电到文本翻译：结合深度学习与大语言模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">EEG decoding</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">sentence embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">vector retrieval</span></div>
+  <div class="item-summary">The pipeline aligns EEG encoders with sentence embeddings, retrieves candidate sentences from a vector store and has an LLM refine them into text. Across nine subjects on the ZuCo dataset it beat a random baseline with a mean cosine similarity of 0.181 versus 0.139, a 30.45% relative improvement.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.17503v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent learning study roadmap open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">datawhalechina/Agent-Learning-Hub<div class="title-zh">datawhalechina/Agent-Learning-Hub：AI Agent 学习路线与资料集</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent learning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">study roadmap</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">Datawhale China's Agent-Learning-Hub collects AI agent learning roadmaps and study materials in a Chinese-language HTML project. It had 9,006 GitHub stars and 898 forks when it appeared on GitHub Trending.</div>
+  <a class="item-link" href="https://github.com/datawhalechina/Agent-Learning-Hub" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="AI for science scientific discovery Gemini">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    
+    
+    <span class="item-source">Google DeepMind</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Gemini for Science: AI experiments and tools for a new era of discovery<div class="title-zh">Gemini for Science：面向发现新时代的 AI 实验与工具</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">AI for science</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific discovery</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Gemini</span></div>
+  <div class="item-summary">Google DeepMind announced Gemini for Science, a collection of science tools and experiments intended to expand the scale and precision of scientific exploration; the announcement provides no further technical detail.</div>
+  <a class="item-link" href="https://deepmind.google/blog/gemini-for-science-ai-experiments-and-tools-for-a-new-era-of-discovery/" target="_blank" rel="noopener">&rarr; deepmind.google</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://deepmind.google" target="_blank" rel="noopener">Google DeepMind</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-17", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 3, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 6, "tools_frameworks": 1, "blogs_insights": 1}}, "daily_keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "memory consolidation", "domain": "knowledge-lifecycle"}, {"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "deep research agents", "domain": "agent-architecture"}, {"text": "benchmark evaluation", "domain": "evaluation-benchmark"}, {"text": "tool calling", "domain": "agent-architecture"}, {"text": "MCP servers", "domain": "agent-architecture"}, {"text": "workflow graphs", "domain": "knowledge-graph"}, {"text": "self-evolving systems", "domain": "knowledge-lifecycle"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "sentence embeddings", "domain": "embeddings-vectors"}, {"text": "agent learning resources", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Episodic-Semantic Memory Architecture for Long-Horizon Scientific Agents", "title_zh": "面向长程科学智能体的情景—语义记忆架构", "url": "http://arxiv.org/abs/2605.17625v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.17625", "summary": "A Dual Process Memory Architecture separates a fixed 10-message episodic window from consolidated long-term knowledge that grows at about three tokens per message, tested over 15,000 messages with six LLMs and 1,440 queries. It maintained 70-85% accuracy using 62% fewer tokens, while full-context models failed at 10,000 messages.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "memory consolidation", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "long-context limits", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Evaluating Deep Research Agents on Expert Consulting Work: A Benchmark with Verifiers, Rubrics, and Cognitive Traps", "title_zh": "评估深度研究智能体在专家咨询工作中的表现：带验证器、评分标准与认知陷阱的基准", "url": "http://arxiv.org/abs/2605.17554v3", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.17554", "summary": "The benchmark comprises 70 SME-authored management consulting prompts with embedded cognitive traps, scored by deterministic binary verifiers and a five-criterion rubric. o3-deep-research led the continuous Verifier-Rubric Score at 61.4, but no agent exceeded a 15.7% acceptance rate under the joint threshold.", "keywords": [{"text": "deep research agents", "domain": "agent-architecture"}, {"text": "benchmark evaluation", "domain": "evaluation-benchmark"}, {"text": "rubric scoring", "domain": "evaluation-benchmark"}, {"text": "cognitive traps", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Firefly: Illuminating Large-Scale Verified Tool-Call Data Generation from Real APIs", "title_zh": "Firefly：从真实 API 生成大规模可验证工具调用数据", "url": "http://arxiv.org/abs/2605.17558v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.17558", "summary": "FireFly inverts tool-call data synthesis by having a strong LLM explore real MCP servers along graph-guided DAGs and then generating tasks backward from observed outcomes, yielding 5,144 verified tasks across 240 servers and 993 tools. A 4B model trained with GRPO on this data matched Claude Sonnet 4.6 on the held-out test set.", "keywords": [{"text": "tool calling", "domain": "agent-architecture"}, {"text": "MCP servers", "domain": "agent-architecture"}, {"text": "verified data generation", "domain": "knowledge-lifecycle"}, {"text": "DAG exploration", "domain": "agent-architecture"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "GraphMind: From Operational Traces to Self-Evolving Workflow Automation", "title_zh": "GraphMind：从运维轨迹到自进化工作流自动化", "url": "http://arxiv.org/abs/2605.17617v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.17617", "summary": "GraphMind extracts action-centric workflow graphs from human resolution traces, executes them with a multi-agent traversal engine, and reinforces successful paths through Adaptive Traversal Reinforcement. Deployed across four production cloud database services, it required 8x less retrieval context than an Agentic Summary-RAG baseline, and its Adaptive Traversal Reinforcement layer reduced hallucination rate by 26%.", "keywords": [{"text": "workflow graphs", "domain": "knowledge-graph"}, {"text": "self-evolving systems", "domain": "knowledge-lifecycle"}, {"text": "multi-agent traversal", "domain": "agent-architecture"}, {"text": "graph-guided retrieval", "domain": "rag-retrieval"}, {"text": "incident investigation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Episodic-Semantic Memory Architecture for Long-Horizon Scientific Agents", "title_zh": "面向长程科学智能体的情景—语义记忆架构", "url": "http://arxiv.org/abs/2605.17625v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.17625", "summary": "A Dual Process Memory Architecture separates a fixed 10-message episodic window from consolidated long-term knowledge that grows at about three tokens per message, tested over 15,000 messages with six LLMs and 1,440 queries. It maintained 70-85% accuracy using 62% fewer tokens, while full-context models failed at 10,000 messages.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "memory consolidation", "domain": "knowledge-lifecycle"}, {"text": "episodic memory", "domain": "agent-memory"}, {"text": "long-context limits", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Evaluating Deep Research Agents on Expert Consulting Work: A Benchmark with Verifiers, Rubrics, and Cognitive Traps", "title_zh": "评估深度研究智能体在专家咨询工作中的表现：带验证器、评分标准与认知陷阱的基准", "url": "http://arxiv.org/abs/2605.17554v3", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.17554", "summary": "The benchmark comprises 70 SME-authored management consulting prompts with embedded cognitive traps, scored by deterministic binary verifiers and a five-criterion rubric. o3-deep-research led the continuous Verifier-Rubric Score at 61.4, but no agent exceeded a 15.7% acceptance rate under the joint threshold.", "keywords": [{"text": "deep research agents", "domain": "agent-architecture"}, {"text": "benchmark evaluation", "domain": "evaluation-benchmark"}, {"text": "rubric scoring", "domain": "evaluation-benchmark"}, {"text": "cognitive traps", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "Validate Your Authority: Benchmarking LLMs on Multi-Label Precedent Treatment Classification", "title_zh": "验证你的权威：多标签判例处理分类的 LLM 基准评测", "url": "http://arxiv.org/abs/2605.17691v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2605.17691", "summary": "The paper introduces an expert-annotated dataset of 239 real-world legal citations and an Average Severity Error metric for multi-label precedent treatment classification. Gemini 2.5 Flash reached 79.1% on the high-level task, while GPT-5-mini led the more complex fine-grained schema at 67.7%.", "keywords": [{"text": "legal reasoning", "domain": "cognition-reasoning"}, {"text": "benchmark dataset", "domain": "evaluation-benchmark"}, {"text": "multi-label classification", "domain": "ai-knowledge"}, {"text": "severity-aware metric", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Firefly: Illuminating Large-Scale Verified Tool-Call Data Generation from Real APIs", "title_zh": "Firefly：从真实 API 生成大规模可验证工具调用数据", "url": "http://arxiv.org/abs/2605.17558v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.17558", "summary": "FireFly inverts tool-call data synthesis by having a strong LLM explore real MCP servers along graph-guided DAGs and then generating tasks backward from observed outcomes, yielding 5,144 verified tasks across 240 servers and 993 tools. A 4B model trained with GRPO on this data matched Claude Sonnet 4.6 on the held-out test set.", "keywords": [{"text": "tool calling", "domain": "agent-architecture"}, {"text": "MCP servers", "domain": "agent-architecture"}, {"text": "verified data generation", "domain": "knowledge-lifecycle"}, {"text": "DAG exploration", "domain": "agent-architecture"}, {"text": "GRPO", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": true}, {"title": "GraphMind: From Operational Traces to Self-Evolving Workflow Automation", "title_zh": "GraphMind：从运维轨迹到自进化工作流自动化", "url": "http://arxiv.org/abs/2605.17617v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.17617", "summary": "GraphMind extracts action-centric workflow graphs from human resolution traces, executes them with a multi-agent traversal engine, and reinforces successful paths through Adaptive Traversal Reinforcement. Deployed across four production cloud database services, it required 8x less retrieval context than an Agentic Summary-RAG baseline, and its Adaptive Traversal Reinforcement layer reduced hallucination rate by 26%.", "keywords": [{"text": "workflow graphs", "domain": "knowledge-graph"}, {"text": "self-evolving systems", "domain": "knowledge-lifecycle"}, {"text": "multi-agent traversal", "domain": "agent-architecture"}, {"text": "graph-guided retrieval", "domain": "rag-retrieval"}, {"text": "incident investigation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "RAG-based EEG-to-Text Translation Using Deep Learning and LLMs", "title_zh": "基于 RAG 的脑电到文本翻译：结合深度学习与大语言模型", "url": "http://arxiv.org/abs/2605.17503v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.17503", "summary": "The pipeline aligns EEG encoders with sentence embeddings, retrieves candidate sentences from a vector store and has an LLM refine them into text. Across nine subjects on the ZuCo dataset it beat a random baseline with a mean cosine similarity of 0.181 versus 0.139, a 30.45% relative improvement.", "keywords": [{"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "EEG decoding", "domain": "ai-knowledge"}, {"text": "sentence embeddings", "domain": "embeddings-vectors"}, {"text": "vector retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "datawhalechina/Agent-Learning-Hub", "title_zh": "datawhalechina/Agent-Learning-Hub：AI Agent 学习路线与资料集", "url": "https://github.com/datawhalechina/Agent-Learning-Hub", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "Datawhale China's Agent-Learning-Hub collects AI agent learning roadmaps and study materials in a Chinese-language HTML project. It had 9,006 GitHub stars and 898 forks when it appeared on GitHub Trending.", "keywords": [{"text": "agent learning", "domain": "agent-architecture"}, {"text": "study roadmap", "domain": "ai-knowledge"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Gemini for Science: AI experiments and tools for a new era of discovery", "title_zh": "Gemini for Science：面向发现新时代的 AI 实验与工具", "url": "https://deepmind.google/blog/gemini-for-science-ai-experiments-and-tools-for-a-new-era-of-discovery/", "source": "Google DeepMind", "section": "blogs_insights", "organization": "Google DeepMind", "language": "en", "arxiv_id": "", "summary": "Google DeepMind announced Gemini for Science, a collection of science tools and experiments intended to expand the scale and precision of scientific exploration; the announcement provides no further technical detail.", "keywords": [{"text": "AI for science", "domain": "ai-knowledge"}, {"text": "scientific discovery", "domain": "ai-knowledge"}, {"text": "Gemini", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "Google DeepMind", "url": "https://deepmind.google"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

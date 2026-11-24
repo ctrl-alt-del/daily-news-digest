@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-19</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">12 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>4 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">7/12 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">9</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:11%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:22%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-use agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">omni-modal benchmark</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theorem proving</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theory of mind</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent skills</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill lifecycle</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-calling guardrails</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="tool-use agents omni-modal benchmark closed-loop verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16909</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">TOBench: A Task-Oriented Omni-Modal Benchmark for Real-World Tool-Using Agents<div class="title-zh">TOBench：面向真实工具使用智能体的任务导向全模态基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-use agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">omni-modal benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">closed-loop verification</span></div>
+  <div class="item-summary">The Pi3AI paper introduces a task-oriented omni-modal tool-use benchmark and evaluation harness with 100 executable tasks across customer service and intelligent creation, including closed-loop verification of intermediate artifacts. Its Hugging Face listing had 9 upvotes and its code repository 5 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.16909" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="agent harness code generation multi-agent systems execution-based verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.18747</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Code as Agent Harness<div class="title-zh">代码即智能体运行框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">code generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">execution-based verification</span></div>
+  <div class="item-summary">This survey frames code as the operational substrate for agent reasoning, action, environment modeling and execution-based verification, organized around the harness interface, harness mechanisms and multi-agent scaling. Its Hugging Face listing drew 225 upvotes and its companion repository 721 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.18747" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="agent skills skill lifecycle long-horizon agents skill library">
+  <div class="item-meta">
+    <span class="item-org">MIT</span>
+    <span class="arxiv-tag">arxiv:2605.18401</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">SkillsVote: Lifecycle Governance of Agent Skills from Collection, Recommendation to Evolution<div class="title-zh">SkillsVote：从收集、推荐到演化的智能体技能生命周期治理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent skills</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill lifecycle</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">skill library</span></div>
+  <div class="item-summary">SkillsVote is a lifecycle-governance framework that profiles a million-scale open-source corpus of agent skills, then collects, recommends and evolves reusable skills for long-horizon LLM agents. Its Hugging Face listing drew 79 upvotes and its code repository 306 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.18401" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="tool-calling guardrails reliability layer context management open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks<div class="title-zh">Show HN：Forge —— 护栏把 8B 模型在智能体任务上的成绩从 53% 提升到 99%</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-calling guardrails</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reliability layer</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">Antoine Zambelli released Forge, an open-source reliability layer for self-hosted LLM tool calling that adds retry nudges, step enforcement and VRAM-aware context management. It reportedly lifts an 8B model from about 53% to 99% on multi-step agentic workflows; the Show HN post drew 687 points and 252 comments.</div>
+  <a class="item-link" href="https://github.com/antoinezambelli/forge" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[9]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="tool-use agents omni-modal benchmark closed-loop verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.16909</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">TOBench: A Task-Oriented Omni-Modal Benchmark for Real-World Tool-Using Agents<div class="title-zh">TOBench：面向真实工具使用智能体的任务导向全模态基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-use agents</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">omni-modal benchmark</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">closed-loop verification</span></div>
+  <div class="item-summary">The Pi3AI paper introduces a task-oriented omni-modal tool-use benchmark and evaluation harness with 100 executable tasks across customer service and intelligent creation, including closed-loop verification of intermediate artifacts. Its Hugging Face listing had 9 upvotes and its code repository 5 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.16909" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="GraphRAG knowledge graph financial sentiment entity recall hybrid retrieval">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.00062</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Graph-Augmented Retrieval for Cross-Entity Financial Sentiment Analysis: A Comparative Study<div class="title-zh">面向跨实体金融情感分析的图增强检索：比较研究</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">GraphRAG</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">financial sentiment</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">entity recall</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">hybrid retrieval</span></div>
+  <div class="item-summary">The study builds a sentiment-weighted knowledge graph of 59 equity entities from 255 news articles and compares two-hop Graph-RAG with vector-only retrieval on 100 grounded queries. Graph-RAG improved entity recall by 6.4% and answer relevancy by 11.7%, with gains concentrated in relational questions, at a 22.6% latency cost.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.00062v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="theorem proving agentic reasoning proof retrieval Lean 4">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.17283</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">OProver: A Unified Framework for Agentic Formal Theorem Proving<div class="title-zh">OProver：智能体形式化定理证明的统一框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theorem proving</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic reasoning</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">proof retrieval</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Lean 4</span></div>
+  <div class="item-summary">OProver is a unified framework for agentic formal theorem proving in Lean 4 in which failed attempts are revised using retrieved compiler-verified proofs and Lean feedback, trained through continued pretraining and iterative post-training. Its Hugging Face listing drew 33 upvotes and its code repository 27 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.17283" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="theory of mind synthetic data reinforcement learning benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.20423</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">OSCToM: RL-Guided Adversarial Generation for High-Order Theory of Mind<div class="title-zh">OSCToM：面向高阶心理理论的强化学习引导对抗生成</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">theory of mind</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">synthetic data</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">OSCToM generates observer-self belief conflicts using reinforcement learning, an extended domain-specific language and compositional surrogate models. OSCToM-8B reaches 76% accuracy on the information-asymmetric FANToM benchmark, compared with 0.2% reported by ExploreToM, and its data-synthesis procedure is 6x more efficient.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.20423v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent orchestration budget allocation inference-time control evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.20485</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ZEBRA: Zero-shot Budgeted Resource Allocation for LLM Orchestration<div class="title-zh">ZEBRA：面向 LLM 编排的零样本预算资源分配</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">budget allocation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">inference-time control</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span></div>
+  <div class="item-summary">ZEBRA treats multi-phase budget allocation as a continuous nonlinear knapsack problem, with an LLM controller estimating per-phase utility curves and a water-filling search returning the split. At half the unconstrained budget it recovered 94.4% of unconstrained quality on APPS, versus 88.1% for LLM-direct allocation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.20485v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent harness code generation multi-agent systems execution-based verification">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.18747</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Code as Agent Harness<div class="title-zh">代码即智能体运行框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">code generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent systems</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">execution-based verification</span></div>
+  <div class="item-summary">This survey frames code as the operational substrate for agent reasoning, action, environment modeling and execution-based verification, organized around the harness interface, harness mechanisms and multi-agent scaling. Its Hugging Face listing drew 225 upvotes and its companion repository 721 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.18747" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="agentic code synthesis cross-stage memory execution harness 3D generation">
+  <div class="item-meta">
+    <span class="item-org">MIT</span>
+    <span class="arxiv-tag">arxiv:2605.18451</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Code-as-Room: Generating 3D Rooms from Top-Down View Images via Agentic Code Synthesis<div class="title-zh">Code-as-Room：通过智能体代码合成从俯视图图像生成 3D 房间</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic code synthesis</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">cross-stage memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">execution harness</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">3D generation</span></div>
+  <div class="item-summary">Code-as-Room is an MLLM agentic framework that converts top-down view images into executable Blender code through a structured execution harness with cross-stage memory, avoiding the looping seen in prior image-conditioned agents. Its Hugging Face listing drew 40 upvotes and its code repository 241 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.18451" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="agent skills skill lifecycle long-horizon agents skill library">
+  <div class="item-meta">
+    <span class="item-org">MIT</span>
+    <span class="arxiv-tag">arxiv:2605.18401</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">SkillsVote: Lifecycle Governance of Agent Skills from Collection, Recommendation to Evolution<div class="title-zh">SkillsVote：从收集、推荐到演化的智能体技能生命周期治理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent skills</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">skill lifecycle</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">long-horizon agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">skill library</span></div>
+  <div class="item-summary">SkillsVote is a lifecycle-governance framework that profiles a million-scale open-source corpus of agent skills, then collects, recommends and evolves reusable skills for long-horizon LLM agents. Its Hugging Face listing drew 79 upvotes and its code repository 306 stars.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.18401" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="chain-of-thought gender bias mechanistic interpretability evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.20410</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Mechanics of Bias and Reasoning: Interpreting the Impact of Chain-of-Thought Prompting on Gender Bias in LLMs<div class="title-zh">偏见与推理的机制：解读思维链提示对 LLM 性别偏见的影响</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">gender bias</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">mechanistic interpretability</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation</span></div>
+  <div class="item-summary">The study combines benchmark evaluation with mechanistic interpretability and reasoning-chain failure analysis to test whether chain-of-thought prompting reduces gender bias. It finds CoT does not consistently narrow the bias gap, with bias still embedded in hidden representations and apparent gains stemming from memorization rather than understanding.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.20410v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding-agent orchestration agent development environment open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">open-mercato/cezar<div class="title-zh">open-mercato/cezar：并行运行多种 AI 编程智能体的编排器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding-agent orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent development environment</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">cezar is an open-source TypeScript orchestrator and agent development environment for running Claude Code, Codex, OpenCode, Pi and other AI coding agents in parallel, either locally or continuously on a user's own server. It had 835 stars and 156 forks.</div>
+  <a class="item-link" href="https://github.com/open-mercato/cezar" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="tool-calling guardrails reliability layer context management open source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks<div class="title-zh">Show HN：Forge —— 护栏把 8B 模型在智能体任务上的成绩从 53% 提升到 99%</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool-calling guardrails</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reliability layer</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context management</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open source</span></div>
+  <div class="item-summary">Antoine Zambelli released Forge, an open-source reliability layer for self-hosted LLM tool calling that adds retry nudges, step enforcement and VRAM-aware context management. It reportedly lifts an 8B model from about 53% to 99% on multi-step agentic workflows; the Show HN post drew 687 points and 252 comments.</div>
+  <a class="item-link" href="https://github.com/antoinezambelli/forge" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent CLI multi-agent platforms developer tooling">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">Hacker News</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Gemini CLI will stop working from June 18, 2026<div class="title-zh">Gemini CLI 将于 2026 年 6 月 18 日起停止工作</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent CLI</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent platforms</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">developer tooling</span></div>
+  <div class="item-summary">Google announced that Gemini CLI will be sunset in favor of Antigravity CLI, described as a more robust, agent-first platform built for the multi-agent complexity of 2026. The change takes effect June 18, 2026; the Hacker News post drew 406 points and 209 comments.</div>
+  <a class="item-link" href="https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/" target="_blank" rel="noopener">&rarr; developers.googleblog.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://huggingface.co/papers" target="_blank" rel="noopener">HuggingFace Papers</a></li>
+<li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://news.ycombinator.com" target="_blank" rel="noopener">Hacker News</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-19", "stats": {"total_items": 12, "unique_items": 12, "sources_count": 4, "links_verified_count": 7, "links_failed_count": 0, "section_counts": {"research_papers": 9, "tools_frameworks": 1, "blogs_insights": 2}}, "daily_keywords": [{"text": "tool-use agents", "domain": "agent-architecture"}, {"text": "omni-modal benchmark", "domain": "evaluation-benchmark"}, {"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "theorem proving", "domain": "cognition-reasoning"}, {"text": "theory of mind", "domain": "cognition-reasoning"}, {"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "agent skills", "domain": "knowledge-lifecycle"}, {"text": "skill lifecycle", "domain": "knowledge-lifecycle"}, {"text": "tool-calling guardrails", "domain": "agent-architecture"}, {"text": "coding-agent orchestration", "domain": "agent-architecture"}, {"text": "chain-of-thought", "domain": "context-prompting"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "TOBench: A Task-Oriented Omni-Modal Benchmark for Real-World Tool-Using Agents", "title_zh": "TOBench：面向真实工具使用智能体的任务导向全模态基准", "url": "https://huggingface.co/papers/2605.16909", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16909", "summary": "The Pi3AI paper introduces a task-oriented omni-modal tool-use benchmark and evaluation harness with 100 executable tasks across customer service and intelligent creation, including closed-loop verification of intermediate artifacts. Its Hugging Face listing had 9 upvotes and its code repository 5 stars.", "keywords": [{"text": "tool-use agents", "domain": "agent-architecture"}, {"text": "omni-modal benchmark", "domain": "evaluation-benchmark"}, {"text": "closed-loop verification", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": true}, {"title": "Code as Agent Harness", "title_zh": "代码即智能体运行框架", "url": "https://huggingface.co/papers/2605.18747", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.18747", "summary": "This survey frames code as the operational substrate for agent reasoning, action, environment modeling and execution-based verification, organized around the harness interface, harness mechanisms and multi-agent scaling. Its Hugging Face listing drew 225 upvotes and its companion repository 721 stars.", "keywords": [{"text": "agent harness", "domain": "agent-architecture"}, {"text": "code generation", "domain": "ai-knowledge"}, {"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "execution-based verification", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": true}, {"title": "SkillsVote: Lifecycle Governance of Agent Skills from Collection, Recommendation to Evolution", "title_zh": "SkillsVote：从收集、推荐到演化的智能体技能生命周期治理", "url": "https://huggingface.co/papers/2605.18401", "source": "HuggingFace Papers", "section": "research_papers", "organization": "MIT", "language": "en", "arxiv_id": "2605.18401", "summary": "SkillsVote is a lifecycle-governance framework that profiles a million-scale open-source corpus of agent skills, then collects, recommends and evolves reusable skills for long-horizon LLM agents. Its Hugging Face listing drew 79 upvotes and its code repository 306 stars.", "keywords": [{"text": "agent skills", "domain": "knowledge-lifecycle"}, {"text": "skill lifecycle", "domain": "knowledge-lifecycle"}, {"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "skill library", "domain": "agent-architecture"}], "link_verified": false, "is_highlight": true}, {"title": "Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks", "title_zh": "Show HN：Forge —— 护栏把 8B 模型在智能体任务上的成绩从 53% 提升到 99%", "url": "https://github.com/antoinezambelli/forge", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Antoine Zambelli released Forge, an open-source reliability layer for self-hosted LLM tool calling that adds retry nudges, step enforcement and VRAM-aware context management. It reportedly lifts an 8B model from about 53% to 99% on multi-step agentic workflows; the Show HN post drew 687 points and 252 comments.", "keywords": [{"text": "tool-calling guardrails", "domain": "agent-architecture"}, {"text": "reliability layer", "domain": "agent-architecture"}, {"text": "context management", "domain": "context-prompting"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "TOBench: A Task-Oriented Omni-Modal Benchmark for Real-World Tool-Using Agents", "title_zh": "TOBench：面向真实工具使用智能体的任务导向全模态基准", "url": "https://huggingface.co/papers/2605.16909", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.16909", "summary": "The Pi3AI paper introduces a task-oriented omni-modal tool-use benchmark and evaluation harness with 100 executable tasks across customer service and intelligent creation, including closed-loop verification of intermediate artifacts. Its Hugging Face listing had 9 upvotes and its code repository 5 stars.", "keywords": [{"text": "tool-use agents", "domain": "agent-architecture"}, {"text": "omni-modal benchmark", "domain": "evaluation-benchmark"}, {"text": "closed-loop verification", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": true}, {"title": "Graph-Augmented Retrieval for Cross-Entity Financial Sentiment Analysis: A Comparative Study", "title_zh": "面向跨实体金融情感分析的图增强检索：比较研究", "url": "http://arxiv.org/abs/2606.00062v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.00062", "summary": "The study builds a sentiment-weighted knowledge graph of 59 equity entities from 255 news articles and compares two-hop Graph-RAG with vector-only retrieval on 100 grounded queries. Graph-RAG improved entity recall by 6.4% and answer relevancy by 11.7%, with gains concentrated in relational questions, at a 22.6% latency cost.", "keywords": [{"text": "GraphRAG", "domain": "rag-retrieval"}, {"text": "knowledge graph", "domain": "knowledge-graph"}, {"text": "financial sentiment", "domain": "ai-knowledge"}, {"text": "entity recall", "domain": "evaluation-benchmark"}, {"text": "hybrid retrieval", "domain": "rag-retrieval"}], "link_verified": true, "is_highlight": false}, {"title": "OProver: A Unified Framework for Agentic Formal Theorem Proving", "title_zh": "OProver：智能体形式化定理证明的统一框架", "url": "https://huggingface.co/papers/2605.17283", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.17283", "summary": "OProver is a unified framework for agentic formal theorem proving in Lean 4 in which failed attempts are revised using retrieved compiler-verified proofs and Lean feedback, trained through continued pretraining and iterative post-training. Its Hugging Face listing drew 33 upvotes and its code repository 27 stars.", "keywords": [{"text": "theorem proving", "domain": "cognition-reasoning"}, {"text": "agentic reasoning", "domain": "agent-architecture"}, {"text": "proof retrieval", "domain": "rag-retrieval"}, {"text": "Lean 4", "domain": "ai-knowledge"}], "link_verified": false, "is_highlight": false}, {"title": "OSCToM: RL-Guided Adversarial Generation for High-Order Theory of Mind", "title_zh": "OSCToM：面向高阶心理理论的强化学习引导对抗生成", "url": "http://arxiv.org/abs/2605.20423v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.20423", "summary": "OSCToM generates observer-self belief conflicts using reinforcement learning, an extended domain-specific language and compositional surrogate models. OSCToM-8B reaches 76% accuracy on the information-asymmetric FANToM benchmark, compared with 0.2% reported by ExploreToM, and its data-synthesis procedure is 6x more efficient.", "keywords": [{"text": "theory of mind", "domain": "cognition-reasoning"}, {"text": "synthetic data", "domain": "knowledge-lifecycle"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "ZEBRA: Zero-shot Budgeted Resource Allocation for LLM Orchestration", "title_zh": "ZEBRA：面向 LLM 编排的零样本预算资源分配", "url": "http://arxiv.org/abs/2605.20485v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.20485", "summary": "ZEBRA treats multi-phase budget allocation as a continuous nonlinear knapsack problem, with an LLM controller estimating per-phase utility curves and a water-filling search returning the split. At half the unconstrained budget it recovered 94.4% of unconstrained quality on APPS, versus 88.1% for LLM-direct allocation.", "keywords": [{"text": "multi-agent orchestration", "domain": "agent-architecture"}, {"text": "budget allocation", "domain": "agent-architecture"}, {"text": "inference-time control", "domain": "context-prompting"}, {"text": "evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Code as Agent Harness", "title_zh": "代码即智能体运行框架", "url": "https://huggingface.co/papers/2605.18747", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.18747", "summary": "This survey frames code as the operational substrate for agent reasoning, action, environment modeling and execution-based verification, organized around the harness interface, harness mechanisms and multi-agent scaling. Its Hugging Face listing drew 225 upvotes and its companion repository 721 stars.", "keywords": [{"text": "agent harness", "domain": "agent-architecture"}, {"text": "code generation", "domain": "ai-knowledge"}, {"text": "multi-agent systems", "domain": "agent-architecture"}, {"text": "execution-based verification", "domain": "evaluation-benchmark"}], "link_verified": false, "is_highlight": true}, {"title": "Code-as-Room: Generating 3D Rooms from Top-Down View Images via Agentic Code Synthesis", "title_zh": "Code-as-Room：通过智能体代码合成从俯视图图像生成 3D 房间", "url": "https://huggingface.co/papers/2605.18451", "source": "HuggingFace Papers", "section": "research_papers", "organization": "MIT", "language": "en", "arxiv_id": "2605.18451", "summary": "Code-as-Room is an MLLM agentic framework that converts top-down view images into executable Blender code through a structured execution harness with cross-stage memory, avoiding the looping seen in prior image-conditioned agents. Its Hugging Face listing drew 40 upvotes and its code repository 241 stars.", "keywords": [{"text": "agentic code synthesis", "domain": "agent-architecture"}, {"text": "cross-stage memory", "domain": "agent-memory"}, {"text": "execution harness", "domain": "agent-architecture"}, {"text": "3D generation", "domain": "ai-knowledge"}], "link_verified": false, "is_highlight": false}, {"title": "SkillsVote: Lifecycle Governance of Agent Skills from Collection, Recommendation to Evolution", "title_zh": "SkillsVote：从收集、推荐到演化的智能体技能生命周期治理", "url": "https://huggingface.co/papers/2605.18401", "source": "HuggingFace Papers", "section": "research_papers", "organization": "MIT", "language": "en", "arxiv_id": "2605.18401", "summary": "SkillsVote is a lifecycle-governance framework that profiles a million-scale open-source corpus of agent skills, then collects, recommends and evolves reusable skills for long-horizon LLM agents. Its Hugging Face listing drew 79 upvotes and its code repository 306 stars.", "keywords": [{"text": "agent skills", "domain": "knowledge-lifecycle"}, {"text": "skill lifecycle", "domain": "knowledge-lifecycle"}, {"text": "long-horizon agents", "domain": "agent-architecture"}, {"text": "skill library", "domain": "agent-architecture"}], "link_verified": false, "is_highlight": true}, {"title": "Mechanics of Bias and Reasoning: Interpreting the Impact of Chain-of-Thought Prompting on Gender Bias in LLMs", "title_zh": "偏见与推理的机制：解读思维链提示对 LLM 性别偏见的影响", "url": "http://arxiv.org/abs/2605.20410v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.20410", "summary": "The study combines benchmark evaluation with mechanistic interpretability and reasoning-chain failure analysis to test whether chain-of-thought prompting reduces gender bias. It finds CoT does not consistently narrow the bias gap, with bias still embedded in hidden representations and apparent gains stemming from memorization rather than understanding.", "keywords": [{"text": "chain-of-thought", "domain": "context-prompting"}, {"text": "gender bias", "domain": "cognition-reasoning"}, {"text": "mechanistic interpretability", "domain": "cognition-reasoning"}, {"text": "evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "open-mercato/cezar", "title_zh": "open-mercato/cezar：并行运行多种 AI 编程智能体的编排器", "url": "https://github.com/open-mercato/cezar", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "cezar is an open-source TypeScript orchestrator and agent development environment for running Claude Code, Codex, OpenCode, Pi and other AI coding agents in parallel, either locally or continuously on a user's own server. It had 835 stars and 156 forks.", "keywords": [{"text": "coding-agent orchestration", "domain": "agent-architecture"}, {"text": "agent development environment", "domain": "agent-architecture"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Show HN: Forge – Guardrails take an 8B model from 53% to 99% on agentic tasks", "title_zh": "Show HN：Forge —— 护栏把 8B 模型在智能体任务上的成绩从 53% 提升到 99%", "url": "https://github.com/antoinezambelli/forge", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Antoine Zambelli released Forge, an open-source reliability layer for self-hosted LLM tool calling that adds retry nudges, step enforcement and VRAM-aware context management. It reportedly lifts an 8B model from about 53% to 99% on multi-step agentic workflows; the Show HN post drew 687 points and 252 comments.", "keywords": [{"text": "tool-calling guardrails", "domain": "agent-architecture"}, {"text": "reliability layer", "domain": "agent-architecture"}, {"text": "context management", "domain": "context-prompting"}, {"text": "open source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Gemini CLI will stop working from June 18, 2026", "title_zh": "Gemini CLI 将于 2026 年 6 月 18 日起停止工作", "url": "https://developers.googleblog.com/an-important-update-transitioning-gemini-cli-to-antigravity-cli/", "source": "Hacker News", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "Google announced that Gemini CLI will be sunset in favor of Antigravity CLI, described as a more robust, agent-first platform built for the multi-agent complexity of 2026. The change takes effect June 18, 2026; the Hacker News post drew 406 points and 209 comments.", "keywords": [{"text": "agent CLI", "domain": "agent-architecture"}, {"text": "multi-agent platforms", "domain": "agent-architecture"}, {"text": "developer tooling", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "HuggingFace Papers", "url": "https://huggingface.co/papers"}, {"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "Hacker News", "url": "https://news.ycombinator.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

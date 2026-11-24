@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-04-18</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">12 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>1 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">12/12 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">12</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent collaboration</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compaction</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">calibrated abstention</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent scheduling</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">information seeking</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep research</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific impact</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="knowledge graph construction multi-agent extraction product attributes graph consolidation A/B evaluation">
+  <div class="item-meta">
+    <span class="item-org">Alibaba</span>
+    <span class="arxiv-tag">arxiv:2604.16950</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AutoPKG: An Automated Framework for Dynamic E-commerce Product-Attribute Knowledge Graph Construction<div class="title-zh">AutoPKG：面向电商产品属性知识图谱自动构建的动态框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent extraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">product attributes</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">graph consolidation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">A/B evaluation</span></div>
+  <div class="item-summary">AutoPKG is a multi-agent LLM framework that induces product types and attribute keys on demand, extracts values from text and images, and consolidates updates through a centralized decision agent that keeps a canonical product-attribute graph consistent. On a Lazada catalog it reaches 0.953 weighted knowledge efficiency for product types and 0.531 edge-level F1 for multimodal value extraction, and online A/B tests attribute GMV lifts of 3.81% in Badge, 5.32% in Search and 7.89% in Recommendation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.16950v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent scheduling concurrent agents API rate limits resource efficiency">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2604.17111</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">HiveMind: OS-Inspired Scheduling for Concurrent LLM Agent Workloads<div class="title-zh">HiveMind：面向并发 LLM 智能体负载的 OS 启发式调度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent scheduling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">concurrent agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">API rate limits</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">resource efficiency</span></div>
+  <div class="item-summary">HiveMind is a transparent HTTP proxy that applies five OS-inspired primitives, including admission control, rate-limit tracking, AIMD backpressure and priority queuing, to concurrent LLM agent workloads without changing agent code. Across 5-50 concurrent agents, uncoordinated runs failed at 72-100% rates while HiveMind cut failures to 0-18% and eliminated 48-100% of wasted compute, adding under 3ms of overhead.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17111v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory context compaction episodic retrieval long conversations memory benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.05182</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LANTERN: Layered Archival and Temporal Episodic Retrieval Network for Long-Context LLM Conversations<div class="title-zh">LANTERN：面向长上下文 LLM 对话的分层归档与时序情景检索网络</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compaction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">episodic retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long conversations</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory benchmark</span></div>
+  <div class="item-summary">LANTERN is a lightweight memory layer that archives every conversation turn and restores details lost during context compaction through hybrid retrieval, with no LLM calls and under 25ms of added latency per turn. On 94 multi-turn conversations it recovered 78.3% of facts lost to compaction versus 72.4% for a MemGPT-style baseline, and raised answer accuracy for four production LLMs by 8.4 percentage points on average.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.05182v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[12]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="knowledge graph construction multi-agent extraction product attributes graph consolidation A/B evaluation">
+  <div class="item-meta">
+    <span class="item-org">Alibaba</span>
+    <span class="arxiv-tag">arxiv:2604.16950</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">AutoPKG: An Automated Framework for Dynamic E-commerce Product-Attribute Knowledge Graph Construction<div class="title-zh">AutoPKG：面向电商产品属性知识图谱自动构建的动态框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">knowledge graph construction</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent extraction</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">product attributes</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">graph consolidation</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">A/B evaluation</span></div>
+  <div class="item-summary">AutoPKG is a multi-agent LLM framework that induces product types and attribute keys on demand, extracts values from text and images, and consolidates updates through a centralized decision agent that keeps a canonical product-attribute graph consistent. On a Lazada catalog it reaches 0.953 weighted knowledge efficiency for product types and 0.531 edge-level F1 for multimodal value extraction, and online A/B tests attribute GMV lifts of 3.81% in Badge, 5.32% in Search and 7.89% in Recommendation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.16950v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent collaboration majority voting adversarial agents token-level fusion robustness">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.17139</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Consensus Trap: Rescuing Multi-Agent LLMs from Adversarial Majorities via Token-Level Collaboration<div class="title-zh">共识陷阱：以 token 级协作让多智能体 LLM 摆脱对抗性多数</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent collaboration</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">majority voting</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">adversarial agents</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">token-level fusion</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">robustness</span></div>
+  <div class="item-summary">The paper shows majority voting in multi-agent LLM systems collapses when corrupted agents form a local majority, because voting only sees final answers and not flawed intermediate reasoning. It proposes token-level round-robin collaboration that interleaves agents' generation in a shared context, and experiments show it keeps accuracy robust beyond the point where majority voting fails.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17139v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="calibrated abstention verifiable rewards clarification unanswerable queries RLVR">
+  <div class="item-meta">
+    <span class="item-org">DeepSeek</span>
+    <span class="arxiv-tag">arxiv:2604.17073</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Abstain-R1: Calibrated Abstention and Post-Refusal Clarification via Verifiable RL<div class="title-zh">Abstain-R1：通过可验证强化学习实现校准弃答与拒答后澄清</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">calibrated abstention</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">verifiable rewards</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">clarification</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">unanswerable queries</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">RLVR</span></div>
+  <div class="item-summary">The authors propose a clarification-aware RLVR reward that jointly optimizes explicit abstention and semantically aligned post-refusal clarification on unanswerable queries while still rewarding correct answers on answerable ones. A trained 3B model, Abstain-R1, improves on Abstain-Test, Abstain-QA and SelfAware and reaches unanswerable-query behavior competitive with larger systems including DeepSeek-R1.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17073v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="graph reasoning divide-and-conquer multi-agent system scalability">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.06671</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">GraphDC: A Divide-and-Conquer Multi-Agent System for Scalable Graph Algorithm Reasoning<div class="title-zh">GraphDC：面向可扩展图算法推理的分治多智能体系统</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph reasoning</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">divide-and-conquer</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent system</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">scalability</span></div>
+  <div class="item-summary">GraphDC splits an input graph into subgraphs, assigns each to a specialized agent and uses a master agent to combine local results with inter-subgraph information. The authors report consistent gains over existing methods, especially on larger graphs.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.06671v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent scheduling concurrent agents API rate limits resource efficiency">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2604.17111</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">HiveMind: OS-Inspired Scheduling for Concurrent LLM Agent Workloads<div class="title-zh">HiveMind：面向并发 LLM 智能体负载的 OS 启发式调度</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent scheduling</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">concurrent agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">API rate limits</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">resource efficiency</span></div>
+  <div class="item-summary">HiveMind is a transparent HTTP proxy that applies five OS-inspired primitives, including admission control, rate-limit tracking, AIMD backpressure and priority queuing, to concurrent LLM agent workloads without changing agent code. Across 5-50 concurrent agents, uncoordinated runs failed at 72-100% rates while HiveMind cut failures to 0-18% and eliminated 48-100% of wasted compute, adding under 3ms of overhead.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17111v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent memory context compaction episodic retrieval long conversations memory benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2606.05182</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">LANTERN: Layered Archival and Temporal Episodic Retrieval Network for Long-Context LLM Conversations<div class="title-zh">LANTERN：面向长上下文 LLM 对话的分层归档与时序情景检索网络</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">agent memory</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context compaction</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">episodic retrieval</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">long conversations</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory benchmark</span></div>
+  <div class="item-summary">LANTERN is a lightweight memory layer that archives every conversation turn and restores details lost during context compaction through hybrid retrieval, with no LLM calls and under 25ms of added latency per turn. On 94 multi-turn conversations it recovered 78.3% of facts lost to compaction versus 72.4% for a MemGPT-style baseline, and raised answer accuracy for four production LLMs by 8.4 percentage points on average.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2606.05182v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal embeddings SVG retrieval instruction-guided embeddings training-free retrieval benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.17054</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">mEOL: Training-Free Instruction-Guided Multimodal Embedder for Vector Graphics and Image Retrieval<div class="title-zh">mEOL：面向矢量图形与图像检索的免训练指令引导多模态嵌入器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal embeddings</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">SVG retrieval</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">instruction-guided embeddings</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">training-free</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">retrieval benchmark</span></div>
+  <div class="item-summary">mEOL uses a multimodal LLM to map text, raster images and SVG code into an aligned embedding space, steering embeddings with modality-specific instructions and structural SVG cues instead of learned projection heads or contrastive training. A semantic SVG rewriting module exposes geometric and relational cues, and on a repurposed VGBench text-to-SVG retrieval benchmark the training-free embeddings outperform encoder-based and training-based multimodal baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17054v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="deep research recursive planning report generation multimodal layout evaluation framework">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.17072</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">CogGen: A Cognitively Inspired Recursive Framework for Deep Research Report Generation<div class="title-zh">CogGen：受认知启发的深度研究报告递归生成框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">deep research</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">recursive planning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">report generation</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">multimodal layout</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation framework</span></div>
+  <div class="item-summary">CogGen uses a hierarchical recursive architecture to support flexible planning and global restructuring in deep research report generation, plus an abstract visual representation language for iteratively refining visual-text layouts. The authors introduce the Cognitive Load Evaluation Framework and an OWID-derived benchmark, and report state-of-the-art results among open-source systems that surpass Gemini Deep Research.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17072v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="prompt injection MCP security embedding similarity evaluation audit reproducibility">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.17125</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Evaluating a Layered Prompt-Injection Defence for the Model Context Protocol: A Record-Level Audit of Decision Conventions, Corpus Provenance and Reproducibility<div class="title-zh">评估面向模型上下文协议的分层提示注入防御：决策约定、语料来源与可复现性的记录级审计</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">prompt injection</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">MCP security</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding similarity</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">evaluation audit</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">reproducibility</span></div>
+  <div class="item-summary">The paper audits CASCADE, a local layered defence combining rule matching, embedding similarity and optional local-model review, on a frozen 5,000-sample MCP prompt-injection corpus at the level of individual decision records. It shows headline detection figures depend heavily on how allow, review and block outcomes are collapsed into a binary label and on corpus wrappers, and derives a ten-item reporting checklist.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17125v3" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="information seeking retrieval completeness agent evaluation uncertainty">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.17143</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SeekerGym: A Benchmark for Reliable Information Seeking<div class="title-zh">SeekerGym：面向可靠信息检索的基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">information seeking</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval completeness</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">uncertainty</span></div>
+  <div class="item-summary">SeekerGym benchmarks how completely AI agents retrieve information, using documents such as Wikipedia articles and ML survey papers as tasks, and also measures whether agents quantify how much may be missing. The best methods retrieve 42.5% of passages on Wikipedia and 29.2% on ML surveys.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17143v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent collaboration graph orchestration agent selection model cards">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.17148</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Graph-of-Agents: A Graph-based Framework for Multi-Agent LLM Collaboration<div class="title-zh">Graph-of-Agents：基于图的多智能体 LLM 协作框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent collaboration</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">graph orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent selection</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">model cards</span></div>
+  <div class="item-summary">Graph-of-Agents models multi-agent LLM collaboration as a graph, sampling relevant agents from model cards, ordering them by comparing their responses, passing messages in both directions and pooling results. With a pool of six models it outperforms multi-agent baselines while using only three agents, according to the authors.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17148v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="scientific impact benchmark multi-task fine-tuning knowledge evaluation">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.17141</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">SciImpact: A Multi-Dimensional, Multi-Field Benchmark for Scientific Impact Prediction<div class="title-zh">SciImpact：面向科学影响力预测的多维、多领域基准</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">scientific impact</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">multi-task fine-tuning</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge evaluation</span></div>
+  <div class="item-summary">SciImpact spans 19 fields and 215,928 contrastive paper pairs to test LLM prediction of scientific impact across citations, awards, media attention, patents and artifact adoption. The authors report that multi-task supervised fine-tuning lets a 4B model outperform 30B models and closed-source o4-mini.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.17141v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-04-18", "stats": {"total_items": 12, "unique_items": 12, "sources_count": 1, "links_verified_count": 12, "links_failed_count": 0, "section_counts": {"research_papers": 12}}, "daily_keywords": [{"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "multi-agent collaboration", "domain": "agent-architecture"}, {"text": "agent memory", "domain": "agent-memory"}, {"text": "context compaction", "domain": "context-prompting"}, {"text": "calibrated abstention", "domain": "cognition-reasoning"}, {"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "agent scheduling", "domain": "agent-architecture"}, {"text": "prompt injection", "domain": "context-prompting"}, {"text": "information seeking", "domain": "rag-retrieval"}, {"text": "deep research", "domain": "rag-retrieval"}, {"text": "scientific impact", "domain": "ai-knowledge"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "AutoPKG: An Automated Framework for Dynamic E-commerce Product-Attribute Knowledge Graph Construction", "title_zh": "AutoPKG：面向电商产品属性知识图谱自动构建的动态框架", "url": "http://arxiv.org/abs/2604.16950v1", "source": "arXiv", "section": "research_papers", "organization": "Alibaba", "language": "en", "arxiv_id": "2604.16950", "summary": "AutoPKG is a multi-agent LLM framework that induces product types and attribute keys on demand, extracts values from text and images, and consolidates updates through a centralized decision agent that keeps a canonical product-attribute graph consistent. On a Lazada catalog it reaches 0.953 weighted knowledge efficiency for product types and 0.531 edge-level F1 for multimodal value extraction, and online A/B tests attribute GMV lifts of 3.81% in Badge, 5.32% in Search and 7.89% in Recommendation.", "keywords": [{"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "multi-agent extraction", "domain": "agent-architecture"}, {"text": "product attributes", "domain": "ai-knowledge"}, {"text": "graph consolidation", "domain": "knowledge-lifecycle"}, {"text": "A/B evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "HiveMind: OS-Inspired Scheduling for Concurrent LLM Agent Workloads", "title_zh": "HiveMind：面向并发 LLM 智能体负载的 OS 启发式调度", "url": "http://arxiv.org/abs/2604.17111v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2604.17111", "summary": "HiveMind is a transparent HTTP proxy that applies five OS-inspired primitives, including admission control, rate-limit tracking, AIMD backpressure and priority queuing, to concurrent LLM agent workloads without changing agent code. Across 5-50 concurrent agents, uncoordinated runs failed at 72-100% rates while HiveMind cut failures to 0-18% and eliminated 48-100% of wasted compute, adding under 3ms of overhead.", "keywords": [{"text": "agent scheduling", "domain": "agent-architecture"}, {"text": "concurrent agents", "domain": "agent-architecture"}, {"text": "API rate limits", "domain": "agent-architecture"}, {"text": "resource efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "LANTERN: Layered Archival and Temporal Episodic Retrieval Network for Long-Context LLM Conversations", "title_zh": "LANTERN：面向长上下文 LLM 对话的分层归档与时序情景检索网络", "url": "http://arxiv.org/abs/2606.05182v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.05182", "summary": "LANTERN is a lightweight memory layer that archives every conversation turn and restores details lost during context compaction through hybrid retrieval, with no LLM calls and under 25ms of added latency per turn. On 94 multi-turn conversations it recovered 78.3% of facts lost to compaction versus 72.4% for a MemGPT-style baseline, and raised answer accuracy for four production LLMs by 8.4 percentage points on average.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "context compaction", "domain": "context-prompting"}, {"text": "episodic retrieval", "domain": "rag-retrieval"}, {"text": "long conversations", "domain": "agent-memory"}, {"text": "memory benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "AutoPKG: An Automated Framework for Dynamic E-commerce Product-Attribute Knowledge Graph Construction", "title_zh": "AutoPKG：面向电商产品属性知识图谱自动构建的动态框架", "url": "http://arxiv.org/abs/2604.16950v1", "source": "arXiv", "section": "research_papers", "organization": "Alibaba", "language": "en", "arxiv_id": "2604.16950", "summary": "AutoPKG is a multi-agent LLM framework that induces product types and attribute keys on demand, extracts values from text and images, and consolidates updates through a centralized decision agent that keeps a canonical product-attribute graph consistent. On a Lazada catalog it reaches 0.953 weighted knowledge efficiency for product types and 0.531 edge-level F1 for multimodal value extraction, and online A/B tests attribute GMV lifts of 3.81% in Badge, 5.32% in Search and 7.89% in Recommendation.", "keywords": [{"text": "knowledge graph construction", "domain": "knowledge-graph"}, {"text": "multi-agent extraction", "domain": "agent-architecture"}, {"text": "product attributes", "domain": "ai-knowledge"}, {"text": "graph consolidation", "domain": "knowledge-lifecycle"}, {"text": "A/B evaluation", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "The Consensus Trap: Rescuing Multi-Agent LLMs from Adversarial Majorities via Token-Level Collaboration", "title_zh": "共识陷阱：以 token 级协作让多智能体 LLM 摆脱对抗性多数", "url": "http://arxiv.org/abs/2604.17139v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.17139", "summary": "The paper shows majority voting in multi-agent LLM systems collapses when corrupted agents form a local majority, because voting only sees final answers and not flawed intermediate reasoning. It proposes token-level round-robin collaboration that interleaves agents' generation in a shared context, and experiments show it keeps accuracy robust beyond the point where majority voting fails.", "keywords": [{"text": "multi-agent collaboration", "domain": "agent-architecture"}, {"text": "majority voting", "domain": "cognition-reasoning"}, {"text": "adversarial agents", "domain": "agent-architecture"}, {"text": "token-level fusion", "domain": "context-prompting"}, {"text": "robustness", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Abstain-R1: Calibrated Abstention and Post-Refusal Clarification via Verifiable RL", "title_zh": "Abstain-R1：通过可验证强化学习实现校准弃答与拒答后澄清", "url": "http://arxiv.org/abs/2604.17073v1", "source": "arXiv", "section": "research_papers", "organization": "DeepSeek", "language": "en", "arxiv_id": "2604.17073", "summary": "The authors propose a clarification-aware RLVR reward that jointly optimizes explicit abstention and semantically aligned post-refusal clarification on unanswerable queries while still rewarding correct answers on answerable ones. A trained 3B model, Abstain-R1, improves on Abstain-Test, Abstain-QA and SelfAware and reaches unanswerable-query behavior competitive with larger systems including DeepSeek-R1.", "keywords": [{"text": "calibrated abstention", "domain": "cognition-reasoning"}, {"text": "verifiable rewards", "domain": "knowledge-lifecycle"}, {"text": "clarification", "domain": "context-prompting"}, {"text": "unanswerable queries", "domain": "ai-knowledge"}, {"text": "RLVR", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "GraphDC: A Divide-and-Conquer Multi-Agent System for Scalable Graph Algorithm Reasoning", "title_zh": "GraphDC：面向可扩展图算法推理的分治多智能体系统", "url": "http://arxiv.org/abs/2605.06671v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.06671", "summary": "GraphDC splits an input graph into subgraphs, assigns each to a specialized agent and uses a master agent to combine local results with inter-subgraph information. The authors report consistent gains over existing methods, especially on larger graphs.", "keywords": [{"text": "graph reasoning", "domain": "knowledge-graph"}, {"text": "divide-and-conquer", "domain": "agent-architecture"}, {"text": "multi-agent system", "domain": "agent-architecture"}, {"text": "scalability", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "HiveMind: OS-Inspired Scheduling for Concurrent LLM Agent Workloads", "title_zh": "HiveMind：面向并发 LLM 智能体负载的 OS 启发式调度", "url": "http://arxiv.org/abs/2604.17111v1", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2604.17111", "summary": "HiveMind is a transparent HTTP proxy that applies five OS-inspired primitives, including admission control, rate-limit tracking, AIMD backpressure and priority queuing, to concurrent LLM agent workloads without changing agent code. Across 5-50 concurrent agents, uncoordinated runs failed at 72-100% rates while HiveMind cut failures to 0-18% and eliminated 48-100% of wasted compute, adding under 3ms of overhead.", "keywords": [{"text": "agent scheduling", "domain": "agent-architecture"}, {"text": "concurrent agents", "domain": "agent-architecture"}, {"text": "API rate limits", "domain": "agent-architecture"}, {"text": "resource efficiency", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "LANTERN: Layered Archival and Temporal Episodic Retrieval Network for Long-Context LLM Conversations", "title_zh": "LANTERN：面向长上下文 LLM 对话的分层归档与时序情景检索网络", "url": "http://arxiv.org/abs/2606.05182v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2606.05182", "summary": "LANTERN is a lightweight memory layer that archives every conversation turn and restores details lost during context compaction through hybrid retrieval, with no LLM calls and under 25ms of added latency per turn. On 94 multi-turn conversations it recovered 78.3% of facts lost to compaction versus 72.4% for a MemGPT-style baseline, and raised answer accuracy for four production LLMs by 8.4 percentage points on average.", "keywords": [{"text": "agent memory", "domain": "agent-memory"}, {"text": "context compaction", "domain": "context-prompting"}, {"text": "episodic retrieval", "domain": "rag-retrieval"}, {"text": "long conversations", "domain": "agent-memory"}, {"text": "memory benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "mEOL: Training-Free Instruction-Guided Multimodal Embedder for Vector Graphics and Image Retrieval", "title_zh": "mEOL：面向矢量图形与图像检索的免训练指令引导多模态嵌入器", "url": "http://arxiv.org/abs/2604.17054v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.17054", "summary": "mEOL uses a multimodal LLM to map text, raster images and SVG code into an aligned embedding space, steering embeddings with modality-specific instructions and structural SVG cues instead of learned projection heads or contrastive training. A semantic SVG rewriting module exposes geometric and relational cues, and on a repurposed VGBench text-to-SVG retrieval benchmark the training-free embeddings outperform encoder-based and training-based multimodal baselines.", "keywords": [{"text": "multimodal embeddings", "domain": "embeddings-vectors"}, {"text": "SVG retrieval", "domain": "rag-retrieval"}, {"text": "instruction-guided embeddings", "domain": "context-prompting"}, {"text": "training-free", "domain": "embeddings-vectors"}, {"text": "retrieval benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "CogGen: A Cognitively Inspired Recursive Framework for Deep Research Report Generation", "title_zh": "CogGen：受认知启发的深度研究报告递归生成框架", "url": "http://arxiv.org/abs/2604.17072v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.17072", "summary": "CogGen uses a hierarchical recursive architecture to support flexible planning and global restructuring in deep research report generation, plus an abstract visual representation language for iteratively refining visual-text layouts. The authors introduce the Cognitive Load Evaluation Framework and an OWID-derived benchmark, and report state-of-the-art results among open-source systems that surpass Gemini Deep Research.", "keywords": [{"text": "deep research", "domain": "rag-retrieval"}, {"text": "recursive planning", "domain": "agent-architecture"}, {"text": "report generation", "domain": "ai-knowledge"}, {"text": "multimodal layout", "domain": "context-prompting"}, {"text": "evaluation framework", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "Evaluating a Layered Prompt-Injection Defence for the Model Context Protocol: A Record-Level Audit of Decision Conventions, Corpus Provenance and Reproducibility", "title_zh": "评估面向模型上下文协议的分层提示注入防御：决策约定、语料来源与可复现性的记录级审计", "url": "http://arxiv.org/abs/2604.17125v3", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.17125", "summary": "The paper audits CASCADE, a local layered defence combining rule matching, embedding similarity and optional local-model review, on a frozen 5,000-sample MCP prompt-injection corpus at the level of individual decision records. It shows headline detection figures depend heavily on how allow, review and block outcomes are collapsed into a binary label and on corpus wrappers, and derives a ten-item reporting checklist.", "keywords": [{"text": "prompt injection", "domain": "context-prompting"}, {"text": "MCP security", "domain": "agent-architecture"}, {"text": "embedding similarity", "domain": "embeddings-vectors"}, {"text": "evaluation audit", "domain": "evaluation-benchmark"}, {"text": "reproducibility", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "SeekerGym: A Benchmark for Reliable Information Seeking", "title_zh": "SeekerGym：面向可靠信息检索的基准", "url": "http://arxiv.org/abs/2604.17143v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.17143", "summary": "SeekerGym benchmarks how completely AI agents retrieve information, using documents such as Wikipedia articles and ML survey papers as tasks, and also measures whether agents quantify how much may be missing. The best methods retrieve 42.5% of passages on Wikipedia and 29.2% on ML surveys.", "keywords": [{"text": "information seeking", "domain": "rag-retrieval"}, {"text": "retrieval completeness", "domain": "rag-retrieval"}, {"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "uncertainty", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Graph-of-Agents: A Graph-based Framework for Multi-Agent LLM Collaboration", "title_zh": "Graph-of-Agents：基于图的多智能体 LLM 协作框架", "url": "http://arxiv.org/abs/2604.17148v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.17148", "summary": "Graph-of-Agents models multi-agent LLM collaboration as a graph, sampling relevant agents from model cards, ordering them by comparing their responses, passing messages in both directions and pooling results. With a pool of six models it outperforms multi-agent baselines while using only three agents, according to the authors.", "keywords": [{"text": "multi-agent collaboration", "domain": "agent-architecture"}, {"text": "graph orchestration", "domain": "knowledge-graph"}, {"text": "agent selection", "domain": "agent-architecture"}, {"text": "model cards", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "SciImpact: A Multi-Dimensional, Multi-Field Benchmark for Scientific Impact Prediction", "title_zh": "SciImpact：面向科学影响力预测的多维、多领域基准", "url": "http://arxiv.org/abs/2604.17141v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.17141", "summary": "SciImpact spans 19 fields and 215,928 contrastive paper pairs to test LLM prediction of scientific impact across citations, awards, media attention, patents and artifact adoption. The authors report that multi-task supervised fine-tuning lets a 4B model outperform 30B models and closed-source o4-mini.", "keywords": [{"text": "scientific impact", "domain": "ai-knowledge"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "multi-task fine-tuning", "domain": "knowledge-lifecycle"}, {"text": "knowledge evaluation", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

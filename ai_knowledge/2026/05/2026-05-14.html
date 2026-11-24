@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-05-14</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-industry_applications" class="nav-link">Industry Applications</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">11 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>3 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">7/11 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">10</span>
+</div><div class="stat-row">
+  <span class="stat-label">Industry & Deployments</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:10%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">in-context learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">belief updating</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory evaluation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">forgetting</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop RAG</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">program synthesis</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge injection</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval from within</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="LLM memory memory evaluation forgetting negative transfer">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.15384</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Is One Score Enough? Rethinking the Evaluation of Sequentially Evolving LLM Memory<div class="title-zh">一个分数就够了吗？重新思考顺序演化 LLM 记忆的评测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">LLM memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory evaluation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">negative transfer</span></div>
+  <div class="item-summary">SeqMem-Eval is a diagnostic framework for sequentially evolving LLM memory that measures online utility, hold-out generalization, backward transfer and forgetting rather than only final or cumulative accuracy. Experiments show that higher final accuracy does not necessarily imply better memory quality, with many methods suffering substantial forgetting or negative transfer.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.15384v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-hop RAG program synthesis self-repair tool use">
+  <div class="item-meta">
+    <span class="item-org">UIUC</span>
+    <span class="arxiv-tag">arxiv:2605.12975</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Retrieval is Cheap, Show Me the Code: Executable Multi-Hop Reasoning for Retrieval-Augmented Generation<div class="title-zh">检索很便宜，给我看代码：面向 RAG 的可执行多跳推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop RAG</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">program synthesis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-repair</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span></div>
+  <div class="item-summary">UIUC's PyRAG reformulates multi-hop retrieval-augmented generation as synthesizing and executing Python programs over retrieval and QA tools, exposing intermediate states and enabling compiler-grounded self-repair without extra training. It outperforms strong baselines on five QA benchmarks.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.12975" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="intrinsic retrieval attention evidence chunks retrieval-generation unification">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2605.05806</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Retrieval from Within: An Intrinsic Capability of Attention-Based Models<div class="title-zh">内在检索：注意力模型的固有属性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">intrinsic retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">attention</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence chunks</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">retrieval-generation unification</span></div>
+  <div class="item-summary">NVIDIA researchers propose INTRA, which lets decoder attention score pre-encoded evidence chunks that are then reused as context, unifying retrieval and generation. It reports gains over strong engineered RAG pipelines on evidence recall and answer quality.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.05806" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[10]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="in-context learning chain-of-thought demonstration selection many-shot prompting">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.13511</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Many-Shot CoT-ICL: Making In-Context Learning Truly Learn<div class="title-zh">多样例 CoT-ICL：让上下文学习真正发生学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">in-context learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">demonstration selection</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">many-shot prompting</span></div>
+  <div class="item-summary">A study of many-shot chain-of-thought in-context learning finds that scaling, retrieval and ordering rules from non-reasoning tasks do not transfer to reasoning tasks. It proposes Curvilinear Demonstration Selection, which yields up to 5.42 points gain on geometry.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.13511" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="belief updating structured memory multi-agent deliberation stance dynamics">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.15343</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Belief Engine: Configurable and Inspectable Stance Dynamics in Multi-Agent LLM Deliberation<div class="title-zh">信念引擎：多智能体 LLM 审议中可配置、可检查的立场动态</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">belief updating</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">structured memory</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent deliberation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">stance dynamics</span></div>
+  <div class="item-summary">The Belief Engine is an auditable belief-update layer that represents belief as an evidential state over a proposition and exposes it as a scalar stance, extracting arguments into structured memory and updating stance with a log-odds rule. Parameter sweeps across base LLMs show evidence uptake and prior anchoring reliably shape stance dynamics while preserving an update trail.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.15343v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="LLM memory memory evaluation forgetting negative transfer">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.15384</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Is One Score Enough? Rethinking the Evaluation of Sequentially Evolving LLM Memory<div class="title-zh">一个分数就够了吗？重新思考顺序演化 LLM 记忆的评测</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">LLM memory</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">memory evaluation</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">forgetting</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">negative transfer</span></div>
+  <div class="item-summary">SeqMem-Eval is a diagnostic framework for sequentially evolving LLM memory that measures online utility, hold-out generalization, backward transfer and forgetting rather than only final or cumulative accuracy. Experiments show that higher final accuracy does not necessarily imply better memory quality, with many methods suffering substantial forgetting or negative transfer.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.15384v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-hop RAG program synthesis self-repair tool use">
+  <div class="item-meta">
+    <span class="item-org">UIUC</span>
+    <span class="arxiv-tag">arxiv:2605.12975</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Retrieval is Cheap, Show Me the Code: Executable Multi-Hop Reasoning for Retrieval-Augmented Generation<div class="title-zh">检索很便宜，给我看代码：面向 RAG 的可执行多跳推理</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">multi-hop RAG</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">program synthesis</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">self-repair</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span></div>
+  <div class="item-summary">UIUC's PyRAG reformulates multi-hop retrieval-augmented generation as synthesizing and executing Python programs over retrieval and QA tools, exposing intermediate states and enabling compiler-grounded self-repair without extra training. It outperforms strong baselines on five QA benchmarks.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.12975" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="knowledge injection clinical prediction inference-time adaptation zero-shot">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2607.20453</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">A Knowledge-Injection Framework for Zero-Shot Adaptation of LLMs to Delirium Prediction<div class="title-zh">面向 LLM 零样本谵妄预测的知识注入框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">knowledge injection</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">clinical prediction</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">inference-time adaptation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">zero-shot</span></div>
+  <div class="item-summary">The authors augment a deterministic natural-language summary of structured EHR data with an external clinical knowledge report at inference time, without fine-tuning or retrieval, and evaluate LLaMA 3.1 8B and 3.3 70B on 3,160 ICU admissions. Adding the report improved AUROC by 8.57 points for the 8B model and 1.99 points for the 70B model, while random control reports did not help.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2607.20453v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="self-evolving agents reinforcement fine-tuning context explosion alpha factor discovery">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.15412</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">From Feedback Loops to Policy Updates: Reinforcement Fine-Tuning for LLM-Based Alpha Factor Discovery<div class="title-zh">从反馈循环到策略更新：面向 LLM Alpha 因子发现的强化微调</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">self-evolving agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">reinforcement fine-tuning</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context explosion</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">alpha factor discovery</span></div>
+  <div class="item-summary">QuantEvolver replaces prompt-level generation-evaluation-feedback loops with reinforcement fine-tuning, converting executable quantitative evaluation into policy updates so a Miner LLM internalizes historical optimization experience. It accumulates high-quality factors in a mined factor database and improves the primary metric over LLM-based alpha-factor baselines on three market benchmarks.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.15412v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="retrieval-augmented measurement AI exposure evidence grounding labor policy">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2605.15474</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Jobs' AI Exposure Should Be Measured from Evidence, Not Model Priors<div class="title-zh">AI 对职业的暴露度应基于证据而非模型先验来衡量</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented measurement</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">AI exposure</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">evidence grounding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">labor policy</span></div>
+  <div class="item-summary">This position paper argues that AI job-exposure labels should be grounded in evidence rather than zero-shot LLM priors, and proposes a retrieval-augmented framework that assigns labels to all 18,796 occupation-task pairs in O*NET 30.2 using retrieved news and paper abstracts. The grounded condition was preferred in over 72% of disagreement cases under automatic and human evaluation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.15474v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multimodal tabular learning embedding tuning benchmark tabular data">
+  <div class="item-meta">
+    <span class="item-org">Technion</span>
+    <span class="arxiv-tag">arxiv:2605.10616</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">MulTaBench: Benchmarking Multimodal Tabular Learning with Text and Image<div class="title-zh">MulTaBench：以文本与图像评测多模态表格学习</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">multimodal tabular learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding tuning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">tabular data</span></div>
+  <div class="item-summary">MulTaBench is a 40-dataset benchmark split evenly between image-tabular and text-tabular tasks, introduced by Technion researchers. It shows that tuning embeddings to the target task beats frozen pretrained embeddings.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.10616" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="intrinsic retrieval attention evidence chunks retrieval-generation unification">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2605.05806</span>
+    
+    <span class="item-source">HuggingFace Papers</span>
+    
+  </div>
+  <div class="item-title">Retrieval from Within: An Intrinsic Capability of Attention-Based Models<div class="title-zh">内在检索：注意力模型的固有属性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">intrinsic retrieval</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">attention</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">evidence chunks</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">retrieval-generation unification</span></div>
+  <div class="item-summary">NVIDIA researchers propose INTRA, which lets decoder attention score pre-encoded evidence chunks that are then reused as context, unifying retrieval and generation. It reports gains over strong engineered RAG pipelines on evidence recall and answer quality.</div>
+  <a class="item-link" href="https://huggingface.co/papers/2605.05806" target="_blank" rel="noopener">&rarr; huggingface.co</a>
+</div>
+<div class="item-card" data-keywords="egocentric video reasoning multimodal benchmark reasoning traces visual prompting">
+  <div class="item-meta">
+    <span class="item-org">Google DeepMind</span>
+    <span class="arxiv-tag">arxiv:2605.15342</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Minerva-Ego: Spatiotemporal Hints for Egocentric Video Understanding<div class="title-zh">Minerva-Ego：第一人称视频理解的时空提示</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">egocentric video reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">multimodal benchmark</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reasoning traces</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">visual prompting</span></div>
+  <div class="item-summary">Minerva-Ego is a benchmark for complex egocentric visual reasoning that pairs multi-step multimodal questions with spatiotemporally dense human-annotated reasoning traces. Benchmarking shows a large gap to human performance, and prompting frontier models with hints about where and when to look yields substantial improvements.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2605.15342v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-industry_applications">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-industry_applications">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Industry Applications
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="coding agents enterprise adoption Codex software development">
+  <div class="item-meta">
+    <span class="item-org">Sea Limited</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Sea's View on the Future of Agentic Software Development with Codex<div class="title-zh">Sea 对基于 Codex 的智能体软件开发未来的看法</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">coding agents</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">enterprise adoption</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">Codex</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">software development</span></div>
+  <div class="item-summary">Sea Limited's CPO explains why the company is deploying Codex across engineering teams to accelerate AI-native software development in Asia.</div>
+  <a class="item-link" href="https://openai.com/index/sea-david-chen" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://huggingface.co/papers" target="_blank" rel="noopener">HuggingFace Papers</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-05-14", "stats": {"total_items": 11, "unique_items": 11, "sources_count": 3, "links_verified_count": 7, "links_failed_count": 0, "section_counts": {"research_papers": 10, "industry_applications": 1}}, "daily_keywords": [{"text": "in-context learning", "domain": "context-prompting"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "belief updating", "domain": "agent-memory"}, {"text": "memory evaluation", "domain": "evaluation-benchmark"}, {"text": "forgetting", "domain": "knowledge-lifecycle"}, {"text": "multi-hop RAG", "domain": "rag-retrieval"}, {"text": "program synthesis", "domain": "agent-architecture"}, {"text": "knowledge injection", "domain": "ai-knowledge"}, {"text": "retrieval from within", "domain": "rag-retrieval"}, {"text": "evidence grounding", "domain": "ai-knowledge"}, {"text": "self-evolving agents", "domain": "knowledge-lifecycle"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Is One Score Enough? Rethinking the Evaluation of Sequentially Evolving LLM Memory", "title_zh": "一个分数就够了吗？重新思考顺序演化 LLM 记忆的评测", "url": "http://arxiv.org/abs/2605.15384v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.15384", "summary": "SeqMem-Eval is a diagnostic framework for sequentially evolving LLM memory that measures online utility, hold-out generalization, backward transfer and forgetting rather than only final or cumulative accuracy. Experiments show that higher final accuracy does not necessarily imply better memory quality, with many methods suffering substantial forgetting or negative transfer.", "keywords": [{"text": "LLM memory", "domain": "agent-memory"}, {"text": "memory evaluation", "domain": "evaluation-benchmark"}, {"text": "forgetting", "domain": "knowledge-lifecycle"}, {"text": "negative transfer", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Retrieval is Cheap, Show Me the Code: Executable Multi-Hop Reasoning for Retrieval-Augmented Generation", "title_zh": "检索很便宜，给我看代码：面向 RAG 的可执行多跳推理", "url": "https://huggingface.co/papers/2605.12975", "source": "HuggingFace Papers", "section": "research_papers", "organization": "UIUC", "language": "en", "arxiv_id": "2605.12975", "summary": "UIUC's PyRAG reformulates multi-hop retrieval-augmented generation as synthesizing and executing Python programs over retrieval and QA tools, exposing intermediate states and enabling compiler-grounded self-repair without extra training. It outperforms strong baselines on five QA benchmarks.", "keywords": [{"text": "multi-hop RAG", "domain": "rag-retrieval"}, {"text": "program synthesis", "domain": "agent-architecture"}, {"text": "self-repair", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}], "link_verified": false, "is_highlight": true}, {"title": "Retrieval from Within: An Intrinsic Capability of Attention-Based Models", "title_zh": "内在检索：注意力模型的固有属性", "url": "https://huggingface.co/papers/2605.05806", "source": "HuggingFace Papers", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2605.05806", "summary": "NVIDIA researchers propose INTRA, which lets decoder attention score pre-encoded evidence chunks that are then reused as context, unifying retrieval and generation. It reports gains over strong engineered RAG pipelines on evidence recall and answer quality.", "keywords": [{"text": "intrinsic retrieval", "domain": "rag-retrieval"}, {"text": "attention", "domain": "embeddings-vectors"}, {"text": "evidence chunks", "domain": "rag-retrieval"}, {"text": "retrieval-generation unification", "domain": "agent-architecture"}], "link_verified": false, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Many-Shot CoT-ICL: Making In-Context Learning Truly Learn", "title_zh": "多样例 CoT-ICL：让上下文学习真正发生学习", "url": "https://huggingface.co/papers/2605.13511", "source": "HuggingFace Papers", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.13511", "summary": "A study of many-shot chain-of-thought in-context learning finds that scaling, retrieval and ordering rules from non-reasoning tasks do not transfer to reasoning tasks. It proposes Curvilinear Demonstration Selection, which yields up to 5.42 points gain on geometry.", "keywords": [{"text": "in-context learning", "domain": "context-prompting"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "demonstration selection", "domain": "rag-retrieval"}, {"text": "many-shot prompting", "domain": "context-prompting"}], "link_verified": false, "is_highlight": false}, {"title": "Belief Engine: Configurable and Inspectable Stance Dynamics in Multi-Agent LLM Deliberation", "title_zh": "信念引擎：多智能体 LLM 审议中可配置、可检查的立场动态", "url": "http://arxiv.org/abs/2605.15343v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.15343", "summary": "The Belief Engine is an auditable belief-update layer that represents belief as an evidential state over a proposition and exposes it as a scalar stance, extracting arguments into structured memory and updating stance with a log-odds rule. Parameter sweeps across base LLMs show evidence uptake and prior anchoring reliably shape stance dynamics while preserving an update trail.", "keywords": [{"text": "belief updating", "domain": "agent-memory"}, {"text": "structured memory", "domain": "agent-memory"}, {"text": "multi-agent deliberation", "domain": "agent-architecture"}, {"text": "stance dynamics", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Is One Score Enough? Rethinking the Evaluation of Sequentially Evolving LLM Memory", "title_zh": "一个分数就够了吗？重新思考顺序演化 LLM 记忆的评测", "url": "http://arxiv.org/abs/2605.15384v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.15384", "summary": "SeqMem-Eval is a diagnostic framework for sequentially evolving LLM memory that measures online utility, hold-out generalization, backward transfer and forgetting rather than only final or cumulative accuracy. Experiments show that higher final accuracy does not necessarily imply better memory quality, with many methods suffering substantial forgetting or negative transfer.", "keywords": [{"text": "LLM memory", "domain": "agent-memory"}, {"text": "memory evaluation", "domain": "evaluation-benchmark"}, {"text": "forgetting", "domain": "knowledge-lifecycle"}, {"text": "negative transfer", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": true}, {"title": "Retrieval is Cheap, Show Me the Code: Executable Multi-Hop Reasoning for Retrieval-Augmented Generation", "title_zh": "检索很便宜，给我看代码：面向 RAG 的可执行多跳推理", "url": "https://huggingface.co/papers/2605.12975", "source": "HuggingFace Papers", "section": "research_papers", "organization": "UIUC", "language": "en", "arxiv_id": "2605.12975", "summary": "UIUC's PyRAG reformulates multi-hop retrieval-augmented generation as synthesizing and executing Python programs over retrieval and QA tools, exposing intermediate states and enabling compiler-grounded self-repair without extra training. It outperforms strong baselines on five QA benchmarks.", "keywords": [{"text": "multi-hop RAG", "domain": "rag-retrieval"}, {"text": "program synthesis", "domain": "agent-architecture"}, {"text": "self-repair", "domain": "cognition-reasoning"}, {"text": "tool use", "domain": "agent-architecture"}], "link_verified": false, "is_highlight": true}, {"title": "A Knowledge-Injection Framework for Zero-Shot Adaptation of LLMs to Delirium Prediction", "title_zh": "面向 LLM 零样本谵妄预测的知识注入框架", "url": "http://arxiv.org/abs/2607.20453v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2607.20453", "summary": "The authors augment a deterministic natural-language summary of structured EHR data with an external clinical knowledge report at inference time, without fine-tuning or retrieval, and evaluate LLaMA 3.1 8B and 3.3 70B on 3,160 ICU admissions. Adding the report improved AUROC by 8.57 points for the 8B model and 1.99 points for the 70B model, while random control reports did not help.", "keywords": [{"text": "knowledge injection", "domain": "ai-knowledge"}, {"text": "clinical prediction", "domain": "ai-knowledge"}, {"text": "inference-time adaptation", "domain": "context-prompting"}, {"text": "zero-shot", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "From Feedback Loops to Policy Updates: Reinforcement Fine-Tuning for LLM-Based Alpha Factor Discovery", "title_zh": "从反馈循环到策略更新：面向 LLM Alpha 因子发现的强化微调", "url": "http://arxiv.org/abs/2605.15412v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.15412", "summary": "QuantEvolver replaces prompt-level generation-evaluation-feedback loops with reinforcement fine-tuning, converting executable quantitative evaluation into policy updates so a Miner LLM internalizes historical optimization experience. It accumulates high-quality factors in a mined factor database and improves the primary metric over LLM-based alpha-factor baselines on three market benchmarks.", "keywords": [{"text": "self-evolving agents", "domain": "knowledge-lifecycle"}, {"text": "reinforcement fine-tuning", "domain": "agent-architecture"}, {"text": "context explosion", "domain": "context-prompting"}, {"text": "alpha factor discovery", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Jobs' AI Exposure Should Be Measured from Evidence, Not Model Priors", "title_zh": "AI 对职业的暴露度应基于证据而非模型先验来衡量", "url": "http://arxiv.org/abs/2605.15474v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2605.15474", "summary": "This position paper argues that AI job-exposure labels should be grounded in evidence rather than zero-shot LLM priors, and proposes a retrieval-augmented framework that assigns labels to all 18,796 occupation-task pairs in O*NET 30.2 using retrieved news and paper abstracts. The grounded condition was preferred in over 72% of disagreement cases under automatic and human evaluation.", "keywords": [{"text": "retrieval-augmented measurement", "domain": "rag-retrieval"}, {"text": "AI exposure", "domain": "evaluation-benchmark"}, {"text": "evidence grounding", "domain": "ai-knowledge"}, {"text": "labor policy", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "MulTaBench: Benchmarking Multimodal Tabular Learning with Text and Image", "title_zh": "MulTaBench：以文本与图像评测多模态表格学习", "url": "https://huggingface.co/papers/2605.10616", "source": "HuggingFace Papers", "section": "research_papers", "organization": "Technion", "language": "en", "arxiv_id": "2605.10616", "summary": "MulTaBench is a 40-dataset benchmark split evenly between image-tabular and text-tabular tasks, introduced by Technion researchers. It shows that tuning embeddings to the target task beats frozen pretrained embeddings.", "keywords": [{"text": "multimodal tabular learning", "domain": "embeddings-vectors"}, {"text": "embedding tuning", "domain": "embeddings-vectors"}, {"text": "benchmark", "domain": "evaluation-benchmark"}, {"text": "tabular data", "domain": "ai-knowledge"}], "link_verified": false, "is_highlight": false}, {"title": "Retrieval from Within: An Intrinsic Capability of Attention-Based Models", "title_zh": "内在检索：注意力模型的固有属性", "url": "https://huggingface.co/papers/2605.05806", "source": "HuggingFace Papers", "section": "research_papers", "organization": "NVIDIA", "language": "en", "arxiv_id": "2605.05806", "summary": "NVIDIA researchers propose INTRA, which lets decoder attention score pre-encoded evidence chunks that are then reused as context, unifying retrieval and generation. It reports gains over strong engineered RAG pipelines on evidence recall and answer quality.", "keywords": [{"text": "intrinsic retrieval", "domain": "rag-retrieval"}, {"text": "attention", "domain": "embeddings-vectors"}, {"text": "evidence chunks", "domain": "rag-retrieval"}, {"text": "retrieval-generation unification", "domain": "agent-architecture"}], "link_verified": false, "is_highlight": true}, {"title": "Minerva-Ego: Spatiotemporal Hints for Egocentric Video Understanding", "title_zh": "Minerva-Ego：第一人称视频理解的时空提示", "url": "http://arxiv.org/abs/2605.15342v1", "source": "arXiv", "section": "research_papers", "organization": "Google DeepMind", "language": "en", "arxiv_id": "2605.15342", "summary": "Minerva-Ego is a benchmark for complex egocentric visual reasoning that pairs multi-step multimodal questions with spatiotemporally dense human-annotated reasoning traces. Benchmarking shows a large gap to human performance, and prompting frontier models with hints about where and when to look yields substantial improvements.", "keywords": [{"text": "egocentric video reasoning", "domain": "cognition-reasoning"}, {"text": "multimodal benchmark", "domain": "evaluation-benchmark"}, {"text": "reasoning traces", "domain": "cognition-reasoning"}, {"text": "visual prompting", "domain": "context-prompting"}], "link_verified": true, "is_highlight": false}]}, {"id": "industry_applications", "label": "Industry Applications", "items": [{"title": "Sea's View on the Future of Agentic Software Development with Codex", "title_zh": "Sea 对基于 Codex 的智能体软件开发未来的看法", "url": "https://openai.com/index/sea-david-chen", "source": "OpenAI", "section": "industry_applications", "organization": "Sea Limited", "language": "en", "arxiv_id": "", "summary": "Sea Limited's CPO explains why the company is deploying Codex across engineering teams to accelerate AI-native software development in Asia.", "keywords": [{"text": "coding agents", "domain": "agent-architecture"}, {"text": "enterprise adoption", "domain": "ai-knowledge"}, {"text": "Codex", "domain": "ai-knowledge"}, {"text": "software development", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "HuggingFace Papers", "url": "https://huggingface.co/papers"}, {"name": "OpenAI", "url": "https://openai.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

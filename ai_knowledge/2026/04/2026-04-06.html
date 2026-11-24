@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-04-06</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">8 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>2 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">8/8 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">7</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:14%"></div></div>
+  <span class="stat-count">1</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document rewriting</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">black-box retrieval</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge drift</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">event evolution graph</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context reasoning</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">attribution bias</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent safety</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">log mining</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">retrieval-augmented generation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent observability</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="document rewriting black-box retrieval reinforcement learning embedding retrieval nDCG">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2604.05087</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Document Optimization for Black-Box Retrieval via Reinforcement Learning<div class="title-zh">通过强化学习实现黑盒检索的文档优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document rewriting</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">black-box retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">nDCG</span></div>
+  <div class="item-summary">DocOpt trains an LLM or VLM with GRPO, using only black-box retriever ranking feedback as reward, to rewrite documents into representations that retrieve better than competing candidates. On code and visual retrieval, optimized rewrites lift text-embedding-3-small from 58.35 to 67.94 average nDCG@5, surpassing the 6.5x more expensive text-embedding-3-large at 66.15.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05087v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge drift temporal retrieval event evolution graph catastrophic forgetting adaptation benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.05096</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RAG or Learning? Understanding the Limits of LLM Adaptation under Continuous Knowledge Drift in the Real World<div class="title-zh">RAG 还是学习？理解持续知识漂移下 LLM 适应的局限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge drift</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">temporal retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">event evolution graph</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adaptation benchmark</span></div>
+  <div class="item-summary">The authors build a benchmark of real-world dynamic events from time-stamped evidence to test how LLMs adapt as facts and entities change, finding that vanilla RAG and several learning-based methods suffer catastrophic forgetting and temporal inconsistency. They propose Chronos, a time-aware retrieval baseline that progressively organizes retrieved evidence into an Event Evolution Graph without additional training.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05096v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent evaluation productivity agents agent safety tool use simulated workspace">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.05172</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ClawsBench: Evaluating Capability and Safety of LLM Productivity Agents in Simulated Workspaces<div class="title-zh">ClawsBench：在模拟工作区中评估 LLM 生产力智能体的能力与安全性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">productivity agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent safety</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">simulated workspace</span></div>
+  <div class="item-summary">ClawsBench provides five high-fidelity mock services and 44 tasks spanning single-service, cross-service and safety-critical productivity workflows, with deterministic snapshot and restore. Across 6 models, 4 agent harnesses and 33 conditions, agents reach 39–64% task success but show unsafe action rates of 7–33%, and the authors identify eight recurring unsafe-behavior patterns including multi-step sandbox escalation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05172v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[7]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="document rewriting black-box retrieval reinforcement learning embedding retrieval nDCG">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    <span class="arxiv-tag">arxiv:2604.05087</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Document Optimization for Black-Box Retrieval via Reinforcement Learning<div class="title-zh">通过强化学习实现黑盒检索的文档优化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document rewriting</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">black-box retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">reinforcement learning</span> <span class="kw-pill" style="--kw-lb:#ede9fe;--kw-lt:#5b21b6;--kw-db:#3b0764;--kw-dt:#c4b5fd" data-domain="embeddings-vectors">embedding retrieval</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">nDCG</span></div>
+  <div class="item-summary">DocOpt trains an LLM or VLM with GRPO, using only black-box retriever ranking feedback as reward, to rewrite documents into representations that retrieve better than competing candidates. On code and visual retrieval, optimized rewrites lift text-embedding-3-small from 58.35 to 67.94 average nDCG@5, surpassing the 6.5x more expensive text-embedding-3-large at 66.15.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05087v4" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="log parsing domain adaptation chain-of-thought anomaly detection instruction tuning">
+  <div class="item-meta">
+    <span class="item-org">Anthropic</span>
+    <span class="arxiv-tag">arxiv:2604.05168</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Instruction-Tuned LLMs for Parsing and Mining Unstructured Logs on Leadership HPC Systems<div class="title-zh">面向顶级 HPC 系统非结构化日志解析与挖掘的指令微调 LLM</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">log parsing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">domain adaptation</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">anomaly detection</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">instruction tuning</span></div>
+  <div class="item-summary">An 8B LLaMA model fine-tuned with domain-specific log-template data and instruction examples uses chain-of-thought reasoning to parse heterogeneous HPC logs, matching larger models such as LLaMA 70B and Claude on parsing accuracy. The authors also parsed more than 600 million production logs from the Frontier supercomputer over four weeks, surfacing temporal patterns, node-level anomalies and workload-error correlations.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05168v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="knowledge drift temporal retrieval event evolution graph catastrophic forgetting adaptation benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.05096</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">RAG or Learning? Understanding the Limits of LLM Adaptation under Continuous Knowledge Drift in the Real World<div class="title-zh">RAG 还是学习？理解持续知识漂移下 LLM 适应的局限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">knowledge drift</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">temporal retrieval</span> <span class="kw-pill" style="--kw-lb:#dcfce7;--kw-lt:#166534;--kw-db:#14532d;--kw-dt:#86efac" data-domain="knowledge-graph">event evolution graph</span> <span class="kw-pill" style="--kw-lb:#fce7f3;--kw-lt:#9d174d;--kw-db:#4a1942;--kw-dt:#f9a8d4" data-domain="agent-memory">catastrophic forgetting</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">adaptation benchmark</span></div>
+  <div class="item-summary">The authors build a benchmark of real-world dynamic events from time-stamped evidence to test how LLMs adapt as facts and entities change, finding that vanilla RAG and several learning-based methods suffer catastrophic forgetting and temporal inconsistency. They propose Chronos, a time-aware retrieval baseline that progressively organizes retrieved evidence into an Event Evolution Graph without additional training.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05096v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="long-context reasoning synthetic data chain-of-thought QA curation open-source dataset">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.05114</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">$π^2$: Structure-Originated Reasoning Data Improves Long-Context Reasoning Ability of Large Language Models<div class="title-zh">$π^2$：源于结构的推理数据提升大语言模型长上下文推理能力</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">long-context reasoning</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">synthetic data</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">chain-of-thought</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">QA curation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source dataset</span></div>
+  <div class="item-summary">The π² pipeline extracts and expands Wikipedia tables, generates complex questions whose answers are validated through dual-path code execution, and back-translates chain-of-thought solutions grounded in realistic context. Supervised fine-tuning of gpt-oss-20b and Qwen3-4B-Instruct-2507 on the data yields average absolute accuracy gains of 6.25% and 3.37% across four long-context reasoning benchmarks and π²-Bench, with code, data and models released openly.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05114v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="quote attribution attribution bias demographic fairness information retrieval suppression">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.05224</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Attribution Bias in Large Language Models<div class="title-zh">大语言模型中的署名归因偏差</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">quote attribution</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">attribution bias</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">demographic fairness</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">information retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">suppression</span></div>
+  <div class="item-summary">AttriBench balances author fame and demographics to test quote attribution across 11 widely used LLMs, finding large systematic accuracy disparities between race, gender and intersectional groups even for frontier models. The authors also document suppression, a failure mode in which models omit attribution entirely despite having access to authorship information, and find it unevenly distributed across demographic groups.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05224v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="agent evaluation productivity agents agent safety tool use simulated workspace">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.05172</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ClawsBench: Evaluating Capability and Safety of LLM Productivity Agents in Simulated Workspaces<div class="title-zh">ClawsBench：在模拟工作区中评估 LLM 生产力智能体的能力与安全性</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent evaluation</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">productivity agents</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent safety</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">tool use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">simulated workspace</span></div>
+  <div class="item-summary">ClawsBench provides five high-fidelity mock services and 44 tasks spanning single-service, cross-service and safety-critical productivity workflows, with deterministic snapshot and restore. Across 6 models, 4 agent harnesses and 33 conditions, agents reach 39–64% task success but show unsafe action rates of 7–33%, and the authors identify eight recurring unsafe-behavior patterns including multi-step sandbox escalation.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05172v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="exemplar retrieval generalization word learning distributional learning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.05243</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Exemplar Retrieval Without Overhypothesis Induction: Limits of Distributional Sequence Learning in Early Word Learning<div class="title-zh">无需过度假设归纳的样例检索：早期词汇学习中分布序列学习的局限</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">exemplar retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">generalization</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">word learning</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">distributional learning</span></div>
+  <div class="item-summary">Autoregressive transformers trained on synthetic corpora achieved perfect first-order exemplar retrieval but only chance-level second-order generalization of 50–52% across 120 pre-registered runs. A feature-swap diagnostic indicated the models relied on frame-to-feature template matching rather than structured noun-to-domain-to-feature abstraction.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.05243v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent observability policy enforcement runtime reliability agent harness">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FailproofAI/failproofai<div class="title-zh">FailproofAI/failproofai：AI 智能体框架的可观测性与策略执行</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent observability</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">policy enforcement</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">runtime reliability</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent harness</span></div>
+  <div class="item-summary">FailproofAI is a TypeScript toolkit that adds observability and policy enforcement to AI agent harnesses, capturing every run to support runtime reliability.</div>
+  <a class="item-link" href="https://github.com/FailproofAI/failproofai" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-04-06", "stats": {"total_items": 8, "unique_items": 8, "sources_count": 2, "links_verified_count": 8, "links_failed_count": 0, "section_counts": {"research_papers": 7, "tools_frameworks": 1}}, "daily_keywords": [{"text": "document rewriting", "domain": "rag-retrieval"}, {"text": "black-box retrieval", "domain": "rag-retrieval"}, {"text": "knowledge drift", "domain": "knowledge-lifecycle"}, {"text": "event evolution graph", "domain": "knowledge-graph"}, {"text": "long-context reasoning", "domain": "context-prompting"}, {"text": "attribution bias", "domain": "evaluation-benchmark"}, {"text": "agent safety", "domain": "agent-architecture"}, {"text": "log mining", "domain": "ai-knowledge"}, {"text": "retrieval-augmented generation", "domain": "rag-retrieval"}, {"text": "agent observability", "domain": "agent-architecture"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "Document Optimization for Black-Box Retrieval via Reinforcement Learning", "title_zh": "通过强化学习实现黑盒检索的文档优化", "url": "http://arxiv.org/abs/2604.05087v4", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2604.05087", "summary": "DocOpt trains an LLM or VLM with GRPO, using only black-box retriever ranking feedback as reward, to rewrite documents into representations that retrieve better than competing candidates. On code and visual retrieval, optimized rewrites lift text-embedding-3-small from 58.35 to 67.94 average nDCG@5, surpassing the 6.5x more expensive text-embedding-3-large at 66.15.", "keywords": [{"text": "document rewriting", "domain": "rag-retrieval"}, {"text": "black-box retrieval", "domain": "rag-retrieval"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "embedding retrieval", "domain": "embeddings-vectors"}, {"text": "nDCG", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "RAG or Learning? Understanding the Limits of LLM Adaptation under Continuous Knowledge Drift in the Real World", "title_zh": "RAG 还是学习？理解持续知识漂移下 LLM 适应的局限", "url": "http://arxiv.org/abs/2604.05096v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.05096", "summary": "The authors build a benchmark of real-world dynamic events from time-stamped evidence to test how LLMs adapt as facts and entities change, finding that vanilla RAG and several learning-based methods suffer catastrophic forgetting and temporal inconsistency. They propose Chronos, a time-aware retrieval baseline that progressively organizes retrieved evidence into an Event Evolution Graph without additional training.", "keywords": [{"text": "knowledge drift", "domain": "knowledge-lifecycle"}, {"text": "temporal retrieval", "domain": "rag-retrieval"}, {"text": "event evolution graph", "domain": "knowledge-graph"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "adaptation benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "ClawsBench: Evaluating Capability and Safety of LLM Productivity Agents in Simulated Workspaces", "title_zh": "ClawsBench：在模拟工作区中评估 LLM 生产力智能体的能力与安全性", "url": "http://arxiv.org/abs/2604.05172v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.05172", "summary": "ClawsBench provides five high-fidelity mock services and 44 tasks spanning single-service, cross-service and safety-critical productivity workflows, with deterministic snapshot and restore. Across 6 models, 4 agent harnesses and 33 conditions, agents reach 39–64% task success but show unsafe action rates of 7–33%, and the authors identify eight recurring unsafe-behavior patterns including multi-step sandbox escalation.", "keywords": [{"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "productivity agents", "domain": "agent-architecture"}, {"text": "agent safety", "domain": "agent-architecture"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "simulated workspace", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "Document Optimization for Black-Box Retrieval via Reinforcement Learning", "title_zh": "通过强化学习实现黑盒检索的文档优化", "url": "http://arxiv.org/abs/2604.05087v4", "source": "arXiv", "section": "research_papers", "organization": "OpenAI", "language": "en", "arxiv_id": "2604.05087", "summary": "DocOpt trains an LLM or VLM with GRPO, using only black-box retriever ranking feedback as reward, to rewrite documents into representations that retrieve better than competing candidates. On code and visual retrieval, optimized rewrites lift text-embedding-3-small from 58.35 to 67.94 average nDCG@5, surpassing the 6.5x more expensive text-embedding-3-large at 66.15.", "keywords": [{"text": "document rewriting", "domain": "rag-retrieval"}, {"text": "black-box retrieval", "domain": "rag-retrieval"}, {"text": "reinforcement learning", "domain": "cognition-reasoning"}, {"text": "embedding retrieval", "domain": "embeddings-vectors"}, {"text": "nDCG", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "Instruction-Tuned LLMs for Parsing and Mining Unstructured Logs on Leadership HPC Systems", "title_zh": "面向顶级 HPC 系统非结构化日志解析与挖掘的指令微调 LLM", "url": "http://arxiv.org/abs/2604.05168v1", "source": "arXiv", "section": "research_papers", "organization": "Anthropic", "language": "en", "arxiv_id": "2604.05168", "summary": "An 8B LLaMA model fine-tuned with domain-specific log-template data and instruction examples uses chain-of-thought reasoning to parse heterogeneous HPC logs, matching larger models such as LLaMA 70B and Claude on parsing accuracy. The authors also parsed more than 600 million production logs from the Frontier supercomputer over four weeks, surfacing temporal patterns, node-level anomalies and workload-error correlations.", "keywords": [{"text": "log parsing", "domain": "ai-knowledge"}, {"text": "domain adaptation", "domain": "knowledge-lifecycle"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "anomaly detection", "domain": "evaluation-benchmark"}, {"text": "instruction tuning", "domain": "knowledge-lifecycle"}], "link_verified": true, "is_highlight": false}, {"title": "RAG or Learning? Understanding the Limits of LLM Adaptation under Continuous Knowledge Drift in the Real World", "title_zh": "RAG 还是学习？理解持续知识漂移下 LLM 适应的局限", "url": "http://arxiv.org/abs/2604.05096v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.05096", "summary": "The authors build a benchmark of real-world dynamic events from time-stamped evidence to test how LLMs adapt as facts and entities change, finding that vanilla RAG and several learning-based methods suffer catastrophic forgetting and temporal inconsistency. They propose Chronos, a time-aware retrieval baseline that progressively organizes retrieved evidence into an Event Evolution Graph without additional training.", "keywords": [{"text": "knowledge drift", "domain": "knowledge-lifecycle"}, {"text": "temporal retrieval", "domain": "rag-retrieval"}, {"text": "event evolution graph", "domain": "knowledge-graph"}, {"text": "catastrophic forgetting", "domain": "agent-memory"}, {"text": "adaptation benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": true}, {"title": "$π^2$: Structure-Originated Reasoning Data Improves Long-Context Reasoning Ability of Large Language Models", "title_zh": "$π^2$：源于结构的推理数据提升大语言模型长上下文推理能力", "url": "http://arxiv.org/abs/2604.05114v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.05114", "summary": "The π² pipeline extracts and expands Wikipedia tables, generates complex questions whose answers are validated through dual-path code execution, and back-translates chain-of-thought solutions grounded in realistic context. Supervised fine-tuning of gpt-oss-20b and Qwen3-4B-Instruct-2507 on the data yields average absolute accuracy gains of 6.25% and 3.37% across four long-context reasoning benchmarks and π²-Bench, with code, data and models released openly.", "keywords": [{"text": "long-context reasoning", "domain": "context-prompting"}, {"text": "synthetic data", "domain": "knowledge-lifecycle"}, {"text": "chain-of-thought", "domain": "cognition-reasoning"}, {"text": "QA curation", "domain": "ai-knowledge"}, {"text": "open-source dataset", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "Attribution Bias in Large Language Models", "title_zh": "大语言模型中的署名归因偏差", "url": "http://arxiv.org/abs/2604.05224v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.05224", "summary": "AttriBench balances author fame and demographics to test quote attribution across 11 widely used LLMs, finding large systematic accuracy disparities between race, gender and intersectional groups even for frontier models. The authors also document suppression, a failure mode in which models omit attribution entirely despite having access to authorship information, and find it unevenly distributed across demographic groups.", "keywords": [{"text": "quote attribution", "domain": "ai-knowledge"}, {"text": "attribution bias", "domain": "evaluation-benchmark"}, {"text": "demographic fairness", "domain": "evaluation-benchmark"}, {"text": "information retrieval", "domain": "rag-retrieval"}, {"text": "suppression", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "ClawsBench: Evaluating Capability and Safety of LLM Productivity Agents in Simulated Workspaces", "title_zh": "ClawsBench：在模拟工作区中评估 LLM 生产力智能体的能力与安全性", "url": "http://arxiv.org/abs/2604.05172v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.05172", "summary": "ClawsBench provides five high-fidelity mock services and 44 tasks spanning single-service, cross-service and safety-critical productivity workflows, with deterministic snapshot and restore. Across 6 models, 4 agent harnesses and 33 conditions, agents reach 39–64% task success but show unsafe action rates of 7–33%, and the authors identify eight recurring unsafe-behavior patterns including multi-step sandbox escalation.", "keywords": [{"text": "agent evaluation", "domain": "evaluation-benchmark"}, {"text": "productivity agents", "domain": "agent-architecture"}, {"text": "agent safety", "domain": "agent-architecture"}, {"text": "tool use", "domain": "agent-architecture"}, {"text": "simulated workspace", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}, {"title": "Exemplar Retrieval Without Overhypothesis Induction: Limits of Distributional Sequence Learning in Early Word Learning", "title_zh": "无需过度假设归纳的样例检索：早期词汇学习中分布序列学习的局限", "url": "http://arxiv.org/abs/2604.05243v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.05243", "summary": "Autoregressive transformers trained on synthetic corpora achieved perfect first-order exemplar retrieval but only chance-level second-order generalization of 50–52% across 120 pre-registered runs. A feature-swap diagnostic indicated the models relied on frame-to-feature template matching rather than structured noun-to-domain-to-feature abstraction.", "keywords": [{"text": "exemplar retrieval", "domain": "rag-retrieval"}, {"text": "generalization", "domain": "cognition-reasoning"}, {"text": "word learning", "domain": "ai-knowledge"}, {"text": "distributional learning", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "FailproofAI/failproofai", "title_zh": "FailproofAI/failproofai：AI 智能体框架的可观测性与策略执行", "url": "https://github.com/FailproofAI/failproofai", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "FailproofAI is a TypeScript toolkit that adds observability and policy enforcement to AI agent harnesses, capturing every run to support runtime reliability.", "keywords": [{"text": "agent observability", "domain": "agent-architecture"}, {"text": "policy enforcement", "domain": "agent-architecture"}, {"text": "runtime reliability", "domain": "agent-architecture"}, {"text": "agent harness", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>

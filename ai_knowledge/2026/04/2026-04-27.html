@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agentic Knowledge Digest</title>
+<style>
+/* ── Reset & Variables ─────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #ffffff; --bg2: #f8f9fa;
+  --text: #1a1a2e; --text2: #4b5563; --text3: #6b7280;
+  --border: #e5e7eb; --accent: #2563eb;
+  --card-bg: #ffffff; --card-shadow: 0 1px 3px rgba(0,0,0,.06);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.1);
+  --hl-bg: #fffbeb; --hl-border: #fcd34d;
+  --stat-bar-bg: #e5e7eb; --stat-bar-fill: #2563eb;
+  --header-bg: #ffffff; --header-border: #e5e7eb;
+  --search-bg: #f3f4f6; --search-focus: #ffffff;
+  --radius: 8px; --font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+}
+.dark {
+  --bg: #0d1117; --bg2: #161b22;
+  --text: #e6edf3; --text2: #8b949e; --text3: #6e7681;
+  --border: #30363d; --accent: #58a6ff;
+  --card-bg: #161b22; --card-shadow: 0 1px 3px rgba(0,0,0,.3);
+  --card-hover-shadow: 0 4px 12px rgba(0,0,0,.5);
+  --hl-bg: #1a1a0a; --hl-border: #674d00;
+  --stat-bar-bg: #30363d; --stat-bar-fill: #58a6ff;
+  --header-bg: #161b22; --header-border: #30363d;
+  --search-bg: #0d1117; --search-focus: #161b22;
+}
+
+/* ── Body ──────────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font); background: var(--bg); color: var(--text);
+  line-height: 1.6; min-height: 100vh;
+}
+
+/* ── Header ────────────────────────────────────────────────────────────── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--header-bg); border-bottom: 1px solid var(--header-border);
+  padding: 12px 0;
+}
+.header-inner {
+  max-width: 960px; margin: 0 auto; padding: 0 20px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.header-left { display: flex; align-items: baseline; gap: 12px; }
+.site-title { font-size: 1.1rem; font-weight: 700; white-space: nowrap; }
+.header-date { font-size: .85rem; color: var(--text3); font-family: var(--mono); }
+.header-nav { display: flex; gap: 6px; flex-wrap: wrap; flex: 1; }
+.nav-link {
+  font-size: .75rem; color: var(--text3); text-decoration: none;
+  padding: 2px 8px; border-radius: 4px; white-space: nowrap;
+}
+.nav-link:hover { color: var(--accent); background: var(--bg2); }
+.header-actions { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.search-input {
+  padding: 6px 12px; border: 1px solid var(--border); border-radius: 6px;
+  font-size: .85rem; background: var(--search-bg); color: var(--text);
+  width: 180px; outline: none; font-family: var(--font);
+}
+.search-input:focus { background: var(--search-focus); border-color: var(--accent); }
+.theme-btn {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 4px 10px; cursor: pointer; font-size: 1rem; color: var(--text);
+  line-height: 1;
+}
+.theme-btn:hover { background: var(--bg2); }
+
+/* ── Main ──────────────────────────────────────────────────────────────── */
+main { max-width: 960px; margin: 0 auto; padding: 24px 20px; }
+
+/* ── Stats Panel ───────────────────────────────────────────────────────── */
+.stats-panel {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px; margin-bottom: 24px;
+  box-shadow: var(--card-shadow);
+}
+.stats-summary { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; font-size: .9rem; }
+.stat-big { font-weight: 700; font-size: 1.05rem; }
+.stat-sep { color: var(--text3); }
+.stat-ok { color: #16a34a; }
+.dark .stat-ok { color: #4ade80; }
+.stats-bars { margin-bottom: 16px; }
+.stat-row {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+}
+.stat-label { min-width: 120px; font-size: .8rem; color: var(--text2); text-align: right; }
+.stat-bar-wrap { flex: 1; height: 8px; background: var(--stat-bar-bg); border-radius: 4px; overflow: hidden; }
+.stat-bar {
+  display: block;
+  height: 100%; background: var(--stat-bar-fill); border-radius: 4px;
+  transition: width .6s ease; min-width: 4px;
+}
+.stat-count { min-width: 24px; font-size: .8rem; font-weight: 600; color: var(--text); font-family: var(--mono); }
+
+/* ── Daily Keywords ────────────────────────────────────────────────────── */
+.daily-keywords { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding-top: 12px; border-top: 1px solid var(--border); }
+.dk-label { font-size: .8rem; font-weight: 600; color: var(--text2); margin-right: 4px; }
+
+/* ── Keyword pills ─────────────────────────────────────────────────────── */
+.kw-pill {
+  display: inline-block; padding: 2px 10px; border-radius: 12px;
+  font-size: .78rem; font-family: var(--mono); cursor: pointer;
+  user-select: none; transition: transform .1s;
+  background: var(--kw-lb); color: var(--kw-lt);
+}
+.dark .kw-pill { background: var(--kw-db); color: var(--kw-dt); }
+.kw-pill:hover { transform: scale(1.05); }
+.kw-pill.active-filter { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* ── Sections ──────────────────────────────────────────────────────────── */
+.news-section { margin-bottom: 20px; }
+.section-highlights .item-card {
+  border-left: 3px solid var(--hl-border); background: var(--hl-bg);
+}
+.section-header {
+  font-size: 1rem; font-weight: 700; padding: 10px 0;
+  cursor: pointer; user-select: none; display: flex; align-items: center; gap: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.section-header:hover { color: var(--accent); }
+.section-arrow { font-size: .7rem; color: var(--text3); transition: transform .2s; }
+.section-arrow.expanded { display: none; }
+.section-body.expanded .section-arrow.collapsed { display: none; }
+.section-body.expanded .section-arrow.expanded { display: inline; }
+.section-count { font-size: .8rem; color: var(--text3); font-weight: 400; }
+.section-body.collapsed { display: none; }
+.section-body { padding: 8px 0; }
+
+/* ── Item cards ────────────────────────────────────────────────────────── */
+.item-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; margin-bottom: 10px;
+  box-shadow: var(--card-shadow); transition: box-shadow .15s, transform .15s;
+  position: relative;
+}
+.item-card:hover { box-shadow: var(--card-hover-shadow); }
+.item-card.hidden { display: none; }
+.item-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+.item-org {
+  font-size: .72rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  padding: 1px 8px; border-radius: 4px;
+}
+.item-source { font-size: .75rem; color: var(--text3); }
+.arxiv-tag { font-size: .72rem; color: var(--text3); font-family: var(--mono); }
+.lang-note { font-size: .7rem; color: var(--text3); font-style: italic; }
+.link-ok { color: #16a34a; font-size: .8rem; }
+.dark .link-ok { color: #4ade80; }
+.item-title { font-size: .95rem; font-weight: 650; margin-bottom: 6px; line-height: 1.4; }
+.title-zh { display: block; font-weight: 400; color: var(--text2); font-size: .88rem; margin-top: 3px; line-height: 1.4; }
+.item-keywords { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.item-summary { font-size: .85rem; color: var(--text2); margin-bottom: 8px; line-height: 1.5; }
+.item-link {
+  font-size: .8rem; color: var(--accent); text-decoration: none;
+  font-family: var(--mono);
+}
+.item-link:hover { text-decoration: underline; }
+
+/* ── Sources ───────────────────────────────────────────────────────────── */
+.sources-section { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+.sources-list { list-style: none; display: flex; flex-wrap: wrap; gap: 6px 16px; padding: 12px 0; }
+.sources-list a { font-size: .8rem; color: var(--text2); text-decoration: none; }
+.sources-list a:hover { color: var(--accent); text-decoration: underline; }
+
+/* ── Footer ────────────────────────────────────────────────────────────── */
+.footer-note {
+  text-align: center; font-size: .72rem; color: var(--text3);
+  padding: 24px 0 12px;
+}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .header-inner { flex-direction: column; align-items: flex-start; }
+  .header-actions { margin-left: 0; width: 100%; }
+  .search-input { width: 100%; }
+  .stat-label { min-width: 80px; font-size: .72rem; }
+  .item-title { font-size: .88rem; }
+}
+</style></style>
+</head>
+<body>
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-left">
+      <h1 class="site-title">Agentic Knowledge Digest</h1>
+      <div class="header-date">2026-04-27</div>
+    </div>
+    <nav class="header-nav"><a href="#sec-highlights" class="nav-link">Highlights</a>
+<a href="#sec-research_papers" class="nav-link">Research Papers</a>
+<a href="#sec-tools_frameworks" class="nav-link">Tools & Frameworks</a>
+<a href="#sec-models_embeddings" class="nav-link">Models & Embeddings</a>
+<a href="#sec-blogs_insights" class="nav-link">Blogs & Insights</a>
+</nav>
+    <div class="header-actions">
+      <input type="search" id="search" class="search-input" placeholder="Filter ..." oninput="doSearch()" autocomplete="off">
+      <button id="theme-toggle" class="theme-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9788;</button>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats-panel">
+  <div class="stats-summary">
+    <span class="stat-big">10 items</span>
+    <span class="stat-sep">&middot;</span>
+    <span>5 sources</span>
+    <span class="stat-sep">&middot;</span>
+    <span class="stat-ok">10/10 links verified &#10003;</span>
+  </div>
+  <div class="stats-bars"><div class="stat-row">
+  <span class="stat-label">Research Papers</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:75%"></div></div>
+  <span class="stat-count">3</span>
+</div><div class="stat-row">
+  <span class="stat-label">Tools & Frameworks</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:100%"></div></div>
+  <span class="stat-count">4</span>
+</div><div class="stat-row">
+  <span class="stat-label">Models & Embeddings</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:25%"></div></div>
+  <span class="stat-count">1</span>
+</div><div class="stat-row">
+  <span class="stat-label">Blogs & Insights</span>
+  <div class="stat-bar-wrap"><div class="stat-bar" style="width:50%"></div></div>
+  <span class="stat-count">2</span>
+</div></div>
+  <div class="daily-keywords">
+    <span class="dk-label">Daily Keywords</span>
+    <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">issue-tracker automation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal model</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">audio-video understanding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent framework</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">bug localization</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">persona collapse</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">population diversity</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model routing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent auditing</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent ecosystem</span>
+  </div>
+</div>
+  <section class="news-section section-highlights" id="sec-highlights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-highlights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Highlights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent orchestration issue trackers Codex open-source specification context switching">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An open-source spec for orchestration: Symphony<div class="title-zh">编排的开源规范：Symphony</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">issue trackers</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Codex</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">open-source specification</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context switching</span></div>
+  <div class="item-summary">OpenAI published Symphony, an open-source specification for Codex orchestration that turns issue trackers into always-on agent systems, aiming to boost engineering output and reduce context switching.</div>
+  <a class="item-link" href="https://openai.com/index/open-source-codex-orchestration-symphony" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="multimodal model audio understanding document understanding agentic computer use open weights">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2604.24954</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Nemotron 3 Nano Omni: Efficient and Open Multimodal Intelligence<div class="title-zh">Nemotron 3 Nano Omni：高效开放的多模态智能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal model</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">audio understanding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document understanding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic computer use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open weights</span></div>
+  <div class="item-summary">Nemotron 3 Nano Omni is the first model in NVIDIA's Nemotron multimodal series to natively support audio alongside text, images and video, built on the efficient 30B-A3B Nemotron 3 Nano backbone. NVIDIA reports accuracy gains over Nemotron Nano V2 VL across all modalities, with leading results in document understanding, long audio-video comprehension and agentic computer use, and releases BF16, FP8 and FP4 checkpoints plus parts of the training data and code.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.24954v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-research_papers">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-research_papers">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Research Papers
+    <span class="section-count">[3]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multi-agent framework bug detection flow graph similar-bug retrieval tree-of-thought">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.24831</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">FGDM: Reasoning Aware Multi-Agentic Framework for Software Bug Detection using Chain of Thought and Tree of Thought Prompting<div class="title-zh">FGDM：基于思维链与思维树提示的推理感知多智能体软件缺陷检测框架</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent framework</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">bug detection</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">flow graph</span> <span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">similar-bug retrieval</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">tree-of-thought</span></div>
+  <div class="item-summary">FGDM is a four-agent framework that converts source code into a flow graph, identifies erroneous segments and generates repaired code, using chain-of-thought and tree-of-thought prompts and a FAISS vector index of similar past bugs and fixes. Across 100 programs from projects including Ansible, FastAPI, Keras, Pandas and SpaCy, it reports mean Levenshtein-distance reductions of 24.33 for Python and 8.37 for C, with cosine similarities of 0.951 and 0.974.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.24831v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="multi-agent framework video storytelling semantic drift bandit search benchmark">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.24842</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Co-Director: Agentic Generative Video Storytelling<div class="title-zh">Co-Director：智能体式生成视频叙事</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent framework</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">video storytelling</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">semantic drift</span> <span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">bandit search</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">benchmark</span></div>
+  <div class="item-summary">Co-Director is a hierarchical multi-agent framework that formulates generative video storytelling as a global optimization problem, using a multi-armed bandit to identify promising creative directions and a local multimodal self-refinement loop to limit identity drift and preserve sequence-level consistency. The authors also introduce GenAD-Bench, a 400-scenario dataset of fictional products for personalized advertising, and report that Co-Director significantly outperforms state-of-the-art baselines.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.24842v1" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+<div class="item-card" data-keywords="persona collapse population diversity multi-agent simulation persona fine-tuning">
+  <div class="item-meta">
+    
+    <span class="arxiv-tag">arxiv:2604.24698</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">The Chameleon's Limit: Investigating Persona Collapse and Homogenization in Large Language Models<div class="title-zh">变色龙的极限：探究大语言模型中的角色坍缩与同质化</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fce4ec;--kw-lt:#9a1a1a;--kw-db:#4a1525;--kw-dt:#fca5a5" data-domain="cognition-reasoning">persona collapse</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">population diversity</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">multi-agent simulation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">persona fine-tuning</span></div>
+  <div class="item-summary">The paper formalizes Persona Collapse, where LLM agents given detailed human profiles cluster into a few response classes rather than covering population diversity, and quantifies it with coverage, uniformity and complexity metrics. Across eight LLMs on personality, moral reasoning and self-introduction tasks, collapse was universal but task-dependent, sampling more personas did not mitigate it, and persona-targeted fine-tuning narrowed the population further.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.24698v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-tools_frameworks">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-tools_frameworks">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Tools & Frameworks
+    <span class="section-count">[4]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="agent orchestration issue trackers Codex open-source specification context switching">
+  <div class="item-meta">
+    <span class="item-org">OpenAI</span>
+    
+    
+    <span class="item-source">OpenAI</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">An open-source spec for orchestration: Symphony<div class="title-zh">编排的开源规范：Symphony</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent orchestration</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">issue trackers</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">Codex</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">open-source specification</span> <span class="kw-pill" style="--kw-lb:#f3e8ff;--kw-lt:#6b21a8;--kw-db:#3b0764;--kw-dt:#d8b4fe" data-domain="context-prompting">context switching</span></div>
+  <div class="item-summary">OpenAI published Symphony, an open-source specification for Codex orchestration that turns issue trackers into always-on agent systems, aiming to boost engineering output and reduce context switching.</div>
+  <a class="item-link" href="https://openai.com/index/open-source-codex-orchestration-symphony" target="_blank" rel="noopener">&rarr; openai.com</a>
+</div>
+<div class="item-card" data-keywords="model routing cost efficiency latency">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">weave-os/router<div class="title-zh">weave-os/router：面向智能体系统的 Go 模型路由器</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">model routing</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">cost efficiency</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">latency</span></div>
+  <div class="item-summary">weave-os/router is a model router for agentic systems, written in Go, that routes each prompt to the right model in under 50 ms and is claimed to cut costs by 40-70% with only an endpoint change.</div>
+  <a class="item-link" href="https://github.com/weave-os/router" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent auditing agent reliability independent verification">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">ifixai-ai/iFixAi<div class="title-zh">iFixAi：AI 智能体独立审计工具</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent auditing</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">agent reliability</span> <span class="kw-pill" style="--kw-lb:#f1f5f9;--kw-lt:#334155;--kw-db:#1e293b;--kw-dt:#94a3b8" data-domain="evaluation-benchmark">independent verification</span></div>
+  <div class="item-summary">iFixAi is a Python tool for independent auditing of AI agents, positioned to answer whether an agent is doing what it is supposed to do in under 120 seconds, run by a human or by the agent itself.</div>
+  <a class="item-link" href="https://github.com/ifixai-ai/iFixAi" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+<div class="item-card" data-keywords="agent resources resource curation open-source">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">GitHub Trending</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">deepseek-ai/awesome-deepseek-agent<div class="title-zh">deepseek-ai/awesome-deepseek-agent：DeepSeek 智能体资源精选</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">agent resources</span> <span class="kw-pill" style="--kw-lb:#fef3c7;--kw-lt:#92400e;--kw-db:#422006;--kw-dt:#fcd34d" data-domain="knowledge-lifecycle">resource curation</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open-source</span></div>
+  <div class="item-summary">A GitHub repository from DeepSeek's official organization that curates DeepSeek agent resources.</div>
+  <a class="item-link" href="https://github.com/deepseek-ai/awesome-deepseek-agent" target="_blank" rel="noopener">&rarr; github.com</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-models_embeddings">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-models_embeddings">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Models & Embeddings
+    <span class="section-count">[1]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="multimodal model audio understanding document understanding agentic computer use open weights">
+  <div class="item-meta">
+    <span class="item-org">NVIDIA</span>
+    <span class="arxiv-tag">arxiv:2604.24954</span>
+    
+    <span class="item-source">arXiv</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Nemotron 3 Nano Omni: Efficient and Open Multimodal Intelligence<div class="title-zh">Nemotron 3 Nano Omni：高效开放的多模态智能</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">multimodal model</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">audio understanding</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document understanding</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agentic computer use</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">open weights</span></div>
+  <div class="item-summary">Nemotron 3 Nano Omni is the first model in NVIDIA's Nemotron multimodal series to natively support audio alongside text, images and video, built on the efficient 30B-A3B Nemotron 3 Nano backbone. NVIDIA reports accuracy gains over Nemotron Nano V2 VL across all modalities, with leading results in document understanding, long audio-video comprehension and agentic computer use, and releases BF16, FP8 and FP4 checkpoints plus parts of the training data and code.</div>
+  <a class="item-link" href="http://arxiv.org/abs/2604.24954v2" target="_blank" rel="noopener">&rarr; arxiv.org</a>
+</div>
+  </div>
+</section>
+<section class="news-section" id="sec-blogs_insights">
+  <h2 class="section-header" onclick="toggleSection(this)" data-target="sec-blogs_insights">
+    <span class="section-arrow collapsed">&#9654;</span>
+    <span class="section-arrow expanded">&#9660;</span>
+    Blogs & Insights
+    <span class="section-count">[2]</span>
+  </h2>
+  <div class="section-body collapsed">
+    <div class="item-card" data-keywords="document parsing agent SDK document workflows">
+  <div class="item-meta">
+    <span class="item-org">LlamaIndex</span>
+    
+    
+    <span class="item-source">LlamaIndex Blog</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">Apr 27, 2026 Product Build Automated Loan Income Verification with LlamaParse + Claude Agent SDK Read<div class="title-zh">用 LlamaParse 与 Claude Agent SDK 实现贷款收入自动核验</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#dbeafe;--kw-lt:#1e40af;--kw-db:#1e3a5f;--kw-dt:#93c5fd" data-domain="rag-retrieval">document parsing</span> <span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent SDK</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">document workflows</span></div>
+  <div class="item-summary">LlamaIndex published a build walkthrough for automating loan income verification with LlamaParse and the Claude Agent SDK.</div>
+  <a class="item-link" href="https://www.llamaindex.ai/blog/build-automated-loan-income-verification-with-llamaparse-claude-agent-sdk" target="_blank" rel="noopener">&rarr; www.llamaindex.ai</a>
+</div>
+<div class="item-card" data-keywords="agent framework default model DeepSeek V4">
+  <div class="item-meta">
+    
+    
+    
+    <span class="item-source">TechNode</span>
+    <span class="link-ok" title="Link verified">&#10003;</span>
+  </div>
+  <div class="item-title">DeepSeek V4 becomes default model for OpenClaw<div class="title-zh">DeepSeek V4 成为 OpenClaw 默认模型</div></div>
+  <div class="item-keywords"><span class="kw-pill" style="--kw-lb:#ffedd5;--kw-lt:#9a3412;--kw-db:#431407;--kw-dt:#fdba74" data-domain="agent-architecture">agent framework</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">default model</span> <span class="kw-pill" style="--kw-lb:#e0e7ff;--kw-lt:#3730a3;--kw-db:#1e1b4b;--kw-dt:#a5b4fc" data-domain="ai-knowledge">DeepSeek V4</span></div>
+  <div class="item-summary">OpenClaw released version 2026.4.24, bringing both DeepSeek V4 models into the core ecosystem of the open-source agent framework and making them its default, according to TechNode.</div>
+  <a class="item-link" href="https://technode.com/2026/04/27/deepseek-v4-becomes-default-model-for-openclaw/" target="_blank" rel="noopener">&rarr; technode.com</a>
+</div>
+  </div>
+</section>
+</main>
+<footer>
+  <section class="sources-section" id="sources">
+  <h2 class="section-header">Sources</h2>
+  <ul class="sources-list"><li><a href="https://arxiv.org" target="_blank" rel="noopener">arXiv</a></li>
+<li><a href="https://openai.com" target="_blank" rel="noopener">OpenAI</a></li>
+<li><a href="https://github.com/trending" target="_blank" rel="noopener">GitHub Trending</a></li>
+<li><a href="https://www.llamaindex.ai/blog" target="_blank" rel="noopener">LlamaIndex Blog</a></li>
+<li><a href="https://technode.com" target="_blank" rel="noopener">TechNode</a></li></ul>
+</section>
+  <div class="footer-note">Generated 2026-11-24 13:41 &mdash; agentic-knowledge-digest</div>
+</footer>
+<script type="application/json" id="digest-data">{"date": "2026-04-27", "stats": {"total_items": 10, "unique_items": 10, "sources_count": 5, "links_verified_count": 10, "links_failed_count": 0, "section_counts": {"research_papers": 3, "tools_frameworks": 4, "models_embeddings": 1, "blogs_insights": 2}}, "daily_keywords": [{"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "issue-tracker automation", "domain": "agent-architecture"}, {"text": "multimodal model", "domain": "ai-knowledge"}, {"text": "audio-video understanding", "domain": "ai-knowledge"}, {"text": "multi-agent framework", "domain": "agent-architecture"}, {"text": "bug localization", "domain": "agent-architecture"}, {"text": "persona collapse", "domain": "cognition-reasoning"}, {"text": "population diversity", "domain": "evaluation-benchmark"}, {"text": "model routing", "domain": "agent-architecture"}, {"text": "agent auditing", "domain": "evaluation-benchmark"}, {"text": "agent ecosystem", "domain": "knowledge-lifecycle"}], "sections": [{"id": "highlights", "label": "Highlights", "items": [{"title": "An open-source spec for orchestration: Symphony", "title_zh": "编排的开源规范：Symphony", "url": "https://openai.com/index/open-source-codex-orchestration-symphony", "source": "OpenAI", "section": "tools_frameworks", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI published Symphony, an open-source specification for Codex orchestration that turns issue trackers into always-on agent systems, aiming to boost engineering output and reduce context switching.", "keywords": [{"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "issue trackers", "domain": "agent-architecture"}, {"text": "Codex", "domain": "agent-architecture"}, {"text": "open-source specification", "domain": "knowledge-lifecycle"}, {"text": "context switching", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "Nemotron 3 Nano Omni: Efficient and Open Multimodal Intelligence", "title_zh": "Nemotron 3 Nano Omni：高效开放的多模态智能", "url": "http://arxiv.org/abs/2604.24954v2", "source": "arXiv", "section": "models_embeddings", "organization": "NVIDIA", "language": "en", "arxiv_id": "2604.24954", "summary": "Nemotron 3 Nano Omni is the first model in NVIDIA's Nemotron multimodal series to natively support audio alongside text, images and video, built on the efficient 30B-A3B Nemotron 3 Nano backbone. NVIDIA reports accuracy gains over Nemotron Nano V2 VL across all modalities, with leading results in document understanding, long audio-video comprehension and agentic computer use, and releases BF16, FP8 and FP4 checkpoints plus parts of the training data and code.", "keywords": [{"text": "multimodal model", "domain": "ai-knowledge"}, {"text": "audio understanding", "domain": "ai-knowledge"}, {"text": "document understanding", "domain": "ai-knowledge"}, {"text": "agentic computer use", "domain": "agent-architecture"}, {"text": "open weights", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "research_papers", "label": "Research Papers", "items": [{"title": "FGDM: Reasoning Aware Multi-Agentic Framework for Software Bug Detection using Chain of Thought and Tree of Thought Prompting", "title_zh": "FGDM：基于思维链与思维树提示的推理感知多智能体软件缺陷检测框架", "url": "http://arxiv.org/abs/2604.24831v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.24831", "summary": "FGDM is a four-agent framework that converts source code into a flow graph, identifies erroneous segments and generates repaired code, using chain-of-thought and tree-of-thought prompts and a FAISS vector index of similar past bugs and fixes. Across 100 programs from projects including Ansible, FastAPI, Keras, Pandas and SpaCy, it reports mean Levenshtein-distance reductions of 24.33 for Python and 8.37 for C, with cosine similarities of 0.951 and 0.974.", "keywords": [{"text": "multi-agent framework", "domain": "agent-architecture"}, {"text": "bug detection", "domain": "agent-architecture"}, {"text": "flow graph", "domain": "ai-knowledge"}, {"text": "similar-bug retrieval", "domain": "rag-retrieval"}, {"text": "tree-of-thought", "domain": "cognition-reasoning"}], "link_verified": true, "is_highlight": false}, {"title": "Co-Director: Agentic Generative Video Storytelling", "title_zh": "Co-Director：智能体式生成视频叙事", "url": "http://arxiv.org/abs/2604.24842v1", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.24842", "summary": "Co-Director is a hierarchical multi-agent framework that formulates generative video storytelling as a global optimization problem, using a multi-armed bandit to identify promising creative directions and a local multimodal self-refinement loop to limit identity drift and preserve sequence-level consistency. The authors also introduce GenAD-Bench, a 400-scenario dataset of fictional products for personalized advertising, and report that Co-Director significantly outperforms state-of-the-art baselines.", "keywords": [{"text": "multi-agent framework", "domain": "agent-architecture"}, {"text": "video storytelling", "domain": "agent-architecture"}, {"text": "semantic drift", "domain": "cognition-reasoning"}, {"text": "bandit search", "domain": "cognition-reasoning"}, {"text": "benchmark", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "The Chameleon's Limit: Investigating Persona Collapse and Homogenization in Large Language Models", "title_zh": "变色龙的极限：探究大语言模型中的角色坍缩与同质化", "url": "http://arxiv.org/abs/2604.24698v2", "source": "arXiv", "section": "research_papers", "organization": "", "language": "en", "arxiv_id": "2604.24698", "summary": "The paper formalizes Persona Collapse, where LLM agents given detailed human profiles cluster into a few response classes rather than covering population diversity, and quantifies it with coverage, uniformity and complexity metrics. Across eight LLMs on personality, moral reasoning and self-introduction tasks, collapse was universal but task-dependent, sampling more personas did not mitigate it, and persona-targeted fine-tuning narrowed the population further.", "keywords": [{"text": "persona collapse", "domain": "cognition-reasoning"}, {"text": "population diversity", "domain": "evaluation-benchmark"}, {"text": "multi-agent simulation", "domain": "agent-architecture"}, {"text": "persona fine-tuning", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "tools_frameworks", "label": "Tools & Frameworks", "items": [{"title": "An open-source spec for orchestration: Symphony", "title_zh": "编排的开源规范：Symphony", "url": "https://openai.com/index/open-source-codex-orchestration-symphony", "source": "OpenAI", "section": "tools_frameworks", "organization": "OpenAI", "language": "en", "arxiv_id": "", "summary": "OpenAI published Symphony, an open-source specification for Codex orchestration that turns issue trackers into always-on agent systems, aiming to boost engineering output and reduce context switching.", "keywords": [{"text": "agent orchestration", "domain": "agent-architecture"}, {"text": "issue trackers", "domain": "agent-architecture"}, {"text": "Codex", "domain": "agent-architecture"}, {"text": "open-source specification", "domain": "knowledge-lifecycle"}, {"text": "context switching", "domain": "context-prompting"}], "link_verified": true, "is_highlight": true}, {"title": "weave-os/router", "title_zh": "weave-os/router：面向智能体系统的 Go 模型路由器", "url": "https://github.com/weave-os/router", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "weave-os/router is a model router for agentic systems, written in Go, that routes each prompt to the right model in under 50 ms and is claimed to cut costs by 40-70% with only an endpoint change.", "keywords": [{"text": "model routing", "domain": "agent-architecture"}, {"text": "cost efficiency", "domain": "ai-knowledge"}, {"text": "latency", "domain": "agent-architecture"}], "link_verified": true, "is_highlight": false}, {"title": "ifixai-ai/iFixAi", "title_zh": "iFixAi：AI 智能体独立审计工具", "url": "https://github.com/ifixai-ai/iFixAi", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "iFixAi is a Python tool for independent auditing of AI agents, positioned to answer whether an agent is doing what it is supposed to do in under 120 seconds, run by a human or by the agent itself.", "keywords": [{"text": "agent auditing", "domain": "agent-architecture"}, {"text": "agent reliability", "domain": "evaluation-benchmark"}, {"text": "independent verification", "domain": "evaluation-benchmark"}], "link_verified": true, "is_highlight": false}, {"title": "deepseek-ai/awesome-deepseek-agent", "title_zh": "deepseek-ai/awesome-deepseek-agent：DeepSeek 智能体资源精选", "url": "https://github.com/deepseek-ai/awesome-deepseek-agent", "source": "GitHub Trending", "section": "tools_frameworks", "organization": "", "language": "en", "arxiv_id": "", "summary": "A GitHub repository from DeepSeek's official organization that curates DeepSeek agent resources.", "keywords": [{"text": "agent resources", "domain": "knowledge-lifecycle"}, {"text": "resource curation", "domain": "knowledge-lifecycle"}, {"text": "open-source", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}, {"id": "models_embeddings", "label": "Models & Embeddings", "items": [{"title": "Nemotron 3 Nano Omni: Efficient and Open Multimodal Intelligence", "title_zh": "Nemotron 3 Nano Omni：高效开放的多模态智能", "url": "http://arxiv.org/abs/2604.24954v2", "source": "arXiv", "section": "models_embeddings", "organization": "NVIDIA", "language": "en", "arxiv_id": "2604.24954", "summary": "Nemotron 3 Nano Omni is the first model in NVIDIA's Nemotron multimodal series to natively support audio alongside text, images and video, built on the efficient 30B-A3B Nemotron 3 Nano backbone. NVIDIA reports accuracy gains over Nemotron Nano V2 VL across all modalities, with leading results in document understanding, long audio-video comprehension and agentic computer use, and releases BF16, FP8 and FP4 checkpoints plus parts of the training data and code.", "keywords": [{"text": "multimodal model", "domain": "ai-knowledge"}, {"text": "audio understanding", "domain": "ai-knowledge"}, {"text": "document understanding", "domain": "ai-knowledge"}, {"text": "agentic computer use", "domain": "agent-architecture"}, {"text": "open weights", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": true}]}, {"id": "blogs_insights", "label": "Blogs & Insights", "items": [{"title": "Apr 27, 2026 Product Build Automated Loan Income Verification with LlamaParse + Claude Agent SDK Read", "title_zh": "用 LlamaParse 与 Claude Agent SDK 实现贷款收入自动核验", "url": "https://www.llamaindex.ai/blog/build-automated-loan-income-verification-with-llamaparse-claude-agent-sdk", "source": "LlamaIndex Blog", "section": "blogs_insights", "organization": "LlamaIndex", "language": "en", "arxiv_id": "", "summary": "LlamaIndex published a build walkthrough for automating loan income verification with LlamaParse and the Claude Agent SDK.", "keywords": [{"text": "document parsing", "domain": "rag-retrieval"}, {"text": "agent SDK", "domain": "agent-architecture"}, {"text": "document workflows", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}, {"title": "DeepSeek V4 becomes default model for OpenClaw", "title_zh": "DeepSeek V4 成为 OpenClaw 默认模型", "url": "https://technode.com/2026/04/27/deepseek-v4-becomes-default-model-for-openclaw/", "source": "TechNode", "section": "blogs_insights", "organization": "", "language": "en", "arxiv_id": "", "summary": "OpenClaw released version 2026.4.24, bringing both DeepSeek V4 models into the core ecosystem of the open-source agent framework and making them its default, according to TechNode.", "keywords": [{"text": "agent framework", "domain": "agent-architecture"}, {"text": "default model", "domain": "ai-knowledge"}, {"text": "DeepSeek V4", "domain": "ai-knowledge"}], "link_verified": true, "is_highlight": false}]}], "sources": [{"name": "arXiv", "url": "https://arxiv.org"}, {"name": "OpenAI", "url": "https://openai.com"}, {"name": "GitHub Trending", "url": "https://github.com/trending"}, {"name": "LlamaIndex Blog", "url": "https://www.llamaindex.ai/blog"}, {"name": "TechNode", "url": "https://technode.com"}]}</script>
+
+<script>
+(function() {
+  // ── Theme ───────────────────────────────────────────────────────────
+  const saved = localStorage.getItem('digest-theme');
+  if (saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+  window.toggleTheme = function() {
+    document.documentElement.classList.toggle('dark');
+    localStorage.setItem('digest-theme', document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+  };
+
+  // ── Section toggle ──────────────────────────────────────────────────
+  window.toggleSection = function(header) {
+    const target = header.getAttribute('data-target');
+    const body = document.querySelector('#' + target + ' .section-body');
+    if (!body) return;
+    body.classList.toggle('collapsed');
+    body.classList.toggle('expanded');
+  };
+
+  // Expand first non-empty section by default
+  const firstSection = document.querySelector('.news-section .section-body');
+  if (firstSection) {
+    setTimeout(function() {
+      firstSection.classList.remove('collapsed');
+      firstSection.classList.add('expanded');
+    }, 10);
+  }
+
+  // ── Search ──────────────────────────────────────────────────────────
+  let activeFilter = null;
+  window.doSearch = function() {
+    const q = document.getElementById('search').value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.item-card');
+    cards.forEach(function(card) {
+      const text = (card.textContent || '').toLowerCase();
+      const kw = (card.getAttribute('data-keywords') || '').toLowerCase();
+      const match = !q || text.includes(q) || kw.includes(q);
+      if (match && (!activeFilter || kw.includes(activeFilter))) {
+        card.classList.remove('hidden');
+      } else {
+        card.classList.add('hidden');
+      }
+    });
+  };
+
+  // ── Keyword filter click ────────────────────────────────────────────
+  document.addEventListener('click', function(e) {
+    if (!e.target.classList.contains('kw-pill')) return;
+    const kwText = e.target.textContent.toLowerCase();
+    const pills = document.querySelectorAll('.kw-pill');
+    if (activeFilter === kwText) {
+      activeFilter = null;
+      pills.forEach(function(p) { p.classList.remove('active-filter'); });
+    } else {
+      activeFilter = kwText;
+      pills.forEach(function(p) {
+        if (p.textContent.toLowerCase() === kwText) p.classList.add('active-filter');
+        else p.classList.remove('active-filter');
+      });
+    }
+    doSearch();
+  });
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────
+  let focusIdx = -1;
+  document.addEventListener('keydown', function(e) {
+    if (e.target.tagName === 'INPUT') return;
+    const cards = Array.from(document.querySelectorAll('.item-card:not(.hidden)'));
+    if (e.key === 'j' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      focusIdx = Math.min(focusIdx + 1, cards.length - 1);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'k' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      focusIdx = Math.max(focusIdx - 1, 0);
+      cards.forEach(function(c, i) { c.style.outline = i === focusIdx ? '2px solid var(--accent)' : ''; });
+      if (cards[focusIdx]) cards[focusIdx].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else if (e.key === 'Enter' && focusIdx >= 0 && cards[focusIdx]) {
+      const link = cards[focusIdx].querySelector('.item-link');
+      if (link) window.open(link.href, '_blank');
+    } else if (e.key === '/') {
+      e.preventDefault();
+      document.getElementById('search').focus();
+    } else if (e.key === 'Escape') {
+      document.getElementById('search').value = '';
+      activeFilter = null;
+      document.querySelectorAll('.kw-pill').forEach(function(p) { p.classList.remove('active-filter'); });
+      doSearch();
+      focusIdx = -1;
+      cards.forEach(function(c) { c.style.outline = ''; });
+    }
+  });
+})();
+</script>
+</body>
+</html>
